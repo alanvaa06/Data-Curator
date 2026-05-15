@@ -330,6 +330,19 @@ class TestPrivateClearTableRowsByPrimaryKey:
 
         assert result.equals(expected)
 
+    def test_clear_table_rows_by_primary_key_returns_empty_table_without_columns_unchanged(self):
+        empty_table = pyarrow.table({})
+        primary_keys_table = pyarrow.table({
+            'primary_key': [1, 3],
+        })
+        result = DataProviderToolkit._clear_table_rows_by_primary_key(
+            empty_table,
+            primary_keys_table,
+            ['primary_key']
+        )
+
+        assert result.equals(empty_table)
+
     def test_clear_table_rows_by_primary_keys_fails_on_discrepant_columns(self):
         table = pyarrow.table({
             'primary_key': [1, 2, 3, 4],

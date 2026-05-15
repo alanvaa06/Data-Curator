@@ -1300,18 +1300,20 @@ class DataProviderToolkit:
         """
         key_columns = clear_rows_primary_keys.column_names
 
+        # An endpoint that returned no rows yields a 0-column table here, so there is
+        # nothing to clear and the column check below would spuriously reject it.
+        if (
+            table.num_rows == 0
+            or clear_rows_primary_keys.num_rows == 0
+        ):
+            return table
+
         # Verify all key columns exist in the target table
         for col in (key_columns + preserved_column_names):
             if col not in table.column_names:
                 msg = f"DataProviderToolkit._clear_table_rows_by_primary_key error: Column '{col}' not found in table."
 
                 raise DataProviderToolkitRuntimeError(msg)
-
-        if (
-            table.num_rows == 0
-            or clear_rows_primary_keys.num_rows == 0
-        ):
-            return table
 
         # Combine chunks to ensure we work with flat Arrays, avoiding 'Mask must be array' errors
         table_combined = table.combine_chunks()

@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [Unreleased]
+### Fixed
+- Handle FMP "Column 'FundamentalDataRow.filing_date' not found in table." errors
+
+
 ## [0.48.1] - 2026-05-04
 ### Fixed
 - `MarketDataDailyRow` non-negative value validation was leaking to fields added to extended entities
