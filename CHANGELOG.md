@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Handle FMP "Column 'FundamentalDataRow.filing_date' not found in table." errors
 - `DataProviderToolkit.consolidate_processed_endpoint_tables` crashed with `pyarrow.lib.ArrowInvalid: Data type null is not supported in join non-key field __indicator_for_validity` when an endpoint table had zero rows; the validity indicator array is now explicitly typed as `bool`.
 
-## Removed
+### Removed
 - `DataProviderToolkit.clear_discrepant_processed_endpoint_tables_rows`
 - `DataProviderToolkit._clear_table_rows_by_primary_key`
 
