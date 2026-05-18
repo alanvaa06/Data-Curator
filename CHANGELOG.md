@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - FMP and LSEG fundamentals: on `CommonDataDiscrepancyError`, drop the discrepant rows entirely instead of nulling their non-key columns and retrying.
+- `DataProviderToolkit.format_consolidated_discrepancy_table_for_output` is now a class method
+- Added visual separators before and after discrepancy table logs for better visual separation and consistency 
 
 ### Fixed
 - Handle FMP "Column 'FundamentalDataRow.filing_date' not found in table." errors

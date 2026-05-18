@@ -162,6 +162,11 @@ class DataProviderFieldPreprocessors:
 
 
 class DataProviderToolkit:
+    # character used for the separator lines wrapping discrepancy tables
+    DISCREPANCY_TABLE_SEPARATOR_CHARACTER: typing.ClassVar[str] = "-"
+    # max width of the separator lines wrapping discrepancy tables
+    DISCREPANCY_TABLE_SEPARATOR_MAX_WIDTH: typing.ClassVar[int] = 80
+
     # endpoint column remaps cache
     _data_block_endpoint_column_remaps: typing.ClassVar[
         DataBlockEndpointColumnRemaps
@@ -752,8 +757,9 @@ class DataProviderToolkit:
         else:
             return None
 
-    @staticmethod
+    @classmethod
     def format_consolidated_discrepancy_table_for_output(
+        cls,
         *,
         discrepancy_table: pyarrow.Table,
         output_column_renames: list[str] | dict[str, str],
@@ -763,7 +769,11 @@ class DataProviderToolkit:
         Format a discrepancy table as CSV string for output.
 
         Converts a PyArrow table to CSV format with renamed columns and
-        specified separator, preserving datetime object formatting.
+        specified separator, preserving datetime object formatting. The
+        CSV body is wrapped between two separator lines built from
+        ``DISCREPANCY_TABLE_SEPARATOR_CHARACTER``, whose width matches
+        the header line, capped at
+        ``DISCREPANCY_TABLE_SEPARATOR_MAX_WIDTH`` characters.
 
         Parameters
         ----------
@@ -777,16 +787,23 @@ class DataProviderToolkit:
         Returns
         -------
         str
-            CSV-formatted string representation of the table
+            CSV-formatted string representation of the table, wrapped
+            between separator lines
         """
         renamed_table = discrepancy_table.rename_columns(output_column_renames)
 
         # convert to pandas, preserving all datetime settings
-        return (
+        csv_output = (
             renamed_table
             .to_pandas(timestamp_as_object=True)
             .to_csv(sep=csv_separator, index=False)
         )
+        csv_body = csv_output.rstrip("\n")
+        header_line = csv_body.split("\n", 1)[0]
+        separator_width = min(len(header_line), cls.DISCREPANCY_TABLE_SEPARATOR_MAX_WIDTH)
+        separator_line = cls.DISCREPANCY_TABLE_SEPARATOR_CHARACTER * separator_width
+
+        return "\n".join([separator_line, csv_body, separator_line])
 
     @classmethod
     def format_endpoint_discrepancy_table_for_output(
