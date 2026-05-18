@@ -178,51 +178,6 @@ class DataProviderToolkit:
         dict[str, EntityFieldToMostSpecificEntity]
     ] = {}
 
-    @classmethod
-    def clear_discrepant_processed_endpoint_tables_rows(
-        cls,
-        *,
-        discrepancy_table: EndpointDiscrepanciesTable,
-        processed_endpoint_tables: ProcessedEndpointTables,
-        key_column_names: list[str],
-        preserved_column_names: list[str],
-    ) -> EndpointTables:
-        """
-        Clear discrepant rows from processed endpoint tables.
-
-        Identifies rows in processed endpoint tables that match primary keys
-        in the discrepancy table and sets non-preserved column values to null
-        for those rows across all endpoints.
-
-        Parameters
-        ----------
-        discrepancy_table
-            Table containing primary keys of discrepant rows
-        processed_endpoint_tables
-            Dictionary mapping endpoints to their processed tables
-        key_column_names
-            List of primary key column names
-        preserved_column_names
-            List of names of columns to preserve (not set to null)
-
-        Returns
-        -------
-        EndpointTables
-            Dictionary mapping endpoints to tables with discrepant rows cleared
-        """
-        # get table with just the primary keys
-        primary_keys_table = discrepancy_table.select(key_column_names)
-        # for each endpoint table
-        output_tables = {}
-        for (endpoint, table) in processed_endpoint_tables.items():
-            output_tables[endpoint] = cls._clear_table_rows_by_primary_key(
-                table=table,
-                clear_rows_primary_keys=primary_keys_table,
-                preserved_column_names=preserved_column_names,
-            )
-
-        return output_tables
-
     @staticmethod
     def consolidate_processed_endpoint_tables(
         *,
@@ -339,10 +294,13 @@ class DataProviderToolkit:
 
                 continue
 
-            # Join and sort once
+            # Join and sort once. Type the indicator explicitly so a zero-row endpoint table still yields a bool column
             table_with_indicator = original_table.append_column(
                 indicator_col,
-                pyarrow.array([True] * len(original_table))
+                pyarrow.array(
+                    [True] * len(original_table),
+                    type=pyarrow.bool_(),
+                )
             )
             aligned_table_with_helpers = key_table_with_order.join(
                 table_with_indicator,
@@ -527,6 +485,45 @@ class DataProviderToolkit:
             name: consolidated_columns[name]
             for name in final_column_order
         })
+
+    @classmethod
+    def drop_discrepant_processed_endpoint_tables_rows(
+        cls,
+        *,
+        discrepancy_table: EndpointDiscrepanciesTable,
+        processed_endpoint_tables: ProcessedEndpointTables,
+        key_column_names: list[str],
+    ) -> EndpointTables:
+        """
+        Drop discrepant rows from processed endpoint tables.
+
+        Removes rows in each endpoint table whose primary keys match the
+        discrepancy table, returning trimmed copies. Used when the discrepant
+        rows cannot be reconciled and the surviving rows should be retained.
+
+        Parameters
+        ----------
+        discrepancy_table
+            Table containing primary keys of discrepant rows
+        processed_endpoint_tables
+            Dictionary mapping endpoints to their processed tables
+        key_column_names
+            List of primary key column names
+
+        Returns
+        -------
+        EndpointTables
+            Dictionary mapping endpoints to tables with discrepant rows dropped
+        """
+        primary_keys_table = discrepancy_table.select(key_column_names)
+        output_tables = {}
+        for (endpoint, table) in processed_endpoint_tables.items():
+            output_tables[endpoint] = cls._drop_table_rows_by_primary_key(
+                table=table,
+                drop_rows_primary_keys=primary_keys_table,
+            )
+
+        return output_tables
 
     @classmethod
     def create_endpoint_tables_from_json_mapping(
@@ -1268,120 +1265,6 @@ class DataProviderToolkit:
         return field_to_most_specific_entity
 
     @staticmethod
-    def _clear_table_rows_by_primary_key(
-        table: pyarrow.Table,
-        clear_rows_primary_keys: PrimaryKeyTable,
-        preserved_column_names: list[str],
-    ) -> pyarrow.Table:
-        """
-        Set non-preserved column values to null for specified primary keys.
-
-        Identifies rows in the table matching the provided primary keys and
-        nullifies all column values except those in the preserved list.
-
-        Parameters
-        ----------
-        table
-            Table to clear rows from
-        clear_rows_primary_keys
-            Table containing primary keys of rows to clear
-        preserved_column_names
-            List of names of columns to keep unchanged
-
-        Returns
-        -------
-        pyarrow.Table
-            Table with specified rows cleared in non-preserved columns
-
-        Raises
-        ------
-        DataProviderToolkitRuntimeError
-            When required columns are missing or type incompatibilities exist
-        """
-        key_columns = clear_rows_primary_keys.column_names
-
-        # An endpoint that returned no rows yields a 0-column table here, so there is
-        # nothing to clear and the column check below would spuriously reject it.
-        if (
-            table.num_rows == 0
-            or clear_rows_primary_keys.num_rows == 0
-        ):
-            return table
-
-        # Verify all key columns exist in the target table
-        for col in (key_columns + preserved_column_names):
-            if col not in table.column_names:
-                msg = f"DataProviderToolkit._clear_table_rows_by_primary_key error: Column '{col}' not found in table."
-
-                raise DataProviderToolkitRuntimeError(msg)
-
-        # Combine chunks to ensure we work with flat Arrays, avoiding 'Mask must be array' errors
-        table_combined = table.combine_chunks()
-
-        # Add a temporary row index column to track rows
-        row_index_col_name = "__temp_row_index__"
-        indices_array = pyarrow.array(
-            range(table_combined.num_rows)
-        )
-        table_with_index = table_combined.append_column(
-            row_index_col_name,
-            indices_array
-        )
-
-        # Perform an inner join to identify rows in 'table' that match 'clear_rows_primary_keys'
-        # PyArrow join handles nulls as equal by default
-        try:
-            matches = table_with_index.select([*key_columns, row_index_col_name]).join(
-                clear_rows_primary_keys,
-                keys=key_columns,
-                join_type="inner"
-            )
-        except pyarrow.lib.ArrowInvalid as error:
-            # Propagate error if types are incompatible
-            msg = f"DataProviderToolkit._clear_table_rows_by_primary_key error: {error}"
-
-            raise DataProviderToolkitRuntimeError(msg) from error
-
-        if matches.num_rows == 0:
-            return table_combined
-
-        # Extract indices of rows to be cleared
-        rows_to_clear_indices = matches[row_index_col_name]
-
-        if len(rows_to_clear_indices) == 0:
-            return table_combined
-
-        # Create boolean mask for the whole table
-        # table_with_index columns are likely ChunkedArrays (even if 1 chunk)
-        all_indices = table_with_index[row_index_col_name]
-
-        # is_in returns a ChunkedArray. We must flatten it because replace_with_mask requires an Array mask.
-        rows_to_clear_mask = pyarrow.compute.is_in(
-            all_indices,
-            value_set=rows_to_clear_indices
-        ).combine_chunks()
-
-        new_columns = {}
-        for col_name in table_combined.column_names:
-            # Get column as a single flat Array
-            original_col = table_combined[col_name].combine_chunks()
-
-            if col_name in preserved_column_names:
-                # Keep primary keys as-is
-                new_columns[col_name] = original_col
-            else:
-                # Replace values with None where mask is True
-                null_scalar = pyarrow.scalar(None, type=original_col.type)
-                new_col = pyarrow.compute.replace_with_mask(
-                    original_col,
-                    rows_to_clear_mask,
-                    null_scalar
-                )
-                new_columns[col_name] = new_col
-
-        return pyarrow.Table.from_pydict(new_columns)
-
-    @staticmethod
     def _create_table_from_json_string(json_string: str) -> pyarrow.Table:
         """
         Parse JSON string into a PyArrow table.
@@ -1443,6 +1326,88 @@ class DataProviderToolkit:
             raise DataProviderParsingError(msg) from error
 
         return table
+
+    @staticmethod
+    def _drop_table_rows_by_primary_key(
+        table: pyarrow.Table,
+        drop_rows_primary_keys: PrimaryKeyTable,
+    ) -> pyarrow.Table:
+        """
+        Remove rows from a table whose primary keys match the provided keys.
+
+        Identifies rows in the table matching the provided primary keys and
+        returns a new table with those rows removed.
+
+        Parameters
+        ----------
+        table
+            Table to drop rows from
+        drop_rows_primary_keys
+            Table containing primary keys of rows to drop
+
+        Returns
+        -------
+        pyarrow.Table
+            Table with the matched rows removed
+
+        Raises
+        ------
+        DataProviderToolkitRuntimeError
+            When required key columns are missing or type incompatibilities exist
+        """
+        key_columns = drop_rows_primary_keys.column_names
+
+        # An endpoint that returned no rows yields a 0-column table here, so there
+        # is nothing to drop and the column check below would spuriously reject it.
+        if (
+            table.num_rows == 0
+            or drop_rows_primary_keys.num_rows == 0
+        ):
+            return table
+
+        for col in key_columns:
+            if col not in table.column_names:
+                msg = f"DataProviderToolkit._drop_table_rows_by_primary_key error: Column '{col}' not found in table."
+
+                raise DataProviderToolkitRuntimeError(msg)
+
+        # Combine chunks to ensure we work with flat Arrays, avoiding 'Mask must be array' errors
+        table_combined = table.combine_chunks()
+
+        # Add a temporary row index column to track matched rows positionally
+        row_index_col_name = "__temp_row_index__"
+        indices_array = pyarrow.array(
+            range(table_combined.num_rows)
+        )
+        table_with_index = table_combined.append_column(
+            row_index_col_name,
+            indices_array
+        )
+
+        try:
+            matches = table_with_index.select([*key_columns, row_index_col_name]).join(
+                drop_rows_primary_keys,
+                keys=key_columns,
+                join_type="inner"
+            )
+        except pyarrow.lib.ArrowInvalid as error:
+            msg = f"DataProviderToolkit._drop_table_rows_by_primary_key error: {error}"
+
+            raise DataProviderToolkitRuntimeError(msg) from error
+
+        if matches.num_rows == 0:
+            return table_combined
+
+        rows_to_drop_indices = matches[row_index_col_name]
+        all_indices = table_with_index[row_index_col_name]
+        keep_mask = pyarrow.compute.invert(
+            pyarrow.compute.is_in(
+                all_indices,
+                value_set=rows_to_drop_indices
+            )
+        ).combine_chunks()
+
+        return table_combined.filter(keep_mask)
 
     @classmethod
     def _get_entity_field_to_most_specific_entity(
