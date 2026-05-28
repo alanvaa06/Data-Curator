@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [0.49.0] - 2026-05-26
+### Added
+- `DataProviderToolkit.drop_discrepant_processed_endpoint_tables_rows` for dropping the discrepant rows
+
+### Changed
+- FMP and LSEG fundamentals: on `CommonDataDiscrepancyError`, drop the discrepant rows entirely instead of nulling their non-key columns and retrying.
+- `DataProviderToolkit.format_consolidated_discrepancy_table_for_output` is now a class method
+- Added visual separators before and after discrepancy table logs for better visual separation and consistency 
+
+### Fixed
+- Handle FMP "Column 'FundamentalDataRow.filing_date' not found in table." errors
+- `DataProviderToolkit.consolidate_processed_endpoint_tables` crashed with `pyarrow.lib.ArrowInvalid: Data type null is not supported in join non-key field __indicator_for_validity` when an endpoint table had zero rows; the validity indicator array is now explicitly typed as `bool`.
+
+### Removed
+- `DataProviderToolkit.clear_discrepant_processed_endpoint_tables_rows`
+- `DataProviderToolkit._clear_table_rows_by_primary_key`
+
+
 ## [0.48.1] - 2026-05-04
 ### Fixed
 - `MarketDataDailyRow` non-negative value validation was leaking to fields added to extended entities

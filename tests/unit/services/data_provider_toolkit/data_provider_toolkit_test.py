@@ -265,8 +265,8 @@ class TestPrivateCalculateEndpointFieldPreprocessors:
         assert result == expected
 
 
-class TestPrivateClearTableRowsByPrimaryKey:
-    def test_clear_table_rows_by_single_primary_key(self):
+class TestPrivateDropTableRowsByPrimaryKey:
+    def test_drop_table_rows_by_single_primary_key(self):
         table = pyarrow.table({
             'primary_key': [1, 2, 3, 4],
             'other_column': [1, 2, 3, 4]
@@ -274,27 +274,26 @@ class TestPrivateClearTableRowsByPrimaryKey:
         primary_keys_table = pyarrow.table({
             'primary_key': [1, 3],
         })
-        result = DataProviderToolkit._clear_table_rows_by_primary_key(
+        result = DataProviderToolkit._drop_table_rows_by_primary_key(
             table,
             primary_keys_table,
-            ['primary_key']
         )
         expected = pyarrow.table({
-            'primary_key': [1, 2, 3, 4],
-            'other_column': [None, 2, None, 4]
+            'primary_key': [2, 4],
+            'other_column': [2, 4]
         })
 
         assert result.equals(expected)
 
-    def test_clear_table_rows_by_multiple_primary_keys_with_none(self):
+    def test_drop_table_rows_by_multiple_primary_keys_with_none(self):
         table = pyarrow.table({
             'primary_key1': [
-                datetime.date.fromisoformat('2021-01-03'),  # to clear
+                datetime.date.fromisoformat('2021-01-03'),  # to drop
                 datetime.date.fromisoformat('2021-01-03'),
                 datetime.date.fromisoformat('2021-01-04'),
-                datetime.date.fromisoformat('2021-01-04'),  # to clear
-                datetime.date.fromisoformat('2021-01-05'),  # to clear
-                datetime.date.fromisoformat('2021-01-05'),  # to clear
+                datetime.date.fromisoformat('2021-01-04'),  # to drop
+                datetime.date.fromisoformat('2021-01-05'),  # to drop
+                datetime.date.fromisoformat('2021-01-05'),  # to drop
             ],
             'primary_key2': [1, None, 1, 3, 1, 4],
             'other_column1': [1, 2, 3, 4, 5, 6],
@@ -309,28 +308,35 @@ class TestPrivateClearTableRowsByPrimaryKey:
             ],
             'primary_key2': [1, 3, 1, 4],
         })
-        result = DataProviderToolkit._clear_table_rows_by_primary_key(
+        result = DataProviderToolkit._drop_table_rows_by_primary_key(
             table,
             primary_keys_table,
-            ['primary_key1', 'primary_key2']
         )
         expected = pyarrow.table({
             'primary_key1': [
-                datetime.date.fromisoformat('2021-01-03'),  # to clear
                 datetime.date.fromisoformat('2021-01-03'),
                 datetime.date.fromisoformat('2021-01-04'),
-                datetime.date.fromisoformat('2021-01-04'),  # to clear
-                datetime.date.fromisoformat('2021-01-05'),  # to clear
-                datetime.date.fromisoformat('2021-01-05'),  # to clear
             ],
-            'primary_key2': [1, None, 1, 3, 1, 4],
-            'other_column1': [None, 2, 3, None, None, None],
-            'other_column2': [None, 7, None, None, None, None],
+            'primary_key2': [None, 1],
+            'other_column1': [2, 3],
+            'other_column2': [7, None],
         })
 
         assert result.equals(expected)
 
-    def test_clear_table_rows_by_primary_keys_fails_on_discrepant_columns(self):
+    def test_drop_table_rows_by_primary_key_returns_empty_table_without_columns_unchanged(self):
+        empty_table = pyarrow.table({})
+        primary_keys_table = pyarrow.table({
+            'primary_key': [1, 3],
+        })
+        result = DataProviderToolkit._drop_table_rows_by_primary_key(
+            empty_table,
+            primary_keys_table,
+        )
+
+        assert result.equals(empty_table)
+
+    def test_drop_table_rows_by_primary_keys_fails_on_missing_key_column(self):
         table = pyarrow.table({
             'primary_key': [1, 2, 3, 4],
             'other_column': [1, 2, 3, 4]
@@ -340,10 +346,9 @@ class TestPrivateClearTableRowsByPrimaryKey:
         })
 
         with pytest.raises(DataProviderToolkitRuntimeError):
-            DataProviderToolkit._clear_table_rows_by_primary_key(
+            DataProviderToolkit._drop_table_rows_by_primary_key(
                 table,
                 primary_keys_table,
-                ['primary_key']
             )
 
 

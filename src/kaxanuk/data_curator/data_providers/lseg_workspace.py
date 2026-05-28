@@ -3513,14 +3513,11 @@ class LsegWorkspace(DataProviderInterface):
                 ', '.join(error.discrepant_columns),
                 discrepancy_output_table
             )
-            # Fill conflicting rows with None and retry
-            no_discrepancy_processed_tables = DataProviderToolkit.clear_discrepant_processed_endpoint_tables_rows(
+            # Drop conflicting rows and retry
+            no_discrepancy_processed_tables = DataProviderToolkit.drop_discrepant_processed_endpoint_tables_rows(
                 discrepancy_table=error.discrepancies_table,
                 processed_endpoint_tables=processed_endpoint_tables,
                 key_column_names=error.key_column_names,
-                preserved_column_names=[
-                    FundamentalsDataBlock.get_field_qualified_name(FundamentalsDataBlock.clock_sync_field),
-                ]
             )
             consolidated_fundamental_table_descending = DataProviderToolkit.consolidate_processed_endpoint_tables(
                 processed_endpoint_tables=no_discrepancy_processed_tables,
