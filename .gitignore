@@ -174,5 +174,6 @@ Output/*
 
 # Temporary ignores
 .agents/
+.claude/
 AGENTS.md
 CLAUDE.md
