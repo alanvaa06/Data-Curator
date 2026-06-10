@@ -1,11 +1,22 @@
 import json
 import threading
+import time
 import urllib.error
 import urllib.request
 
 import pytest
 
 from kaxanuk.data_curator.services import config_editor
+
+
+def _wait_for_run_completion(timeout=15.0):
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        status = config_editor.get_run_status()
+        if status['state'] in ('done', 'failed'):
+            return status
+        time.sleep(0.1)
+    return config_editor.get_run_status()
 
 
 def test_build_default_config_has_required_shape():
@@ -153,3 +164,38 @@ def test_server_rejects_invalid_config(tmp_path):
         assert _post(base + '/api/config', payload) == 400
     finally:
         server.shutdown()
+
+
+class TestRunManager:
+    def test_run_executes_script_and_captures_output(self, tmp_path):
+        config_editor.reset_run_state()
+        script = tmp_path / 'entry.py'
+        script.write_text("print('hello run')", encoding='utf-8')
+        assert config_editor.start_pipeline_run(script) is True
+        status = _wait_for_run_completion()
+        assert status['state'] == 'done'
+        assert 'hello run' in status['output']
+        assert status['returncode'] == 0
+
+    def test_run_missing_script_fails_immediately(self, tmp_path):
+        config_editor.reset_run_state()
+        assert config_editor.start_pipeline_run(tmp_path / 'missing.py') is False
+        assert config_editor.get_run_status()['state'] == 'failed'
+
+    def test_run_failure_reports_failed_state(self, tmp_path):
+        config_editor.reset_run_state()
+        script = tmp_path / 'entry.py'
+        script.write_text("import sys; print('boom'); sys.exit(3)", encoding='utf-8')
+        assert config_editor.start_pipeline_run(script) is True
+        status = _wait_for_run_completion()
+        assert status['state'] == 'failed'
+        assert status['returncode'] == 3
+
+    def test_concurrent_run_rejected(self, tmp_path):
+        config_editor.reset_run_state()
+        script = tmp_path / 'entry.py'
+        script.write_text("import time; time.sleep(1.5); print('slow done')", encoding='utf-8')
+        assert config_editor.start_pipeline_run(script) is True
+        assert config_editor.start_pipeline_run(script) is False
+        status = _wait_for_run_completion()
+        assert status['state'] == 'done'

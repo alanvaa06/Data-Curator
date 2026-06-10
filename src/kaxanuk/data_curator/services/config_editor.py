@@ -10,6 +10,9 @@ import http.server
 import importlib.resources
 import json
 import pathlib
+import subprocess
+import sys
+import threading
 import typing
 import webbrowser
 
@@ -27,6 +30,11 @@ DEFAULT_PORT = 8753
 OUTPUT_FORMATS = ('csv', 'parquet')
 CONFIG_FILENAME = 'data_curator_parameters.json'
 PAGE_RESOURCE = 'config_editor_page.html'
+RUN_TARGET_DEFAULT = '__main__.py'
+RUN_OUTPUT_MAX_CHARS = 20_000
+
+_run_lock = threading.Lock()
+_run_state: dict[str, typing.Any] = {'state': 'idle', 'output': '', 'returncode': None}
 
 REQUIRED_GENERAL_KEYS = (
     'market_data_provider',
@@ -174,6 +182,67 @@ def _try_date(value: typing.Any) -> datetime.date | None:
     except (TypeError, ValueError):
 
         return None
+
+
+def get_run_status() -> dict[str, typing.Any]:
+    """Return a snapshot of the current pipeline run state."""
+    with _run_lock:
+
+        return dict(_run_state)
+
+
+def reset_run_state() -> None:
+    """Reset the pipeline run state to idle (mainly for tests)."""
+    with _run_lock:
+        _run_state.update(state='idle', output='', returncode=None)
+
+
+def start_pipeline_run(entry_script: pathlib.Path | str) -> bool:
+    """
+    Run the entry script in a background thread, capturing its output.
+
+    Returns
+    -------
+    True when a new run was started; False when one is already running or the
+    entry script is missing (state set to 'failed' in that case).
+    """
+    entry_path = pathlib.Path(entry_script)
+    with _run_lock:
+        if _run_state['state'] == 'running':
+
+            return False
+
+        if not entry_path.is_file():
+            _run_state.update(
+                state='failed',
+                output=f"Entry script not found: {entry_path}",
+                returncode=None,
+            )
+
+            return False
+
+        _run_state.update(state='running', output='', returncode=None)
+
+    def _worker() -> None:
+        result = subprocess.run(  # noqa: S603
+            [sys.executable, str(entry_path)],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        output = (result.stdout or '')
+        if result.stderr:
+            output += ('\n' if output else '') + result.stderr
+        with _run_lock:
+            _run_state.update(
+                state='done' if result.returncode == 0 else 'failed',
+                output=output[-RUN_OUTPUT_MAX_CHARS:],
+                returncode=result.returncode,
+            )
+
+    threading.Thread(target=_worker, daemon=True).start()
+
+    return True
 
 
 def _read_page() -> str:
