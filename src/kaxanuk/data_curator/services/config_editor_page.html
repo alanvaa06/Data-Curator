@@ -81,7 +81,8 @@
 <body>
 <div class="bar">
   <div><h1>Data Curator — parameters</h1><p class="sub" id="path">Config/data_curator_parameters.json</p></div>
-  <div><span class="status" id="status"></span> <button id="reload">Reload</button> <button id="save">Save</button> <button id="run">Save &amp; run</button></div>
+  <div><span class="status" id="status"></span> <button id="loadFile">Load file…</button> <button id="reload">Reload</button> <button id="save">Save</button> <button id="run">Save &amp; run</button></div>
+  <input type="file" id="fileInput" accept=".xlsx" style="display:none" />
 </div>
 
 <div class="layout">
@@ -379,6 +380,28 @@ document.getElementById('colSearch').addEventListener('keydown', e => {
     e.preventDefault(); const v = e.target.value.trim();
     if (v && !state.columns.includes(v)) { state.columns.push(v); e.target.value = ''; renderColumns(); }
   }
+});
+async function importParametersFile(file) {
+  setStatus('Importing ' + file.name + '…');
+  const res = await fetch('/api/import-excel', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/octet-stream' },
+    body: await file.arrayBuffer(),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    setStatus((data.errors || ['Import failed']).join('; '), 'err');
+    return;
+  }
+  // fill the panel for review only — nothing is saved or run until the user decides
+  state = data;
+  renderGeneral(); renderIdentifiers(); renderColumns();
+  setStatus('Loaded ' + file.name + ' — review the parameters, then click Save & run', 'ok');
+}
+
+document.getElementById('loadFile').onclick = () => document.getElementById('fileInput').click();
+document.getElementById('fileInput').addEventListener('change', (e) => {
+  if (e.target.files.length) { importParametersFile(e.target.files[0]); e.target.value = ''; }
 });
 document.getElementById('save').onclick = save;
 document.getElementById('run').onclick = saveAndRun;

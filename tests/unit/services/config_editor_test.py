@@ -1,4 +1,5 @@
 import json
+import pathlib
 import threading
 import time
 import urllib.error
@@ -95,6 +96,38 @@ def test_build_catalog_response_includes_identifier_presets():
     presets = {p['key']: p for p in response['identifier_presets']}
     assert 'sp500' in presets
     assert len(presets['russell2000']['identifiers']) > 1000
+
+
+TEMPLATE_XLSX = (
+    pathlib.Path(config_editor.__file__).resolve().parents[4]
+    / 'templates' / 'data_curator' / 'Config' / 'data_curator_parameters.xlsx'
+)
+
+
+class TestParseExcelConfig:
+    def _template_bytes(self):
+        return TEMPLATE_XLSX.read_bytes()
+
+    def test_parses_template_workbook_into_json_shape(self):
+        config = config_editor.parse_excel_config(self._template_bytes())
+        assert set(config) >= {'parameters_format_version', 'general', 'identifiers', 'columns'}
+        general = config['general']
+        assert general['market_data_provider'] == 'financial_modeling_prep'
+        assert general['period'] == 'quarterly'
+        assert general['output_format'] == 'csv'
+        assert general['logger_level'] == 'info'
+        assert general['start_date'] == '1990-01-01'
+        assert isinstance(config['identifiers'], list)
+        assert 'm_date' in config['columns']
+        assert len(config['columns']) > 100
+
+    def test_parsed_template_passes_validation(self):
+        config = config_editor.parse_excel_config(self._template_bytes())
+        assert config_editor.validate_config_payload(config) == []
+
+    def test_invalid_bytes_raise_value_error(self):
+        with pytest.raises(ValueError, match='Excel'):
+            config_editor.parse_excel_config(b'this is not a workbook')
 
 
 class TestEnvKeys:
@@ -217,6 +250,39 @@ def test_server_rejects_invalid_config(tmp_path):
         payload = config_editor.build_default_config()
         payload['general']['period'] = 'weekly'
         assert _post(base + '/api/config', payload) == 400
+    finally:
+        server.shutdown()
+
+
+def test_server_imports_excel_file(tmp_path):
+    server, base = _start(tmp_path)
+    try:
+        request = urllib.request.Request(
+            base + '/api/import-excel',
+            data=TEMPLATE_XLSX.read_bytes(),
+            headers={'Content-Type': 'application/octet-stream'},
+            method='POST',
+        )
+        with urllib.request.urlopen(request) as response:
+            assert response.status == 200
+            config = json.loads(response.read())
+        assert config['general']['market_data_provider'] == 'financial_modeling_prep'
+        assert len(config['columns']) > 100
+        # import must NOT write the config file; the user reviews and saves explicitly
+        assert not (tmp_path / config_editor.CONFIG_FILENAME).exists()
+
+        bad = urllib.request.Request(
+            base + '/api/import-excel',
+            data=b'garbage',
+            headers={'Content-Type': 'application/octet-stream'},
+            method='POST',
+        )
+        try:
+            with urllib.request.urlopen(bad) as response:
+                status = response.status
+        except urllib.error.HTTPError as error:
+            status = error.code
+        assert status == 400
     finally:
         server.shutdown()
 

@@ -8,6 +8,7 @@ http.server that serves a self-contained editor page bound to localhost.
 import datetime
 import http.server
 import importlib.resources
+import io
 import json
 import pathlib
 import re
@@ -18,8 +19,14 @@ import threading
 import time
 import typing
 import webbrowser
+import zipfile
+
+import openpyxl
+import openpyxl.utils.exceptions
 
 from kaxanuk.data_curator import __parameters_format_version__
+from kaxanuk.data_curator.config_handlers.excel_configurator import ExcelConfigurator
+from kaxanuk.data_curator.exceptions import ConfigurationHandlerError
 from kaxanuk.data_curator.config_handlers.column_catalog import (
     load_catalog,
     load_identifier_presets,
@@ -201,6 +208,78 @@ def save_config(
         json.dumps(payload, indent=2) + '\n',
         encoding='utf-8',
     )
+
+
+def _excel_value_to_date_string(value: typing.Any) -> str:
+    if isinstance(value, datetime.datetime):
+
+        return value.date().isoformat()
+
+    if isinstance(value, datetime.date):
+
+        return value.isoformat()
+
+    return str(value).strip()
+
+
+def parse_excel_config(file_bytes: bytes) -> dict[str, typing.Any]:
+    """
+    Parse an Excel parameters workbook into the JSON configuration shape.
+
+    Reuses the ExcelConfigurator sheet schemas and extraction logic, so any
+    workbook the legacy Excel flow accepts converts identically. The format
+    version is stamped to the current one, allowing old workbooks to migrate.
+
+    Raises
+    ------
+    ValueError
+        When the bytes are not a valid parameters workbook.
+    """
+    try:
+        workbook = openpyxl.load_workbook(
+            io.BytesIO(file_bytes),
+            read_only=False,
+        )
+    except (
+        openpyxl.utils.exceptions.InvalidFileException,
+        zipfile.BadZipFile,
+        OSError,
+        KeyError,
+    ) as error:
+        msg = "The uploaded file is not a valid Excel workbook"
+
+        raise ValueError(msg) from error
+
+    try:
+        sheet_key_values = ExcelConfigurator._extract_workbook_key_values_by_schema(  # noqa: SLF001
+            workbook,
+            ExcelConfigurator.SHEET_KEY_VALUES,
+        )
+        sheet_columns = ExcelConfigurator._extract_workbook_columns_by_schema(  # noqa: SLF001
+            workbook,
+            ExcelConfigurator.SHEET_COLUMNS,
+        )
+    except ConfigurationHandlerError as error:
+        msg = f"The Excel file doesn't match the parameters format: {error!s}"
+
+        raise ValueError(msg) from error
+
+    general_values = sheet_key_values['General']
+
+    return {
+        'parameters_format_version': __parameters_format_version__,
+        'general': {
+            'market_data_provider': str(general_values['market_data_provider'] or '').strip(),
+            'fundamental_data_provider': str(general_values['fundamental_data_provider'] or '').strip(),
+            'start_date': _excel_value_to_date_string(general_values['start_date']),
+            'end_date': _excel_value_to_date_string(general_values['end_date']),
+            'period': str(general_values['period'] or '').strip(),
+            'output_format': str(general_values['output_format'] or '').strip(),
+            'logger_level': str(general_values['logger_level'] or '').strip(),
+        },
+        'identifiers': list(sheet_columns['Identifiers']['main_identifier']),
+        'columns': list(sheet_columns['Output_Columns']['columns']),
+    }
 
 
 def _parse_env_lines(env_path: pathlib.Path) -> list[str]:
@@ -516,6 +595,18 @@ def build_server(
                     return
 
                 self._send_json(200, {'status': 'saved'})
+            elif self.path == '/api/import-excel':
+                length = int(self.headers.get('Content-Length', 0))
+                raw = self.rfile.read(length)
+                try:
+                    imported_config = parse_excel_config(raw)
+                except ValueError as error:
+                    self._send_json(400, {'errors': [str(error)]})
+
+                    return
+
+                # returned for review in the panel; nothing is saved until the user saves
+                self._send_json(200, imported_config)
             else:
                 self._send_json(404, {'error': 'not found'})
 
