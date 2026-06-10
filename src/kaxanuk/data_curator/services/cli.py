@@ -262,6 +262,53 @@ def config_editor_command(port: int, no_browser: bool) -> None:    # noqa: FBT00
         config_path,
         port=port,
         open_browser=not no_browser,
+        entry_script=ENTRY_SCRIPT_DEFAULT_NAME,
+    )
+
+
+@cli.command()
+@click.option(
+    '--port',
+    default=config_editor.DEFAULT_PORT,
+    help=f"Port for the local editor server. Default: {config_editor.DEFAULT_PORT}",
+    type=click.INT,
+)
+@click.option(
+    '--no-browser',
+    is_flag=True,
+    default=False,
+    help="Do not open a browser window automatically.",
+)
+def start(port: int, no_browser: bool) -> None:    # noqa: FBT001
+    """
+    One-command workflow: set up the JSON workspace if needed, then open the parameter panel.
+
+    Creates any missing Config/Output directories, configuration file and entry script
+    (never overwriting existing files), then launches the local HTML panel where you can
+    edit the parameters and run the system with the "Save & run" button.
+    """
+    try:
+        _ensure_json_workspace(ENTRY_SCRIPT_DEFAULT_NAME)
+    except NotADirectoryError as error:
+        msg = f"Templates directory not found in {DATA_DIR}. Please uninstall and reinstall this library"
+
+        raise click.ClickException(msg) from error
+    except OSError as error:
+        if error.errno == errno.EACCES:
+            msg = "Unable to access or modify target files"
+        else:
+            msg = f"OS error occurred while copying: {error}"
+
+        raise click.ClickException(msg) from error
+
+    config_path = pathlib.Path(CONFIG_SUBDIR) / PARAMETERS_JSON_FILE
+    click.echo(f"Starting Data Curator panel at http://{config_editor.HOST}:{port} (Ctrl+C to stop)")
+    click.echo("Edit your parameters in the browser and click 'Save & run' to run the system.")
+    config_editor.serve(
+        config_path,
+        port=port,
+        open_browser=not no_browser,
+        entry_script=ENTRY_SCRIPT_DEFAULT_NAME,
     )
 
 
@@ -416,6 +463,49 @@ def _install_json_files(entry_script: str) -> None:
         templates_path / JSON_ENTRY_SCRIPT_NAME,
         entry_script,
     )
+
+
+def _ensure_json_workspace(entry_script: str) -> None:
+    """
+    Create any missing JSON-format directories and files, never overwriting existing ones.
+
+    Parameters
+    ----------
+    entry_script
+        The name of the entry script that will be created if missing
+
+    Raises
+    ------
+    NotADirectoryError
+        The templates directory was not found
+    OSError
+        Usually when there's a file permissions error
+    """
+    for dir_name in INIT_DIRS:
+        dir_path = pathlib.Path(dir_name)
+        if not dir_path.is_dir():
+            pathlib.Path.mkdir(dir_path)
+            click.echo(f"Created directory {dir_name}")
+
+    actual_templates_dir = _find_templates_dir()
+    if actual_templates_dir is None:
+        raise NotADirectoryError
+
+    templates_path = pathlib.Path(actual_templates_dir)
+    for name in ('.env', 'custom_calculations.py', PARAMETERS_JSON_FILE):
+        source = templates_path / CONFIG_SUBDIR / name
+        destination = pathlib.Path(CONFIG_SUBDIR) / name
+        if source.is_file() and not destination.exists():
+            shutil.copy(source, destination)
+            click.echo(f"Created {destination}")
+
+    entry_path = pathlib.Path(entry_script)
+    if not entry_path.exists():
+        shutil.copy(
+            templates_path / JSON_ENTRY_SCRIPT_NAME,
+            entry_path,
+        )
+        click.echo(f"Created entry script {entry_script}")
 
 
 def _find_templates_dir() -> str | None:
