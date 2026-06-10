@@ -1,4 +1,26 @@
-from kaxanuk.data_curator.config_handlers.column_catalog import load_catalog
+from kaxanuk.data_curator.config_handlers.column_catalog import (
+    load_catalog,
+    load_identifier_presets,
+)
+
+
+class TestIdentifierPresets:
+    def test_loads_three_index_presets(self):
+        presets = load_identifier_presets()
+        keys = [p['key'] for p in presets['presets']]
+        assert keys == ['sp500', 'nasdaq100', 'russell2000']
+
+    def test_presets_have_labels_and_plausible_sizes(self):
+        presets = {p['key']: p for p in load_identifier_presets()['presets']}
+        assert presets['sp500']['label'] == 'S&P 500'
+        assert 480 <= len(presets['sp500']['identifiers']) <= 520
+        assert 90 <= len(presets['nasdaq100']['identifiers']) <= 110
+        assert 1500 <= len(presets['russell2000']['identifiers']) <= 2100
+
+    def test_known_members_present(self):
+        presets = {p['key']: p for p in load_identifier_presets()['presets']}
+        assert 'AAPL' in presets['sp500']['identifiers']
+        assert 'NVDA' in presets['nasdaq100']['identifiers']
 
 
 def test_load_catalog_returns_nonempty_groups():

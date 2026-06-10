@@ -90,6 +90,13 @@ def test_build_catalog_response_has_options_and_groups():
     assert 'info' in response['options']['logger_level']
 
 
+def test_build_catalog_response_includes_identifier_presets():
+    response = config_editor.build_catalog_response()
+    presets = {p['key']: p for p in response['identifier_presets']}
+    assert 'sp500' in presets
+    assert len(presets['russell2000']['identifiers']) > 1000
+
+
 def _run_server(server):
     server.serve_forever()
 

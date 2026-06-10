@@ -18,7 +18,10 @@ import typing
 import webbrowser
 
 from kaxanuk.data_curator import __parameters_format_version__
-from kaxanuk.data_curator.config_handlers.column_catalog import load_catalog
+from kaxanuk.data_curator.config_handlers.column_catalog import (
+    load_catalog,
+    load_identifier_presets,
+)
 from kaxanuk.data_curator.config_handlers.configurator_interface import ConfiguratorInterface
 from kaxanuk.data_curator.entities.configuration import (
     CONFIGURATION_COLUMN_PREFIXES,
@@ -90,6 +93,7 @@ def build_catalog_response() -> dict[str, typing.Any]:
 
     return {
         'groups': catalog['groups'],
+        'identifier_presets': load_identifier_presets()['presets'],
         'options': {
             'market_data_provider': list(ConfiguratorInterface.CONFIGURATION_PROVIDERS_MARKET),
             'fundamental_data_provider': list(ConfiguratorInterface.CONFIGURATION_PROVIDERS_FUNDAMENTAL),
