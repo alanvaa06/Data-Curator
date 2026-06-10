@@ -20,3 +20,19 @@ def test_config_editor_invokes_serve(monkeypatch, tmp_path):
     assert result.exit_code == 0, result.output
     assert calls['open_browser'] is False
     assert calls['config_path'].endswith('data_curator_parameters.json')
+
+
+def test_init_json_scaffolds_files(tmp_path, monkeypatch):
+    import pathlib
+
+    templates = pathlib.Path(cli_module.__file__).resolve().parents[4] / 'templates' / 'data_curator'
+    monkeypatch.setattr(cli_module, '_find_templates_dir', lambda: str(templates))
+
+    runner = CliRunner()
+    with runner.isolated_filesystem(temp_dir=tmp_path):
+        result = runner.invoke(cli_module.cli, ['init', 'json'])
+        assert result.exit_code == 0, result.output
+        assert pathlib.Path('Config/data_curator_parameters.json').is_file()
+        assert pathlib.Path('Config/custom_calculations.py').is_file()
+        assert pathlib.Path('__main__.py').is_file()
+        assert not pathlib.Path('Config/data_curator_parameters.xlsx').is_file()
