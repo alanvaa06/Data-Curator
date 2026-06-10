@@ -396,6 +396,35 @@ class TestRunProgress:
         assert config_editor._count_files_modified_since(tmp_path / 'missing', 0) == 0
         assert config_editor._count_files_modified_since(tmp_path, 0) == 1
 
+    def test_count_includes_nested_output_files(self, tmp_path):
+        (tmp_path / 'sub').mkdir()
+        (tmp_path / 'sub' / 'nested.csv').write_text('x', encoding='utf-8')
+        (tmp_path / 'top.csv').write_text('x', encoding='utf-8')
+        assert config_editor._count_files_modified_since(tmp_path, 0) == 2
+
+    def test_progress_count_is_cached_between_polls(self, tmp_path, monkeypatch):
+        calls = {'n': 0}
+        real_count = config_editor._count_files_modified_since
+
+        def counting(directory, since):
+            calls['n'] += 1
+            return real_count(directory, since)
+
+        monkeypatch.setattr(config_editor, '_count_files_modified_since', counting)
+        config_editor.reset_run_state()
+        with config_editor._run_lock:
+            config_editor._run_state.update(
+                state='running',
+                started_at=1.0,
+                identifiers_total=5,
+                output_dir=str(tmp_path),
+            )
+        config_editor.get_run_status()
+        config_editor.get_run_status()
+        config_editor.get_run_status()
+        assert calls['n'] == 1
+        config_editor.reset_run_state()
+
     def test_status_reports_progress_and_elapsed(self, tmp_path):
         import json as json_module
         config_editor.reset_run_state()

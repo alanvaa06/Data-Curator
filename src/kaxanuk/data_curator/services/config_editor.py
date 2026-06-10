@@ -64,6 +64,11 @@ _RUN_STATE_IDLE: dict[str, typing.Any] = {
 }
 _run_state: dict[str, typing.Any] = dict(_RUN_STATE_IDLE)
 
+# counting output files walks the whole directory, which gets expensive on large
+# (and cloud-synced) output folders — cache it so 1s status polls stay cheap
+PROGRESS_CACHE_SECONDS = 5.0
+_progress_cache: dict[str, typing.Any] = {'key': None, 'at': 0.0, 'count': 0}
+
 API_KEY_ENV_VARS = (
     'KNDC_API_KEY_FMP',
     'KNDC_API_KEY_LSEG',
@@ -391,11 +396,22 @@ def get_run_status() -> dict[str, typing.Any]:
         end = snapshot['finished_at'] if snapshot['finished_at'] is not None else time.time()
         snapshot['elapsed'] = round(end - snapshot['started_at'], 1)
         total = snapshot['identifiers_total']
-        written = _count_files_modified_since(
-            snapshot['output_dir'],
-            # half-second margin against filesystem mtime granularity
-            snapshot['started_at'] - 0.5,
-        )
+        now = time.time()
+        cache_key = (snapshot['output_dir'], snapshot['started_at'], snapshot['finished_at'])
+        with _run_lock:
+            cache_valid = (
+                _progress_cache['key'] == cache_key
+                and (now - _progress_cache['at']) < PROGRESS_CACHE_SECONDS
+            )
+            written = _progress_cache['count'] if cache_valid else None
+        if written is None:
+            written = _count_files_modified_since(
+                snapshot['output_dir'],
+                # half-second margin against filesystem mtime granularity
+                snapshot['started_at'] - 0.5,
+            )
+            with _run_lock:
+                _progress_cache.update(key=cache_key, at=now, count=written)
         snapshot['progress'] = {
             'done': min(written, total) if total else written,
             'total': total,
@@ -411,6 +427,7 @@ def reset_run_state() -> None:
     """Reset the pipeline run state to idle (mainly for tests)."""
     with _run_lock:
         _run_state.update(_RUN_STATE_IDLE)
+        _progress_cache.update(key=None, at=0.0, count=0)
 
 
 def start_pipeline_run(

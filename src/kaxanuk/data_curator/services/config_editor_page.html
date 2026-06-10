@@ -315,7 +315,27 @@ async function save() {
   return res.ok && keysOk;
 }
 
-let runTimer = null;
+let runTimer = null, runActive = false;
+
+function startRunPolling() {
+  runActive = true;
+  if (runTimer) clearInterval(runTimer);
+  runTimer = setInterval(pollRun, 2000);
+}
+
+function stopRunPolling() {
+  runActive = false;
+  if (runTimer) { clearInterval(runTimer); runTimer = null; }
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    if (runTimer) { clearInterval(runTimer); runTimer = null; }
+  } else if (runActive && !runTimer) {
+    pollRun();
+    runTimer = setInterval(pollRun, 2000);
+  }
+});
 
 function formatElapsed(seconds) {
   if (seconds === null || seconds === undefined) return '';
@@ -358,8 +378,7 @@ async function saveAndRun() {
   setStatus('Running…');
   document.getElementById('runLog').textContent = 'Running… output appears when the run finishes.';
   updateProgress({ state: 'running', elapsed: 0, progress: null });
-  if (runTimer) clearInterval(runTimer);
-  runTimer = setInterval(pollRun, 1000);
+  startRunPolling();
 }
 
 function firstCriticalLine(output) {
@@ -376,7 +395,7 @@ async function pollRun() {
   if (critical) { setStatus('Run failed: ' + critical, 'err'); }
   else if (s.state === 'done') { setStatus('Run finished — check the Output folder', 'ok'); }
   else if (s.state === 'failed') { setStatus('Run failed — see the run output below', 'err'); }
-  clearInterval(runTimer); runTimer = null;
+  stopRunPolling();
 }
 
 document.getElementById('idAdd').onclick = addIdentifier;
