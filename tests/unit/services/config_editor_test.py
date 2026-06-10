@@ -66,6 +66,54 @@ def test_validate_flags_non_list_identifiers():
     assert config_editor.validate_config_payload(payload)
 
 
+class TestOutputDirectory:
+    def test_default_config_has_output_directory(self):
+        config = config_editor.build_default_config()
+        assert config['general']['output_directory'] == 'Output'
+
+    def test_missing_output_directory_is_valid(self):
+        payload = config_editor.build_default_config()
+        del payload['general']['output_directory']
+        assert config_editor.validate_config_payload(payload) == []
+
+    def test_empty_or_non_string_output_directory_rejected(self):
+        for bad in ('', '   ', 123, None):
+            payload = config_editor.build_default_config()
+            payload['general']['output_directory'] = bad
+            errors = config_editor.validate_config_payload(payload)
+            assert any('output_directory' in e for e in errors), bad
+
+    def test_excel_import_defaults_output_directory(self):
+        config = config_editor.parse_excel_config(TEMPLATE_XLSX.read_bytes())
+        assert config['general']['output_directory'] == 'Output'
+
+    def test_run_counts_progress_in_configured_directory(self, tmp_path):
+        import json as json_module
+        config_editor.reset_run_state()
+        custom_dir = tmp_path / 'MyResults'
+        config = config_editor.build_default_config()
+        config['identifiers'] = ['AAA']
+        config['general']['output_directory'] = str(custom_dir)
+        config_path = tmp_path / config_editor.CONFIG_FILENAME
+        config_path.write_text(json_module.dumps(config), encoding='utf-8')
+        entry = tmp_path / 'entry.py'
+        entry.write_text(
+            "import pathlib\n"
+            "out = pathlib.Path(r'" + str(custom_dir) + "')\n"
+            "out.mkdir(parents=True, exist_ok=True)\n"
+            "(out / 'AAA.csv').write_text('x')\n",
+            encoding='utf-8',
+        )
+        server, base = _start(tmp_path, entry=entry)
+        try:
+            assert _post_empty(base + '/api/run') == 200
+            status = _wait_for_run_completion()
+            assert status['state'] == 'done'
+            assert status['progress'] == {'done': 1, 'total': 1}
+        finally:
+            server.shutdown()
+
+
 def test_save_writes_valid_payload(tmp_path):
     path = tmp_path / 'data_curator_parameters.json'
     payload = config_editor.build_default_config()

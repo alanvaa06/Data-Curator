@@ -118,6 +118,7 @@ const GENERAL_FIELDS = [
   ['market_data_provider', 'select'], ['fundamental_data_provider', 'select'],
   ['start_date', 'date'], ['end_date', 'date'],
   ['period', 'select'], ['output_format', 'select'], ['logger_level', 'select'],
+  ['output_directory', 'text'],
 ];
 let state = null, catalog = null, envStatus = [], collapsedGroups = new Set();
 
@@ -188,8 +189,13 @@ function renderGeneral() {
       for (const opt of catalog.options[key]) {
         const o = document.createElement('option'); o.value = o.textContent = opt; input.appendChild(o);
       }
+    } else if (type === 'text') {
+      input = document.createElement('input');
+      input.type = 'text';
+      input.placeholder = 'Output';
+      input.title = 'Folder for the output files — a folder outside OneDrive/Dropbox runs faster';
     } else { input = document.createElement('input'); input.type = 'date'; }
-    input.value = state.general[key];
+    input.value = state.general[key] || (type === 'text' ? 'Output' : '');
     input.addEventListener('change', () => { state.general[key] = input.value; });
     wrap.appendChild(input); root.appendChild(wrap);
   }

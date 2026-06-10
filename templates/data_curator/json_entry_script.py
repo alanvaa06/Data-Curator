@@ -14,6 +14,7 @@ KNDC_API_KEY_LSEG : str
     Api key for the LSEG Workspace data provider
 """
 
+import json
 import os
 import pathlib
 
@@ -32,10 +33,19 @@ def run():
     else:
         custom_calculation_modules = []
 
-    output_base_dir = 'Output'
-
     # Load the configuration from the JSON file
     parameters_json_file = 'Config/data_curator_parameters.json'
+
+    # the output directory is configurable in the parameters file (panel: General section);
+    # a folder outside cloud-synced locations (OneDrive/Dropbox) runs noticeably faster
+    output_base_dir = 'Output'
+    try:
+        parameters_content = pathlib.Path(parameters_json_file).read_text(encoding='utf-8')
+        configured_dir = json.loads(parameters_content).get('general', {}).get('output_directory')
+        if isinstance(configured_dir, str) and configured_dir.strip():
+            output_base_dir = configured_dir.strip()
+    except (OSError, json.JSONDecodeError):
+        pass  # missing/invalid file is reported properly by the configurator below
     configurator = kaxanuk.data_curator.config_handlers.JsonConfigurator(
         file_path=parameters_json_file,
         data_providers={

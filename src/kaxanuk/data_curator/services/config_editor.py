@@ -103,6 +103,7 @@ def build_default_config() -> dict[str, typing.Any]:
             'period': 'quarterly',
             'output_format': 'csv',
             'logger_level': 'info',
+            'output_directory': 'Output',
         },
         'identifiers': [],
         'columns': columns,
@@ -160,6 +161,12 @@ def validate_config_payload(payload: typing.Any) -> list[str]:
     for key, valid in options.items():
         if key in general and general[key] not in valid:
             errors.append(f"Invalid {key}: {general[key]}")
+
+    if 'output_directory' in general and (
+        not isinstance(general['output_directory'], str)
+        or not general['output_directory'].strip()
+    ):
+        errors.append("Invalid output_directory: must be a non-empty folder path")
 
     start = _try_date(general.get('start_date'))
     end = _try_date(general.get('end_date'))
@@ -281,6 +288,7 @@ def parse_excel_config(file_bytes: bytes) -> dict[str, typing.Any]:
             'period': str(general_values['period'] or '').strip(),
             'output_format': str(general_values['output_format'] or '').strip(),
             'logger_level': str(general_values['logger_level'] or '').strip(),
+            'output_directory': 'Output',
         },
         'identifiers': list(sheet_columns['Identifiers']['main_identifier']),
         'columns': list(sheet_columns['Output_Columns']['columns']),
@@ -433,7 +441,7 @@ def reset_run_state() -> None:
 def start_pipeline_run(
     entry_script: pathlib.Path | str,
     config_path: pathlib.Path | str | None = None,
-    output_dir: pathlib.Path | str = 'Output',
+    output_dir: pathlib.Path | str | None = None,
 ) -> bool:
     """
     Run the entry script in a background thread, capturing its output.
@@ -456,9 +464,16 @@ def start_pipeline_run(
     identifiers_total = 0
     if config_path is not None:
         try:
-            identifiers_total = len(load_config(config_path).get('identifiers', []))
+            parsed_config = load_config(config_path)
+            identifiers_total = len(parsed_config.get('identifiers', []))
+            if output_dir is None:
+                configured_dir = parsed_config.get('general', {}).get('output_directory')
+                if isinstance(configured_dir, str) and configured_dir.strip():
+                    output_dir = configured_dir.strip()
         except (OSError, json.JSONDecodeError):
             identifiers_total = 0
+    if output_dir is None:
+        output_dir = 'Output'
 
     with _run_lock:
         if _run_state['state'] == 'running':

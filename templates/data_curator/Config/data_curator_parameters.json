@@ -7,7 +7,8 @@
     "end_date": "2025-12-31",
     "period": "quarterly",
     "output_format": "csv",
-    "logger_level": "info"
+    "logger_level": "info",
+    "output_directory": "Output"
   },
   "identifiers": [],
   "columns": [
