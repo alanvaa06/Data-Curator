@@ -94,13 +94,23 @@ def _run_server(server):
     server.serve_forever()
 
 
-def _start(tmp_path):
+def _start(tmp_path, entry=None):
     config_path = tmp_path / config_editor.CONFIG_FILENAME
-    server = config_editor.build_server(config_path, port=0)
+    kwargs = {} if entry is None else {'entry_script': entry}
+    server = config_editor.build_server(config_path, port=0, **kwargs)
     thread = threading.Thread(target=_run_server, args=(server,), daemon=True)
     thread.start()
     port = server.server_address[1]
     return server, f'http://127.0.0.1:{port}'
+
+
+def _post_empty(url):
+    request = urllib.request.Request(url, data=b'', method='POST')
+    try:
+        with urllib.request.urlopen(request) as response:
+            return response.status
+    except urllib.error.HTTPError as error:
+        return error.code
 
 
 def _get(url):
@@ -164,6 +174,49 @@ def test_server_rejects_invalid_config(tmp_path):
         assert _post(base + '/api/config', payload) == 400
     finally:
         server.shutdown()
+
+
+class TestRunEndpoints:
+    def test_post_run_executes_entry_script(self, tmp_path):
+        config_editor.reset_run_state()
+        entry = tmp_path / 'entry.py'
+        entry.write_text("print('pipeline ok')", encoding='utf-8')
+        server, base = _start(tmp_path, entry=entry)
+        try:
+            assert _post_empty(base + '/api/run') == 200
+            status = _wait_for_run_completion()
+            assert status['state'] == 'done'
+            body = json.loads(_get(base + '/api/run')[1])
+            assert 'pipeline ok' in body['output']
+        finally:
+            server.shutdown()
+
+    def test_post_run_missing_entry_returns_400(self, tmp_path):
+        config_editor.reset_run_state()
+        server, base = _start(tmp_path, entry=tmp_path / 'missing.py')
+        try:
+            assert _post_empty(base + '/api/run') == 400
+        finally:
+            server.shutdown()
+
+    def test_get_run_returns_idle_status(self, tmp_path):
+        config_editor.reset_run_state()
+        server, base = _start(tmp_path)
+        try:
+            status, body = _get(base + '/api/run')
+            assert status == 200
+            assert json.loads(body)['state'] == 'idle'
+        finally:
+            server.shutdown()
+
+    def test_page_has_run_controls(self, tmp_path):
+        server, base = _start(tmp_path)
+        try:
+            _, body = _get(base + '/')
+            assert 'Save &amp; run' in body
+            assert '/api/run' in body
+        finally:
+            server.shutdown()
 
 
 class TestRunManager:

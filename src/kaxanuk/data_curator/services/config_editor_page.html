@@ -31,7 +31,7 @@
 <body>
 <div class="bar">
   <div><h1>Data Curator — parameters</h1><p class="sub" id="path">Config/data_curator_parameters.json</p></div>
-  <div><span class="status" id="status"></span> <button id="reload">Reload</button> <button id="save">Save</button></div>
+  <div><span class="status" id="status"></span> <button id="reload">Reload</button> <button id="save">Save</button> <button id="run">Save &amp; run</button></div>
 </div>
 
 <fieldset><legend>General</legend><div class="grid" id="general"></div></fieldset>
@@ -44,6 +44,10 @@
 <fieldset><legend>Output columns (<span id="colCount">0</span> selected)</legend>
   <div class="row"><input id="colSearch" placeholder="Search columns or type a custom c_… then Enter" /></div>
   <div class="cols" id="cols"></div>
+</fieldset>
+
+<fieldset id="runBox" style="display:none"><legend>Run output</legend>
+  <pre id="runLog" style="margin:0; max-height:260px; overflow:auto; font-size:12px; white-space:pre-wrap;"></pre>
 </fieldset>
 
 <script>
@@ -134,6 +138,35 @@ async function save() {
   const res = await fetch('/api/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(state) });
   if (res.ok) { setStatus('Saved', 'ok'); }
   else { const data = await res.json(); setStatus((data.errors || ['Error']).join('; '), 'err'); }
+  return res.ok;
+}
+
+let runTimer = null;
+
+async function saveAndRun() {
+  const ok = await save();
+  if (!ok) return;
+  const res = await fetch('/api/run', { method: 'POST' });
+  document.getElementById('runBox').style.display = '';
+  if (!res.ok) {
+    const data = await res.json();
+    setStatus(data.state === 'running' ? 'Already running' : 'Run failed to start', 'err');
+    document.getElementById('runLog').textContent = data.output || '';
+    return;
+  }
+  setStatus('Running…');
+  document.getElementById('runLog').textContent = 'Running… output appears when the run finishes.';
+  if (runTimer) clearInterval(runTimer);
+  runTimer = setInterval(pollRun, 2000);
+}
+
+async function pollRun() {
+  const s = await (await fetch('/api/run')).json();
+  if (s.state === 'running') return;
+  document.getElementById('runLog').textContent = s.output || '(no output)';
+  if (s.state === 'done') { setStatus('Run finished — check the Output folder', 'ok'); }
+  else if (s.state === 'failed') { setStatus('Run failed', 'err'); }
+  clearInterval(runTimer); runTimer = null;
 }
 
 document.getElementById('idAdd').onclick = addIdentifier;
@@ -146,6 +179,7 @@ document.getElementById('colSearch').addEventListener('keydown', e => {
   }
 });
 document.getElementById('save').onclick = save;
+document.getElementById('run').onclick = saveAndRun;
 document.getElementById('reload').onclick = boot;
 boot();
 </script>

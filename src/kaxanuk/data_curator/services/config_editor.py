@@ -256,9 +256,11 @@ def _read_page() -> str:
 def build_server(
     config_path: pathlib.Path | str,
     port: int = DEFAULT_PORT,
+    entry_script: pathlib.Path | str = RUN_TARGET_DEFAULT,
 ) -> http.server.HTTPServer:
     """Build (but do not start) the editor HTTP server bound to localhost."""
     config_path = pathlib.Path(config_path)
+    run_target = pathlib.Path(entry_script)
     page = _read_page()
 
     class Handler(http.server.BaseHTTPRequestHandler):
@@ -282,32 +284,39 @@ def build_server(
                 self._send_json(200, load_config(config_path))
             elif self.path == '/api/catalog':
                 self._send_json(200, build_catalog_response())
+            elif self.path == '/api/run':
+                self._send_json(200, get_run_status())
             else:
                 self._send_json(404, {'error': 'not found'})
 
         def do_POST(self) -> None:
-            if self.path != '/api/config':
+            if self.path == '/api/config':
+                length = int(self.headers.get('Content-Length', 0))
+                raw = self.rfile.read(length)
+                try:
+                    payload = json.loads(raw.decode('utf-8'))
+                except json.JSONDecodeError:
+                    self._send_json(400, {'errors': ['Invalid JSON']})
+
+                    return
+
+                try:
+                    save_config(config_path, payload)
+                except ValueError as error:
+                    self._send_json(400, {'errors': str(error).split('; ')})
+
+                    return
+
+                self._send_json(200, {'status': 'saved'})
+            elif self.path == '/api/run':
+                if start_pipeline_run(run_target):
+                    self._send_json(200, {'status': 'started'})
+                else:
+                    status = get_run_status()
+                    code = 409 if status['state'] == 'running' else 400
+                    self._send_json(code, status)
+            else:
                 self._send_json(404, {'error': 'not found'})
-
-                return
-
-            length = int(self.headers.get('Content-Length', 0))
-            raw = self.rfile.read(length)
-            try:
-                payload = json.loads(raw.decode('utf-8'))
-            except json.JSONDecodeError:
-                self._send_json(400, {'errors': ['Invalid JSON']})
-
-                return
-
-            try:
-                save_config(config_path, payload)
-            except ValueError as error:
-                self._send_json(400, {'errors': str(error).split('; ')})
-
-                return
-
-            self._send_json(200, {'status': 'saved'})
 
     return http.server.HTTPServer((HOST, port), Handler)
 
@@ -317,9 +326,10 @@ def serve(
     port: int = DEFAULT_PORT,
     *,
     open_browser: bool = True,
+    entry_script: pathlib.Path | str = RUN_TARGET_DEFAULT,
 ) -> None:
     """Start the editor server and block until interrupted."""
-    server = build_server(config_path, port=port)
+    server = build_server(config_path, port=port, entry_script=entry_script)
     url = f"http://{HOST}:{server.server_address[1]}"
     if open_browser:
         webbrowser.open(url)
