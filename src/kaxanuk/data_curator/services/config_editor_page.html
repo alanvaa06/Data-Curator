@@ -82,6 +82,8 @@
   <div class="side">
     <fieldset><legend>General</legend><div class="grid" id="general"></div></fieldset>
 
+    <fieldset><legend>API keys</legend><div class="grid" id="apikeys"></div></fieldset>
+
     <fieldset class="boxIds"><legend>Identifiers (<span id="idCount">0</span>)</legend>
       <div class="presets" id="presets"></div>
       <div class="row"><input id="idInput" placeholder="Add ticker…" /><button id="idAdd">Add</button></div>
@@ -105,12 +107,18 @@ const GENERAL_FIELDS = [
   ['start_date', 'date'], ['end_date', 'date'],
   ['period', 'select'], ['output_format', 'select'], ['logger_level', 'select'],
 ];
-let state = null, catalog = null, collapsedGroups = new Set();
+let state = null, catalog = null, envStatus = [], collapsedGroups = new Set();
+
+const KEY_LABELS = {
+  KNDC_API_KEY_FMP: 'Financial Modeling Prep',
+  KNDC_API_KEY_LSEG: 'LSEG Workspace',
+};
 
 async function boot() {
   try {
     catalog = await (await fetch('/api/catalog')).json();
     state = await (await fetch('/api/config')).json();
+    envStatus = await (await fetch('/api/env')).json();
   } catch (e) {
     setStatus('Not connected', 'err');
     document.getElementById('general').innerHTML =
@@ -122,7 +130,37 @@ async function boot() {
   }
   collapsedGroups = new Set(catalog.groups.map(g => g.label));
   collapsedGroups.add('Custom / other');
-  renderGeneral(); renderPresets(); renderIdentifiers(); renderColumns(); setStatus('');
+  renderGeneral(); renderKeys(); renderPresets(); renderIdentifiers(); renderColumns(); setStatus('');
+}
+
+function renderKeys() {
+  const root = document.getElementById('apikeys'); root.innerHTML = '';
+  for (const entry of envStatus) {
+    const wrap = document.createElement('div');
+    const label = document.createElement('label');
+    label.textContent = (KEY_LABELS[entry.name] || entry.name) + (entry.set ? ' — key saved' : ' — no key');
+    const input = document.createElement('input');
+    input.type = 'password';
+    input.autocomplete = 'off';
+    input.dataset.env = entry.name;
+    input.placeholder = entry.set ? 'saved — type to replace' : 'paste API key…';
+    wrap.appendChild(label); wrap.appendChild(input); root.appendChild(wrap);
+  }
+}
+
+async function saveKeys() {
+  const updates = {};
+  for (const input of document.querySelectorAll('#apikeys input')) {
+    const value = input.value.trim();
+    if (value) updates[input.dataset.env] = value;
+  }
+  if (!Object.keys(updates).length) return true;
+  const res = await fetch('/api/env', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updates) });
+  if (res.ok) {
+    envStatus = await (await fetch('/api/env')).json();
+    renderKeys();
+  }
+  return res.ok;
 }
 
 function setStatus(msg, cls) { const s = document.getElementById('status'); s.textContent = msg; s.className = 'status ' + (cls || ''); }
@@ -257,10 +295,12 @@ function columnRow(col, checked) {
 
 async function save() {
   setStatus('Saving…');
+  const keysOk = await saveKeys();
   const res = await fetch('/api/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(state) });
-  if (res.ok) { setStatus('Saved', 'ok'); }
-  else { const data = await res.json(); setStatus((data.errors || ['Error']).join('; '), 'err'); }
-  return res.ok;
+  if (res.ok && keysOk) { setStatus('Saved', 'ok'); }
+  else if (!res.ok) { const data = await res.json(); setStatus((data.errors || ['Error']).join('; '), 'err'); }
+  else { setStatus('Config saved, but saving API keys failed', 'err'); }
+  return res.ok && keysOk;
 }
 
 let runTimer = null;

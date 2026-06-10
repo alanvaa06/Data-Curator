@@ -97,6 +97,44 @@ def test_build_catalog_response_includes_identifier_presets():
     assert len(presets['russell2000']['identifiers']) > 1000
 
 
+class TestEnvKeys:
+    def test_status_reports_missing_file_as_unset(self, tmp_path):
+        status = config_editor.read_env_status(tmp_path / '.env')
+        assert status == [
+            {'name': 'KNDC_API_KEY_FMP', 'set': False},
+            {'name': 'KNDC_API_KEY_LSEG', 'set': False},
+        ]
+
+    def test_status_detects_set_and_empty_values(self, tmp_path):
+        env = tmp_path / '.env'
+        env.write_text('KNDC_API_KEY_FMP=abc123\nKNDC_API_KEY_LSEG=\n', encoding='utf-8')
+        status = {s['name']: s['set'] for s in config_editor.read_env_status(env)}
+        assert status['KNDC_API_KEY_FMP'] is True
+        assert status['KNDC_API_KEY_LSEG'] is False
+
+    def test_save_updates_existing_line_preserving_others(self, tmp_path):
+        env = tmp_path / '.env'
+        env.write_text('# comment\nKNDC_API_KEY_FMP=\nOTHER_VAR=keep\n', encoding='utf-8')
+        config_editor.save_env_values(env, {'KNDC_API_KEY_FMP': 'newkey'})
+        content = env.read_text(encoding='utf-8')
+        assert 'KNDC_API_KEY_FMP=newkey' in content
+        assert '# comment' in content
+        assert 'OTHER_VAR=keep' in content
+
+    def test_save_appends_missing_variable_and_creates_file(self, tmp_path):
+        env = tmp_path / '.env'
+        config_editor.save_env_values(env, {'KNDC_API_KEY_LSEG': 'lsegkey'})
+        assert 'KNDC_API_KEY_LSEG=lsegkey' in env.read_text(encoding='utf-8')
+
+    def test_save_rejects_unknown_variable(self, tmp_path):
+        with pytest.raises(ValueError):
+            config_editor.save_env_values(tmp_path / '.env', {'EVIL_VAR': 'x'})
+
+    def test_save_rejects_newlines_in_value(self, tmp_path):
+        with pytest.raises(ValueError):
+            config_editor.save_env_values(tmp_path / '.env', {'KNDC_API_KEY_FMP': 'a\nb'})
+
+
 def _run_server(server):
     server.serve_forever()
 
@@ -179,6 +217,25 @@ def test_server_rejects_invalid_config(tmp_path):
         payload = config_editor.build_default_config()
         payload['general']['period'] = 'weekly'
         assert _post(base + '/api/config', payload) == 400
+    finally:
+        server.shutdown()
+
+
+def test_server_env_roundtrip_without_echoing_values(tmp_path):
+    server, base = _start(tmp_path)
+    try:
+        status, body = _get(base + '/api/env')
+        assert status == 200
+        assert {s['name']: s['set'] for s in json.loads(body)} == {
+            'KNDC_API_KEY_FMP': False,
+            'KNDC_API_KEY_LSEG': False,
+        }
+        assert _post(base + '/api/env', {'KNDC_API_KEY_FMP': 'secretvalue'}) == 200
+        status, body = _get(base + '/api/env')
+        assert {s['name']: s['set'] for s in json.loads(body)}['KNDC_API_KEY_FMP'] is True
+        assert 'secretvalue' not in body
+        assert 'secretvalue' in (tmp_path / '.env').read_text(encoding='utf-8')
+        assert _post(base + '/api/env', {'EVIL': 'x'}) == 400
     finally:
         server.shutdown()
 

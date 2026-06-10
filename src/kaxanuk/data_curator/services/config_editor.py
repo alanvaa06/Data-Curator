@@ -40,6 +40,11 @@ RUN_OUTPUT_MAX_CHARS = 20_000
 _run_lock = threading.Lock()
 _run_state: dict[str, typing.Any] = {'state': 'idle', 'output': '', 'returncode': None}
 
+API_KEY_ENV_VARS = (
+    'KNDC_API_KEY_FMP',
+    'KNDC_API_KEY_LSEG',
+)
+
 REQUIRED_GENERAL_KEYS = (
     'market_data_provider',
     'fundamental_data_provider',
@@ -181,6 +186,69 @@ def save_config(
     )
 
 
+def _parse_env_lines(env_path: pathlib.Path) -> list[str]:
+    if not env_path.is_file():
+
+        return []
+
+    return env_path.read_text(encoding='utf-8').splitlines()
+
+
+def read_env_status(env_path: pathlib.Path | str) -> list[dict[str, typing.Any]]:
+    """
+    Report which API key environment variables are set in the .env file.
+
+    Never returns the values themselves, only whether each is non-empty.
+    """
+    values: dict[str, str] = {}
+    for line in _parse_env_lines(pathlib.Path(env_path)):
+        stripped = line.strip()
+        if stripped and not stripped.startswith('#') and '=' in stripped:
+            name, _, value = stripped.partition('=')
+            values[name.strip()] = value.strip()
+
+    return [
+        {'name': name, 'set': bool(values.get(name))}
+        for name in API_KEY_ENV_VARS
+    ]
+
+
+def save_env_values(
+    env_path: pathlib.Path | str,
+    updates: dict[str, str],
+) -> None:
+    """
+    Write API key values into the .env file, preserving any other content.
+
+    Raises
+    ------
+    ValueError
+        On unknown variable names or values containing line breaks.
+    """
+    for name, value in updates.items():
+        if name not in API_KEY_ENV_VARS:
+            msg = f"Unknown environment variable: {name}"
+
+            raise ValueError(msg)
+        if '\n' in value or '\r' in value:
+            msg = f"Invalid value for {name}"
+
+            raise ValueError(msg)
+
+    env_path = pathlib.Path(env_path)
+    lines = _parse_env_lines(env_path)
+    remaining = dict(updates)
+    for index, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped and not stripped.startswith('#') and '=' in stripped:
+            name = stripped.partition('=')[0].strip()
+            if name in remaining:
+                lines[index] = f"{name}={remaining.pop(name)}"
+
+    lines.extend(f"{name}={value}" for name, value in remaining.items())
+    env_path.write_text('\n'.join(lines) + '\n', encoding='utf-8')
+
+
 def _try_date(value: typing.Any) -> datetime.date | None:
     try:
         return datetime.date.fromisoformat(str(value))
@@ -306,6 +374,8 @@ def build_server(
                 self._send_json(200, build_catalog_response())
             elif self.path == '/api/run':
                 self._send_json(200, get_run_status())
+            elif self.path == '/api/env':
+                self._send_json(200, read_env_status(config_path.parent / '.env'))
             else:
                 self._send_json(404, {'error': 'not found'})
 
@@ -335,6 +405,22 @@ def build_server(
                     status = get_run_status()
                     code = 409 if status['state'] == 'running' else 400
                     self._send_json(code, status)
+            elif self.path == '/api/env':
+                length = int(self.headers.get('Content-Length', 0))
+                raw = self.rfile.read(length)
+                try:
+                    payload = json.loads(raw.decode('utf-8'))
+                    if not isinstance(payload, dict):
+                        msg = "Expected a JSON object"
+
+                        raise ValueError(msg)
+                    save_env_values(config_path.parent / '.env', payload)
+                except (json.JSONDecodeError, ValueError) as error:
+                    self._send_json(400, {'errors': [str(error)]})
+
+                    return
+
+                self._send_json(200, {'status': 'saved'})
             else:
                 self._send_json(404, {'error': 'not found'})
 

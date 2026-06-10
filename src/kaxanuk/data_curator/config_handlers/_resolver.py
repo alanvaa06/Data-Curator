@@ -19,6 +19,7 @@ from kaxanuk.data_curator.data_providers import (
 from kaxanuk.data_curator.exceptions import (
     ConfigurationError,
     ConfigurationHandlerError,
+    DataProviderMissingKeyError,
 )
 from kaxanuk.data_curator.output_handlers import OutputHandlerInterface
 
@@ -76,7 +77,15 @@ def _instantiate_provider(provider_entry: dict[str, typing.Any]) -> DataProvider
     if provider_entry['api_key'] is not None:
         params['api_key'] = provider_entry['api_key']
 
-    return provider_entry['class'](**params)
+    try:
+        return provider_entry['class'](**params)
+    except DataProviderMissingKeyError as error:
+        msg = " ".join([
+            f"Data provider {provider_entry['class'].__name__} requires an API key.",
+            "Set it in the Config/.env file (or through the API keys section of the configuration panel).",
+        ])
+
+        raise ConfigurationError(msg) from error
 
 
 def select_market_data_provider(

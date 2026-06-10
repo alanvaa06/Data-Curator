@@ -106,8 +106,30 @@ def test_missing_file_exits(tmp_path):
             output_handlers=handlers(),
         )
 
-    with pytest.raises(SystemExit):
+    with pytest.raises(SystemExit) as excinfo:
         make()
+    assert excinfo.value.code == 1
+
+
+def test_missing_api_key_exits_with_clear_error(tmp_path, capsys):
+    from kaxanuk.data_curator.exceptions import DataProviderMissingKeyError
+
+    class KeyDemandingProvider(FakeProvider):
+        def __init__(self, api_key=None):
+            if api_key is None:
+                raise DataProviderMissingKeyError
+            super().__init__(api_key)
+
+    path = write_config(tmp_path, valid_config_dict())
+    with pytest.raises(SystemExit) as excinfo:
+        JsonConfigurator(
+            file_path=path,
+            data_providers={'financial_modeling_prep': {'class': KeyDemandingProvider, 'api_key': None}},
+            output_handlers=handlers(),
+        )
+    assert excinfo.value.code == 1
+    captured = capsys.readouterr()
+    assert 'API key' in captured.err + captured.out
 
 
 def test_invalid_json_exits(tmp_path):

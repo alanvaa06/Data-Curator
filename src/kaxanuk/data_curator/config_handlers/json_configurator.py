@@ -110,7 +110,7 @@ class JsonConfigurator(ConfiguratorInterface):
         ) as error:
             msg = f"An error was encountered when parsing your configuration file: {error!s}"
             logging.getLogger(__name__).critical(msg)
-            sys.exit()
+            sys.exit(1)
 
     def get_configuration(self) -> Configuration:
         return self._configuration

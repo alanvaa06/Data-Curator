@@ -102,6 +102,26 @@ class TestValidateApiKeys:
         _resolver.validate_api_keys({'Good': good, 'Skip': skip}, logging.getLogger('test'))
 
 
+class _KeyDemandingProvider(_FakeProvider):
+    def __init__(self, api_key=None):
+        if api_key is None:
+            from kaxanuk.data_curator.exceptions import DataProviderMissingKeyError
+            raise DataProviderMissingKeyError
+        super().__init__(api_key)
+
+
+class TestMissingApiKeyHandling:
+    def test_market_provider_missing_key_raises_configuration_error(self):
+        providers = {'fmp': {'class': _KeyDemandingProvider, 'api_key': None}}
+        with pytest.raises(ConfigurationError, match='API key'):
+            _resolver.select_market_data_provider('fmp', providers)
+
+    def test_fundamental_provider_missing_key_raises_configuration_error(self):
+        providers = {'fmp': {'class': _KeyDemandingProvider, 'api_key': None}}
+        with pytest.raises(ConfigurationError, match='API key'):
+            _resolver.select_fundamental_data_provider('fmp', providers)
+
+
 class TestSelectOutputHandler:
     def test_returns_selected_handler(self):
         handlers = {'csv': object(), 'parquet': object()}
