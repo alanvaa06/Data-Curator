@@ -258,11 +258,10 @@ def config_editor_command(port: int, no_browser: bool) -> None:    # noqa: FBT00
     """
     config_path = pathlib.Path(CONFIG_SUBDIR) / PARAMETERS_JSON_FILE
     click.echo(f"Starting config editor at http://{config_editor.HOST}:{port} (Ctrl+C to stop)")
-    config_editor.serve(
+    _serve_panel(
         config_path,
         port=port,
         open_browser=not no_browser,
-        entry_script=ENTRY_SCRIPT_DEFAULT_NAME,
     )
 
 
@@ -304,12 +303,45 @@ def start(port: int, no_browser: bool) -> None:    # noqa: FBT001
     config_path = pathlib.Path(CONFIG_SUBDIR) / PARAMETERS_JSON_FILE
     click.echo(f"Starting Data Curator panel at http://{config_editor.HOST}:{port} (Ctrl+C to stop)")
     click.echo("Edit your parameters in the browser and click 'Save & run' to run the system.")
-    config_editor.serve(
+    _serve_panel(
         config_path,
         port=port,
         open_browser=not no_browser,
-        entry_script=ENTRY_SCRIPT_DEFAULT_NAME,
     )
+
+
+def _serve_panel(
+    config_path: pathlib.Path,
+    *,
+    port: int,
+    open_browser: bool,
+) -> None:
+    """
+    Serve the configuration panel, translating port conflicts into a clear message.
+
+    Raises
+    ------
+    click.ClickException
+        When the port is already in use by another process
+    """
+    try:
+        config_editor.serve(
+            config_path,
+            port=port,
+            open_browser=open_browser,
+            entry_script=ENTRY_SCRIPT_DEFAULT_NAME,
+        )
+    except OSError as error:
+        if error.errno == errno.EADDRINUSE:
+            msg = " ".join([
+                f"Port {port} is already in use — a Data Curator panel is probably already running.",
+                f"Open http://{config_editor.HOST}:{port} in your browser, close the other process,",
+                "or pass a different port with --port.",
+            ])
+
+            raise click.ClickException(msg) from error
+
+        raise
 
 
 @cli.command()

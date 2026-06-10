@@ -49,6 +49,24 @@ def test_config_editor_invokes_serve(monkeypatch, tmp_path):
     assert calls['config_path'].endswith('data_curator_parameters.json')
 
 
+def test_config_editor_reports_port_in_use(tmp_path):
+    from kaxanuk.data_curator.services import config_editor
+
+    blocker = config_editor.build_server(tmp_path / 'cfg.json', port=0)
+    busy_port = blocker.server_address[1]
+    try:
+        runner = CliRunner()
+        with runner.isolated_filesystem(temp_dir=tmp_path):
+            result = runner.invoke(
+                cli_module.cli,
+                ['config-editor', '--no-browser', '--port', str(busy_port)],
+            )
+        assert result.exit_code != 0
+        assert 'already in use' in result.output
+    finally:
+        blocker.server_close()
+
+
 def test_init_json_scaffolds_files(tmp_path, monkeypatch):
     monkeypatch.setattr(cli_module, '_find_templates_dir', lambda: str(_repo_templates()))
 

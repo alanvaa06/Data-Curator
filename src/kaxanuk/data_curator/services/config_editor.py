@@ -10,6 +10,7 @@ import http.server
 import importlib.resources
 import json
 import pathlib
+import socket
 import subprocess
 import sys
 import threading
@@ -253,6 +254,21 @@ def _read_page() -> str:
     return resource.read_text(encoding='utf-8')
 
 
+class _PanelServer(http.server.HTTPServer):
+    """
+    HTTPServer with exclusive port binding on Windows.
+
+    The stdlib default sets SO_REUSEADDR, which on Windows silently allows two
+    servers to bind the same port — the second instance must fail loudly instead.
+    """
+
+    def server_bind(self) -> None:
+        if hasattr(socket, 'SO_EXCLUSIVEADDRUSE'):
+            self.allow_reuse_address = False
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+        super().server_bind()
+
+
 def build_server(
     config_path: pathlib.Path | str,
     port: int = DEFAULT_PORT,
@@ -261,7 +277,6 @@ def build_server(
     """Build (but do not start) the editor HTTP server bound to localhost."""
     config_path = pathlib.Path(config_path)
     run_target = pathlib.Path(entry_script)
-    page = _read_page()
 
     class Handler(http.server.BaseHTTPRequestHandler):
         def log_message(self, *args: typing.Any) -> None:
@@ -279,7 +294,8 @@ def build_server(
 
         def do_GET(self) -> None:
             if self.path in ('/', '/index.html'):
-                self._send(200, page.encode('utf-8'), 'text/html; charset=utf-8')
+                # read per request so server restarts are never needed to pick up page updates
+                self._send(200, _read_page().encode('utf-8'), 'text/html; charset=utf-8')
             elif self.path == '/api/config':
                 self._send_json(200, load_config(config_path))
             elif self.path == '/api/catalog':
@@ -318,7 +334,7 @@ def build_server(
             else:
                 self._send_json(404, {'error': 'not found'})
 
-    return http.server.HTTPServer((HOST, port), Handler)
+    return _PanelServer((HOST, port), Handler)
 
 
 def serve(

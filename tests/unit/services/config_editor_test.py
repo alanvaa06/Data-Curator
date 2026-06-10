@@ -227,6 +227,18 @@ class TestRunEndpoints:
         finally:
             server.shutdown()
 
+    def test_page_read_per_request_not_cached(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(config_editor, '_read_page', lambda: '<html>version one</html>')
+        server, base = _start(tmp_path)
+        try:
+            _, body = _get(base + '/')
+            assert 'version one' in body
+            monkeypatch.setattr(config_editor, '_read_page', lambda: '<html>version two</html>')
+            _, body = _get(base + '/')
+            assert 'version two' in body
+        finally:
+            server.shutdown()
+
 
 class TestRunManager:
     def test_run_executes_script_and_captures_output(self, tmp_path):
