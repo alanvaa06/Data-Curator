@@ -58,7 +58,7 @@ def main(
     logger_level: int = logging.WARNING,
     logger_format: str = "[%(levelname)s] %(message)s",
     logger_file: str | bytes | os.PathLike | None = None,
-) -> None:
+) -> bool:
     """
     Run the data curator system.
 
@@ -99,7 +99,8 @@ def main(
 
     Returns
     -------
-    None
+    True when all identifiers were processed to the end, False when a fatal
+    error aborted the run (the error is logged at critical level).
     """
     if not isinstance(configuration, Configuration):
         msg = "Incorrect Configuration passed to main"
@@ -326,7 +327,7 @@ def main(
             # downloads finish
             logging.getLogger(__name__).critical(str(error))
 
-            return
+            return False
         finally:
             executor.shutdown(wait=True, cancel_futures=True)
             if compute_executor is not None:
@@ -338,8 +339,12 @@ def main(
         ColumnBuilderUnavailableEntityFieldError,
     ) as error:
         logging.getLogger(__name__).critical(str(error))
+
+        return False
     else:
         logging.getLogger(__name__).info("Finished processing data!")
+
+        return True
 
 
 def _compute_worker_initializer(parent_sys_path: list[str]) -> None:

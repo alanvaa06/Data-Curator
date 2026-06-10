@@ -333,7 +333,7 @@ function updateProgress(status) {
   if (!progress) { fill.className = 'pfill'; fill.style.width = '0%'; text.textContent = ''; return; }
   if (progress.total > 0) {
     fill.className = 'pfill';
-    const pct = status.state === 'done' ? 100 : Math.round(100 * progress.done / progress.total);
+    const pct = Math.round(100 * progress.done / progress.total);
     fill.style.width = pct + '%';
     text.textContent = progress.done + '/' + progress.total + ' identifiers';
   } else {
@@ -362,13 +362,20 @@ async function saveAndRun() {
   runTimer = setInterval(pollRun, 1000);
 }
 
+function firstCriticalLine(output) {
+  const match = (output || '').split('\n').find(line => line.includes('[CRITICAL]'));
+  return match ? match.replace('[CRITICAL]', '').trim() : null;
+}
+
 async function pollRun() {
   const s = await (await fetch('/api/run')).json();
   updateProgress(s);
   if (s.state === 'running') return;
   document.getElementById('runLog').textContent = s.output || '(no output)';
-  if (s.state === 'done') { setStatus('Run finished — check the Output folder', 'ok'); }
-  else if (s.state === 'failed') { setStatus('Run failed', 'err'); }
+  const critical = firstCriticalLine(s.output);
+  if (critical) { setStatus('Run failed: ' + critical, 'err'); }
+  else if (s.state === 'done') { setStatus('Run finished — check the Output folder', 'ok'); }
+  else if (s.state === 'failed') { setStatus('Run failed — see the run output below', 'err'); }
   clearInterval(runTimer); runTimer = null;
 }
 

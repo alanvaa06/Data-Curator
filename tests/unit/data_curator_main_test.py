@@ -157,6 +157,24 @@ class TestMainParallelCompute:
         )
         assert handler.identifiers == list(identifiers)
 
+    def test_main_returns_true_on_success(self):
+        result = data_curator.main(
+            configuration=_build_configuration(('AAA', 'BBB')),
+            market_data_provider=StubMarketDataProvider(),
+            fundamental_data_provider=None,
+            output_handlers=[RecordingOutputHandler()],
+        )
+        assert result is True
+
+    def test_main_returns_false_on_fatal_error(self):
+        result = data_curator.main(
+            configuration=_build_configuration(('AAA', 'BAD', 'CCC')),
+            market_data_provider=StubMarketDataProvider(fatal_identifiers=('BAD',)),
+            fundamental_data_provider=None,
+            output_handlers=[RecordingOutputHandler()],
+        )
+        assert result is False
+
     def test_invalid_max_concurrent_computations_rejected(self):
         for bad in (0, -1, True, 'x', None):
             with pytest.raises(PassedArgumentError):

@@ -65,8 +65,8 @@ def run():
         },
     )
 
-    # Run this puppy!
-    kaxanuk.data_curator.main(
+    # Run this puppy! Returns False when a fatal error aborted the run.
+    return kaxanuk.data_curator.main(
         configuration=configurator.get_configuration(),
         market_data_provider=configurator.get_market_data_provider(),
         fundamental_data_provider=configurator.get_fundamental_data_provider(),
@@ -78,4 +78,4 @@ def run():
 
 
 if __name__ == '__main__':
-    run()
+    raise SystemExit(0 if run() else 1)
