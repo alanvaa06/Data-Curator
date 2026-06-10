@@ -103,9 +103,11 @@ def validate_config_payload(payload: typing.Any) -> list[str]:
         errors.append("Missing 'general' section")
         general = {}
 
-    for key in REQUIRED_GENERAL_KEYS:
-        if key not in general:
-            errors.append(f"Missing general parameter: {key}")
+    errors.extend(
+        f"Missing general parameter: {key}"
+        for key in REQUIRED_GENERAL_KEYS
+        if key not in general
+    )
 
     options = build_catalog_response()['options']
     for key, valid in options.items():
