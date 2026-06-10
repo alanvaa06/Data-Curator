@@ -22,34 +22,54 @@
     --err: light-dark(#a32d2d, #f09595);
     --row-hover: light-dark(#f0f0f4, #26262d);
   }
-  body { margin: 0; padding: 24px; max-width: 960px; background: var(--bg); color: var(--text); }
-  h1 { font-size: 18px; font-weight: 600; margin: 0 0 4px; }
-  .sub { color: var(--muted); font-size: 13px; margin: 0 0 20px; }
-  fieldset { background: var(--card); border: 1px solid var(--border-soft); border-radius: 10px; margin: 0 0 18px; padding: 14px 16px; }
-  legend { font-size: 13px; font-weight: 600; color: var(--muted); padding: 0 6px; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px 16px; }
-  label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
-  input, select { width: 100%; box-sizing: border-box; padding: 7px 8px; font-size: 14px; border: 1px solid var(--border); border-radius: 6px; background: Field; color: FieldText; }
+  html, body { height: 100%; }
+  body { margin: 0; padding: 12px 20px 16px; box-sizing: border-box; display: flex; flex-direction: column;
+         overflow: hidden; background: var(--bg); color: var(--text); }
+  h1 { font-size: 17px; font-weight: 600; margin: 0; }
+  .sub { color: var(--muted); font-size: 12px; margin: 0; }
+  .bar { flex: none; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-bottom: 10px; }
+  .layout { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(340px, 2fr) 3fr; gap: 12px; }
+  .side { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+  fieldset { background: var(--card); border: 1px solid var(--border-soft); border-radius: 10px; margin: 0;
+             padding: 10px 14px 12px; min-width: 0; }
+  legend { font-size: 12px; font-weight: 600; color: var(--muted); padding: 0 6px; }
+  .boxIds, .boxRun, .boxCols { display: flex; flex-direction: column; min-height: 0; }
+  .boxIds { flex: 1; }
+  .boxRun { flex: 1; }
+  .boxCols { min-height: 0; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px 12px; }
+  label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 3px; }
+  input, select { width: 100%; box-sizing: border-box; padding: 6px 8px; font-size: 13px;
+                  border: 1px solid var(--border); border-radius: 6px; background: Field; color: FieldText; }
   input[type="checkbox"] { width: 15px; height: 15px; margin: 0; flex: none; accent-color: var(--accent); cursor: pointer; }
-  .row { display: flex; gap: 8px; margin-bottom: 10px; }
+  .row { display: flex; gap: 8px; margin: 8px 0; flex: none; }
   .row input { flex: 1; }
-  button { padding: 7px 12px; font-size: 13px; border: 1px solid var(--border); border-radius: 6px; background: var(--card); color: var(--text); cursor: pointer; }
+  button { padding: 6px 12px; font-size: 13px; border: 1px solid var(--border); border-radius: 6px;
+           background: var(--card); color: var(--text); cursor: pointer; }
   button:hover { background: var(--row-hover); }
   #run { background: var(--accent); border-color: var(--accent); color: var(--accent-contrast); font-weight: 600; }
   #run:hover { opacity: 0.9; }
-  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
-  .chip { display: inline-flex; align-items: center; gap: 6px; background: var(--accent-bg); color: var(--accent-text); padding: 4px 8px; border-radius: 6px; font-size: 13px; }
-  .chip button { border: none; background: none; cursor: pointer; color: inherit; padding: 0; font-size: 14px; }
-  .cols { max-height: 420px; overflow: auto; border: 1px solid var(--border-soft); border-radius: 6px; }
-  .col { display: flex; align-items: center; gap: 10px; padding: 4px 12px; font-size: 13px; font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; color: var(--text); cursor: pointer; }
+  .presets { display: flex; flex-wrap: wrap; gap: 6px; flex: none; }
+  .presets button { font-size: 12px; padding: 4px 10px; border-radius: 12px; }
+  .chips { flex: 1; min-height: 0; overflow: auto; display: flex; flex-wrap: wrap; gap: 5px; align-content: flex-start; }
+  .chip { display: inline-flex; align-items: center; gap: 5px; background: var(--accent-bg); color: var(--accent-text);
+          padding: 3px 8px; border-radius: 6px; font-size: 12px; height: fit-content; }
+  .chip button { border: none; background: none; cursor: pointer; color: inherit; padding: 0; font-size: 13px; }
+  .cols { flex: 1; min-height: 0; overflow: auto; border: 1px solid var(--border-soft); border-radius: 6px; }
+  .col { display: flex; align-items: center; gap: 10px; padding: 3px 12px; font-size: 13px;
+         font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; color: var(--text); cursor: pointer; }
   .col:hover { background: var(--row-hover); }
-  .grouphdr { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; gap: 8px; font-weight: 600; font-family: system-ui; font-size: 12px; color: var(--text); background: var(--card); margin: 0; padding: 8px 12px 6px; border-bottom: 1px solid var(--border-soft); }
+  .grouphdr { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; gap: 8px; font-weight: 600;
+              font-size: 12px; color: var(--text); background: var(--card); margin: 0; padding: 7px 12px 6px;
+              border-bottom: 1px solid var(--border-soft); cursor: pointer; user-select: none; }
+  .grouphdr:hover { background: var(--row-hover); }
+  .chev { display: inline-block; width: 12px; color: var(--muted); font-size: 11px; }
   .gcount { color: var(--muted); font-weight: 400; }
   .gactions { margin-left: auto; display: flex; gap: 4px; }
-  .mini { padding: 2px 8px; font-size: 11px; border-radius: 5px; color: var(--muted); }
-  .bar { position: sticky; top: 0; z-index: 2; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 0; background: var(--bg); }
+  .mini { padding: 1px 8px; font-size: 11px; border-radius: 5px; color: var(--muted); }
   .status { font-size: 13px; }
   .ok { color: var(--ok); } .err { color: var(--err); }
+  #runLog { flex: 1; min-height: 0; overflow: auto; margin: 0; font-size: 12px; white-space: pre-wrap; }
 </style>
 </head>
 <body>
@@ -58,21 +78,26 @@
   <div><span class="status" id="status"></span> <button id="reload">Reload</button> <button id="save">Save</button> <button id="run">Save &amp; run</button></div>
 </div>
 
-<fieldset><legend>General</legend><div class="grid" id="general"></div></fieldset>
+<div class="layout">
+  <div class="side">
+    <fieldset><legend>General</legend><div class="grid" id="general"></div></fieldset>
 
-<fieldset><legend>Identifiers</legend>
-  <div class="row"><input id="idInput" placeholder="Add ticker…" /><button id="idAdd">Add</button></div>
-  <div class="chips" id="idChips"></div>
-</fieldset>
+    <fieldset class="boxIds"><legend>Identifiers (<span id="idCount">0</span>)</legend>
+      <div class="presets" id="presets"></div>
+      <div class="row"><input id="idInput" placeholder="Add ticker…" /><button id="idAdd">Add</button></div>
+      <div class="chips" id="idChips"></div>
+    </fieldset>
 
-<fieldset><legend>Output columns (<span id="colCount">0</span> selected)</legend>
-  <div class="row"><input id="colSearch" placeholder="Search columns or type a custom c_… then Enter" /></div>
-  <div class="cols" id="cols"></div>
-</fieldset>
+    <fieldset class="boxRun" id="runBox" style="display:none"><legend>Run output</legend>
+      <pre id="runLog"></pre>
+    </fieldset>
+  </div>
 
-<fieldset id="runBox" style="display:none"><legend>Run output</legend>
-  <pre id="runLog" style="margin:0; max-height:260px; overflow:auto; font-size:12px; white-space:pre-wrap;"></pre>
-</fieldset>
+  <fieldset class="boxCols"><legend>Output columns (<span id="colCount">0</span> selected)</legend>
+    <div class="row"><input id="colSearch" placeholder="Search columns or type a custom c_… then Enter" /></div>
+    <div class="cols" id="cols"></div>
+  </fieldset>
+</div>
 
 <script>
 const GENERAL_FIELDS = [
@@ -80,7 +105,7 @@ const GENERAL_FIELDS = [
   ['start_date', 'date'], ['end_date', 'date'],
   ['period', 'select'], ['output_format', 'select'], ['logger_level', 'select'],
 ];
-let state = null, catalog = null;
+let state = null, catalog = null, collapsedGroups = new Set();
 
 async function boot() {
   try {
@@ -95,7 +120,9 @@ async function boot() {
       'then open the address it prints (default <code>http://127.0.0.1:8753</code>).</p>';
     return;
   }
-  renderGeneral(); renderIdentifiers(); renderColumns(); setStatus('');
+  collapsedGroups = new Set(catalog.groups.map(g => g.label));
+  collapsedGroups.add('Custom / other');
+  renderGeneral(); renderPresets(); renderIdentifiers(); renderColumns(); setStatus('');
 }
 
 function setStatus(msg, cls) { const s = document.getElementById('status'); s.textContent = msg; s.className = 'status ' + (cls || ''); }
@@ -118,6 +145,26 @@ function renderGeneral() {
   }
 }
 
+function renderPresets() {
+  const root = document.getElementById('presets'); root.innerHTML = '';
+  for (const preset of (catalog.identifier_presets || [])) {
+    const b = document.createElement('button');
+    b.textContent = preset.label + ' (' + preset.identifiers.length + ')';
+    b.title = 'Add all ' + preset.label + ' constituents';
+    b.onclick = () => {
+      const have = new Set(state.identifiers);
+      for (const t of preset.identifiers) { if (!have.has(t)) { state.identifiers.push(t); have.add(t); } }
+      renderIdentifiers();
+    };
+    root.appendChild(b);
+  }
+  const clear = document.createElement('button');
+  clear.textContent = 'Clear';
+  clear.title = 'Remove all identifiers';
+  clear.onclick = () => { state.identifiers = []; renderIdentifiers(); };
+  root.appendChild(clear);
+}
+
 function renderIdentifiers() {
   const chips = document.getElementById('idChips'); chips.innerHTML = '';
   state.identifiers.forEach((id, i) => {
@@ -126,6 +173,7 @@ function renderIdentifiers() {
     x.onclick = () => { state.identifiers.splice(i, 1); renderIdentifiers(); };
     chip.appendChild(x); chips.appendChild(chip);
   });
+  document.getElementById('idCount').textContent = state.identifiers.length;
 }
 
 function addIdentifier() {
@@ -144,18 +192,23 @@ function refreshCounts() {
   document.getElementById('colCount').textContent = state.columns.length;
 }
 
-function groupHeader(label, columns) {
+function groupHeader(label, columns, expanded) {
   const hdr = document.createElement('div'); hdr.className = 'grouphdr';
+  const chev = document.createElement('span'); chev.className = 'chev'; chev.textContent = expanded ? '▾' : '▸';
   const title = document.createElement('span'); title.textContent = label;
   const count = document.createElement('span'); count.className = 'gcount';
-  hdr.appendChild(title); hdr.appendChild(count);
+  hdr.appendChild(chev); hdr.appendChild(title); hdr.appendChild(count);
+  hdr.onclick = () => {
+    if (collapsedGroups.has(label)) collapsedGroups.delete(label); else collapsedGroups.add(label);
+    renderColumns();
+  };
   if (columns.length) {
     groupCounters.push({ span: count, columns: columns });
     const actions = document.createElement('span'); actions.className = 'gactions';
     const all = document.createElement('button'); all.className = 'mini'; all.textContent = 'all';
-    all.onclick = () => { for (const c of columns) { if (!state.columns.includes(c)) state.columns.push(c); } renderColumns(); };
+    all.onclick = (e) => { e.stopPropagation(); for (const c of columns) { if (!state.columns.includes(c)) state.columns.push(c); } renderColumns(); };
     const none = document.createElement('button'); none.className = 'mini'; none.textContent = 'none';
-    none.onclick = () => { state.columns = state.columns.filter(c => !columns.includes(c)); renderColumns(); };
+    none.onclick = (e) => { e.stopPropagation(); state.columns = state.columns.filter(c => !columns.includes(c)); renderColumns(); };
     actions.appendChild(all); actions.appendChild(none); hdr.appendChild(actions);
   }
   return hdr;
@@ -171,15 +224,21 @@ function renderColumns() {
     group.columns.forEach(c => known.add(c));
     const matches = [...group.columns].sort().filter(c => !filter || c.toLowerCase().includes(filter));
     if (!matches.length) continue;
-    root.appendChild(groupHeader(group.label, matches));
-    for (const col of matches) {
-      root.appendChild(columnRow(col, selected.has(col)));
+    const expanded = filter ? true : !collapsedGroups.has(group.label);
+    root.appendChild(groupHeader(group.label, matches, expanded));
+    if (expanded) {
+      for (const col of matches) {
+        root.appendChild(columnRow(col, selected.has(col)));
+      }
     }
   }
   const custom = state.columns.filter(c => !known.has(c) && (!filter || c.toLowerCase().includes(filter))).sort();
   if (custom.length) {
-    root.appendChild(groupHeader('Custom / other', custom));
-    custom.forEach(c => root.appendChild(columnRow(c, true)));
+    const expanded = filter ? true : !collapsedGroups.has('Custom / other');
+    root.appendChild(groupHeader('Custom / other', custom, expanded));
+    if (expanded) {
+      custom.forEach(c => root.appendChild(columnRow(c, true)));
+    }
   }
   refreshCounts();
 }
