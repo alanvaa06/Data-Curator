@@ -131,7 +131,7 @@ class RecordingOutputHandler(OutputHandlerInterface):
 
 
 class TestMainParallelCompute:
-    def test_all_identifiers_processed_with_parallel_compute(self):
+    def test_all_identifiers_processed_in_order_with_parallel_compute(self):
         identifiers = ('AAA', 'BBB', 'CCC', 'DDD', 'EEE', 'FFF', 'GGG', 'HHH')
         handler = RecordingOutputHandler()
         data_curator.main(
@@ -140,9 +140,10 @@ class TestMainParallelCompute:
             fundamental_data_provider=None,
             output_handlers=[handler],
             max_concurrent_fetches=4,
-            max_concurrent_computations=4,
+            max_concurrent_computations=2,
         )
-        assert sorted(handler.identifiers) == sorted(identifiers)
+        # output handlers run in the parent process, drained in submission order
+        assert handler.identifiers == list(identifiers)
 
     def test_default_keeps_sequential_deterministic_order(self):
         identifiers = ('AAA', 'BBB', 'CCC', 'DDD')
@@ -178,7 +179,7 @@ class TestMainParallelCompute:
             max_concurrent_fetches=2,
             max_concurrent_computations=2,
         )
-        assert sorted(handler.identifiers) == ['AAA', 'CCC', 'DDD']
+        assert handler.identifiers == ['AAA', 'CCC', 'DDD']
 
 
 class TestMainParallelFetch:

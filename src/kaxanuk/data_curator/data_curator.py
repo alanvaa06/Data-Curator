@@ -12,9 +12,13 @@ main:
 
 import collections
 import concurrent.futures
+import importlib
 import logging
 import os
+import sys
 import types
+
+import pyarrow
 
 from kaxanuk.data_curator.entities import (
     Configuration,
@@ -77,12 +81,15 @@ def main(
         1 reproduces fully sequential fetching. Values above 32 are effectively
         capped by the shared HTTP connection pool size.
     max_concurrent_computations
-        Maximum number of identifiers whose columns are calculated and output
-        concurrently. 1 (the default) keeps the column calculation and output
-        stage fully sequential, preserving deterministic output handler order.
-        Higher values process each identifier's columns in worker threads;
-        output file contents are unchanged but completion order may vary, so
-        only use with output handlers that are thread-safe across identifiers.
+        Maximum number of identifiers whose columns are calculated concurrently
+        in worker processes (sidestepping the GIL). 1 (the default) keeps the
+        column calculation stage fully sequential in this process. Output
+        handlers always run in this process in configuration order, so output
+        behavior is identical in both modes. When above 1, the calculation
+        modules must be importable by name in a fresh interpreter (which is the
+        case for the standard Config/custom_calculations.py setup). On
+        Windows the entry script must guard its executable code with
+        `if __name__ == '__main__':`, as worker processes re-import it.
     logger_level
         All logs of priority logger_level or higher will be printed to stderr
     logger_format
@@ -172,10 +179,15 @@ def main(
         )
         compute_executor = None
         if max_concurrent_computations > 1:
-            compute_executor = concurrent.futures.ThreadPoolExecutor(
+            compute_executor = concurrent.futures.ProcessPoolExecutor(
                 max_workers=max_concurrent_computations,
-                thread_name_prefix='data_curator_compute',
+                initializer=_compute_worker_initializer,
+                initargs=(list(sys.path),),
             )
+        calculation_module_names = [
+            module.__name__
+            for module in calculation_modules
+        ]
         try:
             identifiers = configuration.identifiers
             max_pending_fetches = max_concurrent_fetches * 2
@@ -189,7 +201,7 @@ def main(
             ] = collections.deque()
             next_identifier_index = 0
             pending_computes: collections.deque[
-                concurrent.futures.Future[None]
+                tuple[str, concurrent.futures.Future]
             ] = collections.deque()
             max_pending_computes = max_concurrent_computations * 2
 
@@ -260,36 +272,49 @@ def main(
                     continue
 
                 if compute_executor is None:
-                    _compute_and_output_identifier(
-                        main_identifier=main_identifier,
+                    output_columns = _compute_identifier_columns(
                         configuration=configuration,
                         calculation_modules=calculation_modules,
-                        output_handlers=output_handlers,
                         market_data=full_market_data,
                         fundamental_data=full_fundamental_data,
                         dividend_data=full_dividend_data,
                         split_data=full_split_data,
                     )
+                    _output_identifier_columns(
+                        main_identifier=main_identifier,
+                        output_columns=output_columns,
+                        output_handlers=output_handlers,
+                    )
                 else:
-                    # bound the compute queue so fetches don't outrun computation unbounded
+                    # bound the compute queue so fetches don't outrun computation unbounded;
+                    # draining in submission order keeps output handler order deterministic
                     while len(pending_computes) >= max_pending_computes:
-                        pending_computes.popleft().result()
-                    pending_computes.append(
-                        compute_executor.submit(
-                            _compute_and_output_identifier,
-                            main_identifier=main_identifier,
-                            configuration=configuration,
-                            calculation_modules=calculation_modules,
+                        (computed_identifier, compute_future) = pending_computes.popleft()
+                        _output_identifier_columns(
+                            main_identifier=computed_identifier,
+                            output_columns=compute_future.result(),
                             output_handlers=output_handlers,
+                        )
+                    pending_computes.append((
+                        main_identifier,
+                        compute_executor.submit(
+                            _compute_identifier_columns_in_worker,
+                            configuration=configuration,
+                            calculation_module_names=calculation_module_names,
                             market_data=full_market_data,
                             fundamental_data=full_fundamental_data,
                             dividend_data=full_dividend_data,
                             split_data=full_split_data,
                         )
-                    )
+                    ))
 
             while pending_computes:
-                pending_computes.popleft().result()
+                (computed_identifier, compute_future) = pending_computes.popleft()
+                _output_identifier_columns(
+                    main_identifier=computed_identifier,
+                    output_columns=compute_future.result(),
+                    output_handlers=output_handlers,
+                )
         except (
             ApiEndpointError,
             ColumnBuilderCircularDependenciesError,
@@ -317,23 +342,27 @@ def main(
         logging.getLogger(__name__).info("Finished processing data!")
 
 
-def _compute_and_output_identifier(
+def _compute_worker_initializer(parent_sys_path: list[str]) -> None:
+    """
+    Initialize a compute worker process with the parent's module search path.
+
+    Ensures the calculation modules (including the user's Config.custom_calculations)
+    resolve identically to the parent process.
+    """
+    sys.path[:] = parent_sys_path
+
+
+def _compute_identifier_columns(
     *,
-    main_identifier: str,
     configuration: Configuration,
     calculation_modules: list[types.ModuleType],
-    output_handlers: list[OutputHandlerInterface],
     market_data: MarketData,
     fundamental_data: FundamentalData,
     dividend_data: DividendData,
     split_data: SplitData,
-) -> None:
+) -> pyarrow.Table:
     """
-    Calculate the output columns for one identifier and pass them to the output handlers.
-
-    Safe to run concurrently for different identifiers, as each ColumnBuilder is
-    independent; output handlers must tolerate concurrent calls for different
-    identifiers when used with max_concurrent_computations > 1.
+    Calculate the output columns for one identifier's data.
     """
     column_builder = ColumnBuilder(
         calculation_modules=calculation_modules,
@@ -343,8 +372,49 @@ def _compute_and_output_identifier(
         market_data=market_data,
         split_data=split_data,
     )
-    output_columns = column_builder.process_columns(configuration.columns)
 
+    return column_builder.process_columns(configuration.columns)
+
+
+def _compute_identifier_columns_in_worker(
+    *,
+    configuration: Configuration,
+    calculation_module_names: list[str],
+    market_data: MarketData,
+    fundamental_data: FundamentalData,
+    dividend_data: DividendData,
+    split_data: SplitData,
+) -> pyarrow.Table:
+    """
+    Worker-process wrapper: resolve calculation modules by name, then calculate columns.
+
+    Modules can't cross the process boundary, so they're re-imported here;
+    sys.modules caches them after the first task in each worker.
+    """
+    calculation_modules = [
+        importlib.import_module(module_name)
+        for module_name in calculation_module_names
+    ]
+
+    return _compute_identifier_columns(
+        configuration=configuration,
+        calculation_modules=calculation_modules,
+        market_data=market_data,
+        fundamental_data=fundamental_data,
+        dividend_data=dividend_data,
+        split_data=split_data,
+    )
+
+
+def _output_identifier_columns(
+    *,
+    main_identifier: str,
+    output_columns: pyarrow.Table,
+    output_handlers: list[OutputHandlerInterface],
+) -> None:
+    """
+    Pass one identifier's calculated columns to all output handlers.
+    """
     for output_handler in output_handlers:
         output_handler.output_data(
             main_identifier=main_identifier,

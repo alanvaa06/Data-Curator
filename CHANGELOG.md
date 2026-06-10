@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Editor server endpoints `POST /api/run` / `GET /api/run` to launch the entry script in the background and poll its status/output from the panel.
 - `init json` / `update json` scaffolding and a JSON entry-script template.
 - `data_curator.main` new `max_concurrent_fetches` parameter (default 8): identifiers' data is now downloaded concurrently through a bounded prefetch pipeline while column calculation and output stay sequential and deterministic; pass 1 for fully sequential fetching
-- `data_curator.main` new `max_concurrent_computations` parameter (default 1 = unchanged sequential behavior): opt-in threaded per-identifier column calculation and output. Measured no speedup on standard (GIL) CPython builds — the compute stage is bound by per-row Python entity assembly — but becomes useful on free-threaded builds; see `benchmarks/RESULTS.md` addendum
+- `data_curator.main` new `max_concurrent_computations` parameter (default 1 = unchanged sequential behavior): per-identifier column calculation in worker processes, sidestepping the GIL. Output handlers always run in the parent process in configuration order, so output behavior is identical. Measured 21% faster on a real 24-ticker / 201-column run (gain grows with run size); the JSON entry-script template enables 4 workers. Entry scripts must guard their executable code with `if __name__ == '__main__':` on Windows; see `benchmarks/RESULTS.md`
 - `benchmarks/` harness with a local mock FMP server for reproducible end-to-end performance measurement (4.1x faster at default settings on the reference workload, see `benchmarks/RESULTS.md`)
 
 ### Changed

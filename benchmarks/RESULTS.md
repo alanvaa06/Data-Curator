@@ -56,3 +56,34 @@ dominant cost in production.
 
 Next real lever (out of scope here): vectorize entity assembly / column packing to
 eliminate the per-row Python call storms, or process-based compute parallelism.
+
+## Addendum 2 (2026-06-10): process-pool compute
+
+`max_concurrent_computations` reimplemented on `ProcessPoolExecutor`: workers
+calculate one identifier's columns and return the pyarrow table; output handlers
+always run in the parent in configuration order, so output behavior is unchanged.
+Custom calculation modules are re-imported by name in each worker (verified with
+the template's `c_test`).
+
+Mock benchmark (heavy calculation columns, 8 fetch workers, 75 ms latency):
+
+| Tickers | compute=1 | compute=4 (processes) | Net |
+|---------|-----------|------------------------|-----|
+| 48 | 6.55 s | 5.42 s | -17% |
+| 96 | 12.47 s | 11.47 s | -8% |
+
+Real FMP run (24 tickers, full 201-column set, warm network, back to back):
+
+| Mode | Wall time |
+|------|-----------|
+| compute=1 | 5.8 s |
+| compute=4 | 4.6 s (**-21%**, including ~2 s one-time pool spawn) |
+
+The fixed ~2 s Windows process-spawn cost dominates small runs and amortizes on
+large ones; the parallelizable compute share grows with column count. The JSON
+entry-script template now defaults to `max_concurrent_computations=4`.
+
+Caveat (root-caused during validation): on Windows the worker processes re-import
+the parent's `__main__`, so entry scripts MUST guard their executable code with
+`if __name__ == '__main__':` — otherwise the pool dies with `BrokenProcessPool`.
+The JSON entry-script template ships guarded.
