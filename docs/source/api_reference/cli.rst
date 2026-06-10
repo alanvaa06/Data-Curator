@@ -22,10 +22,24 @@ Below is the entry point for the CLI. Run ``kaxanuk.data_curator --help`` to see
 Commands
 --------
 
-autorun
-~~~~~~~
+start
+~~~~~
 
-Installs required files and directories for the Excel entry script if missing; otherwise runs the system.
+One-command workflow: creates any missing workspace files (never overwriting existing ones),
+then opens the HTML parameter panel in the browser, where the system can be run with **Save & run**.
+
+Options:
+- ``--port <number>``: Port for the local panel server. Defaults to ``8753``.
+- ``--no-browser``: Do not open a browser window automatically.
+
+config-editor
+~~~~~~~~~~~~~
+
+Launches the local HTML editor for the JSON configuration file without scaffolding any files.
+
+Options:
+- ``--port <number>``: Port for the local panel server. Defaults to ``8753``.
+- ``--no-browser``: Do not open a browser window automatically.
 
 init
 ~~~~
@@ -33,7 +47,7 @@ init
 Creates all files and folders required by the specified configuration format.
 
 Arguments:
-- ``CONFIG_FORMAT`` (required, choices: ``excel``): The configuration format to initialize.
+- ``CONFIG_FORMAT`` (required, choices: ``json``): The configuration format to initialize.
 
 Options:
 - ``--entry_script <name>.py``: Name of the entry script to generate. Defaults to ``__main__.py``.
@@ -53,17 +67,17 @@ update
 Updates configuration files for the specified format.
 
 Arguments:
-- ``CONFIG_FORMAT`` (required, choices: ``excel``, ``entry_script``): The configuration format to update.
+- ``CONFIG_FORMAT`` (required, choices: ``json``, ``entry_script``): The configuration format to update.
 
 Examples
 --------
 
-Initialize a new Excel configuration (creates ``Config/``, ``Output/`` and a new ``__main__.py``):
+Initialize a new JSON configuration (creates ``Config/``, ``Output/`` and a new ``__main__.py``):
 
 .. code-block:: console
 
-   $ kaxanuk.data_curator init excel
-   Initializing data curator with format: excel
+   $ kaxanuk.data_curator init json
+   Initializing data curator with format: json
    Created directory Config
    Created directory Output
    Installed all files successfully
@@ -89,9 +103,10 @@ Update only the entry script to the latest template:
    $ kaxanuk.data_curator update entry_script
    Updated entry script
 
-Install or run the Excel entry script (if ``__main__.py`` is missing, it will install; otherwise run):
+Set up the workspace and open the parameter panel in one step:
 
 .. code-block:: console
 
-   $ kaxanuk.data_curator autorun
-   Installed all files successfully. Please configure the files in the Config folder and run again
+   $ kaxanuk.data_curator start
+   Starting Data Curator panel at http://127.0.0.1:8753 (Ctrl+C to stop)
+   Edit your parameters in the browser and click 'Save & run' to run the system.

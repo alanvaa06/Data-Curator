@@ -19,9 +19,9 @@ Each function needs to return an iterable supported by pyarrow.array(), of the s
 The result will automatically be wrapped in a DataColumn for any successive functions that use
 that as input. Yes, you can absolutely chain functions together and are encouraged to do so!
 
-Once you've added your function to the file, you need to add its name to the Output_Columns
-sheet of the data_curator_parameters.xlsx file. Don't forget that your function name needs to
-start with c_ as a prefix!
+Once you've added your function to the file, you need to add its name to the "columns" list in
+the data_curator_parameters.json file (or type it into the column picker of the parameter panel
+and press Enter). Don't forget that your function name needs to start with c_ as a prefix!
 
 See more examples of how to program custom functions by checking our built-in calculations at
 https://github.com/KaxaNuk/Data-Curator/blob/main/src/kaxanuk/data_curator/features/calculations.py
@@ -39,7 +39,7 @@ def c_test(m_open_split_adjusted, m_close_split_adjusted):
 
     For this function to generate an output column, you need to:
     1. Make sure it's in your project's Config/custom_calculations.py file.
-    2. Add c_test to the Output_Columns sheet in your Config/data_curator_parameters.xlsx file.
+    2. Add c_test to the "columns" list in your Config/data_curator_parameters.json file.
 
     Parameters
     ----------

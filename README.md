@@ -7,10 +7,10 @@
 | [![PyPI - Version](https://img.shields.io/pypi/v/kaxanuk.data-curator?logo=pypi)](https://pypi.org/project/kaxanuk.data-curator) [![PyPI Downloads](https://static.pepy.tech/badge/kaxanuk-data-curator)](https://pepy.tech/projects/kaxanuk-data-curator) [![Powered by KaxaNuk](https://img.shields.io/badge/powered%20by-KaxaNuk-orange?colorB=orange)](https://kaxanuk.mx) |
 
 Component library for downloading, validating, homogenizing, and combining financial stocks' data from different data providers.
-Can be run in standalone mode, configurable in Excel, or as a component of a larger Python-based system. 
+Can be run in standalone mode, configurable through a browser-based parameter panel, or as a component of a larger Python-based system. 
 
 Features:
-* **Configurable** from an Excel file, or directly in a Python script. Docker image also available.
+* **Configurable** from a browser-based parameter panel (backed by a JSON file), or directly in a Python script. Docker image also available.
 * Fully readable and specific **tag names**, homogenized between data providers, based on the US GAAP taxonomy. Switch between data providers without changing your code.
 * Automatically validates market and fundamental data, discarding datasets that make no sense (like high price below low, etc.) or can't guarantee point-in-time validity (like amended statements).
 * Easily create your own **calculated feature functions** without need for Numpy or Pandas (though you can also use those if you want to).
@@ -50,12 +50,15 @@ The system can run either on your local Python (versions `3.12`, `3.13`, or `3.1
 ### Configuration
 1. Open a terminal in any directory and run the following command:
     ```
-    kaxanuk.data_curator init excel
+    kaxanuk.data_curator start
     ```
-    This should create two subdirectories, `Config` and `Output`, as well as the entry script `__main__.py` in the current directory.
-2. Open the `Config/data_curator_parameters.xlsx` file in Excel, fill out the fields in all the sheets, save the file, and close it.
-3. If your data provider requires an API key, open the `Config/.env` file in a text editor, and paste the key after
-    the `=` sign of the provider's corresponding `API_KEY` variable. Don't add any quotes or spaces before or after the key.
+    This creates two subdirectories, `Config` and `Output`, plus the entry script `__main__.py` in the current
+    directory (never overwriting existing files), and opens the parameter panel in your browser.
+2. In the panel, pick the data providers, dates, period, output format, identifiers, and output columns, then click
+   **Save & run** — the run output appears on the page and the data is saved to the `Output` folder.
+3. If your data provider requires an API key, set it in the panel's API keys section, or open the `Config/.env` file
+    in a text editor and paste the key after the `=` sign of the provider's corresponding `API_KEY` variable.
+    Don't add any quotes or spaces before or after the key.
 
 *_If on MacOS, the `.env` file will be hidden in Finder by default. Just use the keys `Command` + `Shift` + `.` to toggle
 the visibility of hidden files._
@@ -95,7 +98,8 @@ If your data provider requires an API key, you need to pass it as an environment
 #### Running the Container
 1. On the first run, the container will create the `Config` and `Output` subdirectories in the mounted volume, as well as
 the entry script `__main__.py`.
-2. Open the `Config/data_curator_parameters.xlsx` file in Excel, fill out the fields in all the sheets, save the file, and close it.
+2. Edit the `Config/data_curator_parameters.json` file with your providers, dates, identifiers and output columns
+(or run `kaxanuk.data_curator config-editor` on the host against the mounted volume to edit it in the browser).
 
 Now that the configuration is set up, each time you run the container again, it will download the data for the tickers/identifiers
 as configured in the parameters file, and save it to the `Output` folder.
@@ -106,7 +110,8 @@ The `__main__.py` entry script is customizable, so you can implement your own da
 handlers, and inject them from there.
 
 You can also create your own calculated feature functions by adding them to the `Config/custom_calculations.py` file,
-and adding their function name to the `Columns` sheet in the `Config/data_curator_parameters.xlsx` file.
+and adding their function name to the `columns` list in the `Config/data_curator_parameters.json` file (or typing it
+into the parameter panel's column picker).
 As long as the names start with the `c_` prefix, the system will use them as any other feature.
 
 Check the [API Reference](https://kaxanuk-data-curator.readthedocs.io/en/stable/api_reference/index.html) to learn how to easily implement your own calculated features.

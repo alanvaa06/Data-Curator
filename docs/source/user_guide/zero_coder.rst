@@ -3,17 +3,12 @@
 Zero-Coder Workflow
 ====================
 
-In “zero-coder” mode, everything is configured without writing Python code. Follow these steps to install, configure, and run Data Curator.
+In “zero-coder” mode, everything is configured without writing Python code: a local web panel
+edits the JSON configuration file for you, and a single **Save & run** button runs the system.
+Follow these steps to install, configure, and run Data Curator.
 
-.. note::
-
-   The recommended zero-coder path is now a single command: ``kaxanuk.data_curator start``.
-   It sets up the workspace, opens the parameter panel in your browser, and lets you run the
-   system with the **Save & run** button (see :ref:`quick_start`). The Excel workbook workflow
-   described below is still supported as a legacy fallback.
-
-Direct Setup (No Containers)
-----------------------------
+Install Data Curator
+--------------------
 
 Create a Python 3.12 Environment
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -36,8 +31,8 @@ Use Conda or `venv` to isolate Data Curator’s dependencies.
    datacurator_env\Scripts\activate.bat   # Windows
 
 
-Install Data Curator via pip
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Install the Package via pip
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 With the virtual environment active, run:
 
@@ -45,11 +40,17 @@ With the virtual environment active, run:
 
    pip install --upgrade kaxanuk.data_curator
 
-This installs Data Curator plus all dependencies specified in `pyproject.toml` (e.g., `openpyxl`, `pandas`, `pyarrow`, `pandas_ta`, etc.).
+This installs Data Curator plus all dependencies specified in `pyproject.toml` (e.g., `pandas`, `pyarrow`, etc.).
+
+If you want to use the Yahoo Finance data provider, also install its extension package:
+
+.. code-block:: bash
+
+   pip install kaxanuk.data_curator_extensions.yahoo_finance
 
 
-Initialize the Configuration
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Start the Configuration Panel
+-----------------------------
 
 Choose or create a project directory and move into it:
 
@@ -58,209 +59,152 @@ Choose or create a project directory and move into it:
    mkdir ~/data_curator_project
    cd ~/data_curator_project
 
-Run the initializer:
+Run the one-command workflow:
 
 .. code-block:: bash
 
-   kaxanuk.data_curator init excel
+   kaxanuk.data_curator start
 
-After this command, your directory will contain:
+.. tip::
 
-- ``__main__.py``
-- ``Config/`` (empty configuration folder)
-- ``Output/`` (empty output folder)
+   If your terminal reports the command is not found, use the module form instead:
+   ``python -m kaxanuk.data_curator start``. Add ``--port N`` to serve on a different
+   port, or ``--no-browser`` to skip opening the browser automatically.
 
+The ``start`` command:
 
-Configure Data Curator
-----------------------
+1. Scaffolds any missing workspace files (existing files are never overwritten):
 
-Edit the Excel workbook and, if needed, the `.env` file as follows.
+   - ``__main__.py`` — the entry script that runs the system
+   - ``Config/data_curator_parameters.json`` — the configuration file
+   - ``Config/custom_calculations.py`` — optional Python calculations (see :ref:`custom_calculator`)
+   - ``Config/.env`` — API keys for the data providers
+   - ``Output/`` — where results are written
 
+2. Serves the parameter panel at ``http://127.0.0.1:8753`` and opens it in your browser.
 
-Edit ``Config/parameters_datacurator.xlsx``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Open the Excel workbook and fill in these worksheets:
-
-- **Providers**
-  - ``market_data_provider``: pick a market-data vendor (e.g., “Financial Modeling Prep”, “AlphaVantage”).
-  - ``market_data_api_key``: enter its API key here, or leave blank to use `.env`.
-  - ``fundamental_data_provider``: pick a fundamental-data vendor.
-  - ``fundamental_data_api_key``: enter its API key here, or leave blank to use `.env`.
-
-- **Date Range**
-  - ``start_date`` (YYYY-MM-DD): first date of data fetch.
-  - ``end_date`` (YYYY-MM-DD): last date of data fetch.
-  - ``period``: frequency (e.g., ``1d`` for daily, ``1w`` for weekly, ``1m`` for monthly).
-
-- **Instruments**
-  - List ticker symbols (one per row), e.g., ``AAPL``, ``MSFT``.
-
-- **Output Settings**
-  - ``output_format``: choose between ``csv`` or ``parquet``.
-  - ``logger_level``: log verbosity (e.g., ``INFO``, ``DEBUG``).
-
-- **Columns/Calculations**
-  - Tick raw data columns you want (e.g., ``open``, ``close``, ``volume``).
-  - Under **Predefined Calculations**, tick any built-in features (e.g., “Simple Moving Average 5d”, “Annualized Volatility 21d”).
-  - Under **Custom Calculations**, list any function names defined in ``Config/custom_calculations.py`` (prefix with ``c_``).
+Stop the panel with ``Ctrl+C`` in the terminal.
 
 
-Edit ``Config/.env``
-~~~~~~~~~~~~~~~~~~~~~~
+Configure Data Curator in the Panel
+-----------------------------------
 
-If you left API keys blank in Excel, create or open ``Config/.env`` and add:
+Everything you set in the panel is saved to ``Config/data_curator_parameters.json``.
+
+General
+~~~~~~~
+
+- ``market_data_provider`` / ``fundamental_data_provider``: pick the data vendors
+  (e.g., ``financial_modeling_prep``, ``lseg_workspace``, ``yahoo_finance``).
+- ``start_date`` / ``end_date`` (YYYY-MM-DD): first and last dates of the data fetch.
+- ``period``: fundamental data frequency, ``annual`` or ``quarterly``.
+- ``output_format``: choose between ``csv`` or ``parquet``.
+- ``logger_level``: log verbosity (e.g., ``info``, ``debug``).
+- ``output_directory``: where output files are written (defaults to ``Output``). A directory
+  outside cloud-synced locations (OneDrive/Dropbox) runs noticeably faster.
+
+API Keys
+~~~~~~~~
+
+Paste each provider’s key in the **API keys** section of the panel; keys are stored in
+``Config/.env``, never in the configuration file. You can also edit ``Config/.env`` directly:
 
 .. code-block:: text
 
-   KNDC_API_KEY_MARKET_DATA=<your_market_data_api_key>
-   KNDC_API_KEY_FUNDAMENTAL_DATA=<your_fundamental_data_api_key>
+   KNDC_API_KEY_FMP=<your_financial_modeling_prep_api_key>
+   KNDC_API_KEY_LSEG=<your_lseg_workspace_api_key>
 
-- On macOS, press **Command+Shift+Period** in Finder dialogs to reveal hidden files when editing.
+Do not add quotes or extra spaces around the keys.
+
+- On macOS, press **Command+Shift+Period** in Finder dialogs to reveal hidden files like ``.env``.
+
+Identifiers
+~~~~~~~~~~~
+
+Type each ticker symbol (e.g., ``AAPL``, ``MSFT``) and press **Enter** or click **Add**.
+
+Output Columns
+~~~~~~~~~~~~~~
+
+Tick the columns you want in the output files:
+
+- Raw market data (prefixed ``m_``), e.g., ``m_open``, ``m_close``, ``m_volume``.
+- Fundamental data (prefixed ``f_``, ``fbs_``, ``fis_``, ``fcf_``), e.g., ``fis_net_income``.
+- Dividends and splits (prefixed ``d_`` and ``s_``).
+- Predefined calculations (prefixed ``c_``), e.g., ``c_simple_moving_average_5d_close_split_adjusted``.
+
+Use the search box to filter the list.
 
 
 Run Data Curator
 ----------------
 
-After saving ``parameters_datacurator.xlsx`` and (if needed) `.env`, run:
+Click **Save & run**. The panel saves your parameters, runs the system, and shows progress and
+log output on the page. Data Curator will:
 
-.. code-block:: bash
-
-   python /path/to/data_curator_project
-
-Replace ``/path/to/data_curator_project`` with the directory containing ``__main__.py``. Data Curator will:
-
-- Load ``parameters_datacurator.xlsx`` and read your settings.
-- Read any API keys from `.env`.
-- Fetch market, fundamental, and optional alternative data (e.g., transcripts, news, economic).
-- Apply predefined and custom calculations.
-- Write one file per ticker into ``Output/``, named:
+- Read your settings from ``Config/data_curator_parameters.json``.
+- Read the API keys from ``Config/.env``.
+- Fetch market and fundamental data from the selected providers.
+- Apply any predefined and custom calculations you selected.
+- Write one file per identifier into your output directory (``Output/`` by default), named:
 
   ::
 
-     <TICKER>_Market_and_Fundamental_Data.<csv|parquet>
+     <IDENTIFIER>.<csv|parquet>
 
-  Each output file contains separate sheets/tables for:
-  - **Market data** (date, open, high, low, close, volume, etc.)
-  - **Fundamental data** (income statement and balance-sheet fields)
-  - **Dividends** (if requested)
-  - **Splits** (if requested)
-  - **Calculations** (columns prefixed with ``c_``)
+Each output file contains one row per date, with the columns you selected: market data,
+fundamental data, dividends, splits, and calculation columns (prefixed ``c_``).
+
+To iterate, adjust the parameters in the panel and click **Save & run** again — previous
+output files are overwritten.
 
 
-Container Setup (Recommended)
+Running Without the Panel
+-------------------------
+
+Once the configuration is saved, you can also run headlessly from your project directory:
+
+.. code-block:: bash
+
+   kaxanuk.data_curator run
+
+This executes the entry script (``__main__.py``), reading ``Config/data_curator_parameters.json``
+and ``Config/.env``. Other useful commands:
+
+.. code-block:: bash
+
+   kaxanuk.data_curator init json             # scaffold the workspace without serving the panel
+   kaxanuk.data_curator config-editor         # serve the panel without scaffolding
+   kaxanuk.data_curator update json           # refresh the config file from the template (renames the existing one first)
+   kaxanuk.data_curator update entry_script   # refresh __main__.py from the template (renames the existing one first)
+
+
+Editing the JSON File by Hand
 -----------------------------
 
-Using a container runtime eliminates local dependency issues and guarantees a reproducible environment. This guide uses **Podman Desktop** (open-source and free).
+The panel is optional — ``Config/data_curator_parameters.json`` is a plain JSON file you can
+edit in any text editor:
 
+.. code-block:: json
 
-Install Podman Desktop
-~~~~~~~~~~~~~~~~~~~~~~
+   {
+     "parameters_format_version": "0.47.0",
+     "general": {
+       "market_data_provider": "financial_modeling_prep",
+       "fundamental_data_provider": "financial_modeling_prep",
+       "start_date": "2020-01-01",
+       "end_date": "2025-12-31",
+       "period": "quarterly",
+       "output_format": "csv",
+       "logger_level": "info",
+       "output_directory": "Output"
+     },
+     "identifiers": ["AAPL", "MSFT"],
+     "columns": ["m_date", "m_close", "m_volume", "c_market_cap"]
+   }
 
-1. Download the installer for your OS:
-   https://podman-desktop.io/downloads
-
-2. Run the installer:
-   - On **Windows**, ensure “Install WSL if not present” is checked.
-   - On **macOS/Linux**, follow on-screen instructions.
-
-3. Launch Podman Desktop; accept defaults if prompted to create a Podman Machine.
-
-4. If Windows complains about WSL version < 1.2.5, open an elevated command prompt and run:
-
-   .. code-block:: powershell
-
-      wsl --update
-
-   Then re-open Podman Desktop.
-
-
-Pull the Data Curator Image
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-1. In Podman Desktop’s left menu, click **Images**.
-2. Click **Pull** (top-right).
-3. Enter the image URI:
-
-   .. code-block:: text
-
-      ghcr.io/kaxanuk-community/data-curator:dev
-
-4. Click **Pull Image**.
-
-
-Run the Container for the First Time
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-1. In **Images**, locate ``data-curator:dev`` and click the triangular **Run** icon.
-2. In the **Basic** tab:
-   - **Container name**: ``data-curator``
-
-   - **Volumes**:
-
-     - **Host path**: select or create the directory where you want ``Config/`` and ``Output/`` to reside (e.g., ``~/data_curator_project``).
-     - **Container path**: ``/app``
-
-   - **Environment variables** (only if you did not set API keys in Excel):
-     - ``KNDC_API_KEY_MARKET_DATA=<your_market_data_api_key>``
-     - ``KNDC_API_KEY_FUNDAMENTAL_DATA=<your_fundamental_data_api_key>``
-
-3. Leave other fields at defaults, then click **Start container**. Podman will:
-   - Create a container named ``data-curator``.
-   - Mount your chosen host directory to ``/app`` inside the container.
-   - Run ``__main__.py`` once, which initializes Data Curator in Excel mode (equivalent to ``kaxanuk.data_curator init excel``).
-
-
-Configure Inside the Container
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-After the first run, your host directory contains:
-
-- ``Config/`` ── contains ``parameters_datacurator.xlsx``, ``custom_calculations.py``, and (if present) ``.env``.
-- ``Output/`` ── initially empty; output will be written here on subsequent runs.
-
-Edit these files exactly as in **Configure Data Curator**:
-
-- **Config/parameters_datacurator.xlsx**: set providers, API keys, date range, tickers, output format, and calculations.
-- **Config/.env**: add API keys if not set in Excel.
-
-
-Run the Fully Configured Container
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-1. In Podman Desktop, click **Containers**.
-2. Locate ``data-curator`` and click **Start**.
-3. The container reads updated configuration and writes output to ``Output/``.
-
-
-Iterate
-~~~~~~~
-
-- Modify ``Config/parameters_datacurator.xlsx`` or ``Config/custom_calculations.py``.
-- In Podman Desktop’s **Containers** view, click **Stop** (if running) and then **Start** again.
-- The container reruns Data Curator with the new settings, overwriting previous outputs.
-
-
-Output Structure
-----------------
-
-After running (Direct or Container), inspect ``Output/``:
-
-- **``<TICKER>_Market_and_Fundamental_Data.<csv|parquet>``**
-  - **Market data**: one row per date with columns ``date``, ``open``, ``high``, ``low``, ``close``, ``volume``, ``adjusted_close``, etc.
-  - **Fundamental data**: income statement and balance-sheet fields (e.g., ``total_revenue``, ``net_income``, ``total_assets``).
-  - **Dividends**: ``date``, ``dividend_amount`` (if enabled).
-  - **Splits**: ``date``, ``split_ratio`` (if enabled).
-  - **Calculations**: columns prefixed with ``c_`` (e.g., ``c_simple_moving_average_5d``, ``c_log_returns_adjusted_close``).
-
-- **``Earnings_Transcripts/``** (optional)
-  If earnings transcripts were enabled, JSON/text files appear here.
-
-- **``News/``** (optional)
-  If news data was enabled, files per ticker or aggregate news feed appear here.
-
-- **``Economic_Data/``** (optional)
-  Contains macroeconomic series (e.g., GDP, CPI) if enabled.
+Keep the ``parameters_format_version`` value that comes with the scaffolded file. After saving
+your changes, run ``kaxanuk.data_curator run``.
 
 
 See also

@@ -63,7 +63,7 @@ Check the `official release on PyPI <https://pypi.org/project/kaxanuk.data-curat
       :class-card: intro-card
       :shadow: none
 
-      Dive into the comprehensive API documentation, including Excel configuration,
+      Dive into the comprehensive API documentation, including JSON configuration,
       main modules, calculations, public objects and interfaces.
 
       +++

@@ -14,7 +14,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Editor server endpoints `POST /api/run` / `GET /api/run` to launch the entry script in the background and poll its status/output from the panel.
 - `init json` / `update json` scaffolding and a JSON entry-script template.
 - Configurable output directory: `general.output_directory` in the JSON configuration (default `Output`), editable from the panel's General section; the progress bar follows the configured folder. Pointing it outside cloud-synced folders (OneDrive/Dropbox) avoids heavy sync churn on large runs
-- Panel "Load file…" button: import a legacy Excel parameters workbook (`POST /api/import-excel`); the panel fields fill for review and nothing is saved or run until the user clicks Save / Save & run. Old-format workbooks migrate automatically (the format version is stamped to the current one).
 - `data_curator.main` new `max_concurrent_fetches` parameter (default 8): identifiers' data is now downloaded concurrently through a bounded prefetch pipeline while column calculation and output stay sequential and deterministic; pass 1 for fully sequential fetching
 - `data_curator.main` new `max_concurrent_computations` parameter (default 1 = unchanged sequential behavior): per-identifier column calculation in worker processes, sidestepping the GIL. Output handlers always run in the parent process in configuration order, so output behavior is identical. Measured 21% faster on a real 24-ticker / 201-column run (gain grows with run size); the JSON entry-script template enables 4 workers. Entry scripts must guard their executable code with `if __name__ == '__main__':` on Windows; see `benchmarks/RESULTS.md`
 - `benchmarks/` harness with a local mock FMP server for reproducible end-to-end performance measurement (4.1x faster at default settings on the reference workload, see `benchmarks/RESULTS.md`)
@@ -23,8 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - HTTP transport for data providers switched from per-request `urllib` to a shared pooled `httpx` client: connections are reused across requests (keep-alive), eliminating per-request TCP/TLS handshakes; requests now have an explicit 30 second timeout instead of potentially hanging forever
 - `httpx` is now an explicit dependency (it was already present transitively via `lseg-data`)
 
-### Deprecated
-- The Excel configuration format and `ExcelConfigurator` remain supported but are now the legacy fallback; the JSON + HTML editor path is the default.
+### Removed
+- The Excel configuration format is gone: `ExcelConfigurator`, the `autorun` CLI command, the `init excel` / `update excel` CLI formats, the Excel parameters template, the panel's Excel import button (`POST /api/import-excel`), and the `openpyxl` dependency. JSON (`Config/data_curator_parameters.json`) + the HTML parameter panel is the only configuration path; the Docker image now runs `kaxanuk.data_curator run` on start.
 
 ### Fixed
 - FMP free-account fallback: concurrent HTTP 402 responses could spuriously skip identifiers or duplicate probe requests; the account-plan downgrade is now thread-safe and shared by the dividend, fundamental and split endpoints

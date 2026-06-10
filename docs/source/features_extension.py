@@ -90,11 +90,11 @@ Available Calculation Functions
 -------------------------------
 
 This section lists all the **predefined calculation functions** provided by Data Curator.
-Each function corresponds to a feature that can be used as an output column in your Excel configuration file.
+Each function corresponds to a feature that can be used as an output column in your configuration file.
 
 To use one of these features:
 
-- Reference its name (without the ``c_`` prefix) in the ``Output_Columns`` sheet.
+- Reference its name (without the ``c_`` prefix) in the ``columns`` list of your JSON configuration.
 - The system will automatically match it to the Python function ``c_<name>``.
 
 All functions operate on `DataColumn` inputs and return iterable values compatible with our internal data.

@@ -44,10 +44,10 @@ All arguments to your functions are instances of :ref:`data_column`. This provid
 - Null-safe operations (any operation involving a null yields null)
 - Seamless conversion to pandas, pyarrow, or numpy if needed
 
-Usage in Excel
---------------
+Usage in the Configuration
+--------------------------
 
-Once you've written your function in ``custom_calculations.py``, reference it by name directly in the **columns** list of your Excel configuration file.
+Once you've written your function in ``custom_calculations.py``, reference it by name directly in the **columns** list of your JSON configuration file (or type it into the parameter panel's column picker).
 
 For example, to use a function called ``c_net_margin``, simply add it like this:
 

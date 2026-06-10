@@ -87,4 +87,4 @@ ARG BUILD_ENV
 ENV KNDC_APPENV=$BUILD_ENV
 
 # execute data_curator on container start
-CMD ["kaxanuk.data_curator", "autorun"]
+CMD ["kaxanuk.data_curator", "run"]

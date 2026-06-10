@@ -6,5 +6,6 @@ def test_json_configurator_is_exported():
     assert 'JsonConfigurator' in config_handlers.__all__
 
 
-def test_excel_configurator_still_exported():
-    assert hasattr(config_handlers, 'ExcelConfigurator')
+def test_excel_configurator_removed():
+    assert not hasattr(config_handlers, 'ExcelConfigurator')
+    assert 'ExcelConfigurator' not in config_handlers.__all__

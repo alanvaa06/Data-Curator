@@ -75,9 +75,3 @@ Each step is also available as its own command if you prefer finer control:
    kaxanuk.data_curator init json        # scaffold the workspace
    kaxanuk.data_curator config-editor    # edit parameters in the browser
    kaxanuk.data_curator run              # run the system headlessly
-
-**Legacy: Excel configuration**
-
-The Excel workflow is still supported as a fallback. Run ``kaxanuk.data_curator init excel`` to
-scaffold an ``Config/data_curator_parameters.xlsx`` file and edit it directly, then
-``kaxanuk.data_curator run``. New projects should prefer the ``start`` workflow above.

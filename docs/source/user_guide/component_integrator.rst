@@ -3,7 +3,7 @@
 Component Integrator Workflow
 =============================
 
-In “component integrator” mode, you bypass the Excel-driven Zero-Coder interface and instead write a Python script that constructs a `Configuration` object, selects or implements data providers and output handlers, and invokes the core Data Curator functionality programmatically. This mode assumes you have Python programming experience and a Direct Setup (non-container) environment. Follow these steps to install the component library, create an entry script, and (if needed) implement custom data providers or data blocks.
+In “component integrator” mode, you bypass the Zero-Coder parameter panel and instead write a Python script that constructs a `Configuration` object, selects or implements data providers and output handlers, and invokes the core Data Curator functionality programmatically. This mode assumes you have Python programming experience and a Direct Setup (non-container) environment. Follow these steps to install the component library, create an entry script, and (if needed) implement custom data providers or data blocks.
 
 Install the Data Curator Component Library
 ------------------------------------------
@@ -14,7 +14,7 @@ Use Pip to install the library from PyPI:
 
    pip install --upgrade kaxanuk.data_curator
 
-This command installs `kaxanuk.data_curator` along with all its dependencies (e.g., `openpyxl`, `pandas`, `pyarrow`, `pandas_ta`, etc.). :contentReference[oaicite:0]{index=0}
+This command installs `kaxanuk.data_curator` along with all its dependencies (e.g., `pandas`, `pyarrow`, `httpx`, etc.).
 
 Create an Entry Script
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -22,7 +22,7 @@ Create an Entry Script
 Create a new Python file (e.g., ``run_data_curator.py``) in your project directory. The script must:
 
 - Import the `kaxanuk.data_curator` package.
-- Construct a `Configuration` object (from ``kaxanuk.data_curator.entities``) that mirrors the settings you would normally set in ``parameters_datacurator.xlsx``.
+- Construct a `Configuration` object (from ``kaxanuk.data_curator.entities``) that mirrors the settings you would normally set in ``data_curator_parameters.json``.
 - Instantiate one or more data provider classes (implementing the appropriate interfaces).
 - Instantiate the output handler(s) you wish to use (e.g., CSV or Parquet).
 - Call the `kaxanuk.data_curator.main(...)` function with the assembled arguments.

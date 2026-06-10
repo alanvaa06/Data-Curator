@@ -28,9 +28,7 @@ CONFIG_SUBDIR = 'Config'
 DATA_DIR = sysconfig.get_path('data')
 DEV_TEMPLATES_SUBDIR = 'templates/data_curator'
 ENTRY_SCRIPT_DEFAULT_NAME = '__main__.py'
-JSON_ENTRY_SCRIPT_NAME = 'json_entry_script.py'
 OUTPUT_SUBDIR = 'Output'
-PARAMETERS_EXCEL_FILE = 'data_curator_parameters.xlsx'
 PARAMETERS_JSON_FILE = 'data_curator_parameters.json'
 TEMPLATES_DIR = f'{DATA_DIR}/data_curator'
 
@@ -40,11 +38,9 @@ INIT_DIRS = (
 )
 
 class InitFormats(enum.StrEnum):
-    EXCEL = 'excel'
     JSON = 'json'
 
 class UpdateFormats(enum.StrEnum):
-    EXCEL = 'excel'
     ENTRY_SCRIPT = 'entry_script'
     JSON = 'json'
 
@@ -58,41 +54,6 @@ def cli() -> None:
     """
     Entrypoint required for the click library, body can be empty.
     """
-
-
-@cli.command()
-def autorun() -> None:
-    """
-    Install the required files and directories for the Excel entry script if missing, otherwise run the system.
-    """
-    entry_script_path = pathlib.Path(ENTRY_SCRIPT_DEFAULT_NAME)
-    if not pathlib.Path.exists(entry_script_path):
-        try:
-            _install_excel_files(ENTRY_SCRIPT_DEFAULT_NAME)
-        except NotADirectoryError as error:
-            msg = f"Templates directory not found in {DATA_DIR}. Please uninstall and reinstall this library"
-
-            raise click.ClickException(msg) from error
-        except OSError as error:
-            if error.errno == errno.EACCES:
-                msg = "Unable to access or modify target files"
-            else:
-                msg = f"OS error occurred while copying: {error}"
-
-            raise click.ClickException(msg) from error
-
-        click.echo("Installed all files successfully. Please configure the files in the Config folder and run again")
-    else:
-        try:
-            _run_entry_script(entry_script_path)
-        except subprocess.CalledProcessError as e:
-            msg = "\n".join([
-                "Failure executing the entry script process",
-                f"Process output: {e.stdout}",
-                f"Process errors: {e.stderr}",
-            ])
-
-            raise click.ClickException(msg) from e
 
 
 @cli.command()
@@ -125,38 +86,7 @@ def init(
         The name of the entry script that will be generated
     """
     click.echo(f"Initializing data curator with format: {config_format}")
-    if config_format == InitFormats.EXCEL:
-        config_path = pathlib.Path(CONFIG_SUBDIR)
-        if pathlib.Path.exists(config_path):
-            msg = f"The directory {CONFIG_SUBDIR} already exists. Please run the 'update' command instead"
-
-            raise click.ClickException(msg)
-
-        if not _validate_filename(entry_script):
-            msg = ' '.join([
-                "The entry script file name can only contain alphanumeric characters, hyphens,",
-                "underscores, and periods, and must end in .py"
-            ])
-
-            raise click.ClickException(msg)
-
-        try:
-            _install_excel_files(entry_script)
-        except NotADirectoryError as error:
-            msg = f"Templates directory not found in {DATA_DIR}. Please uninstall and reinstall this library"
-
-            raise click.ClickException(msg) from error
-        except OSError as error:
-            if error.errno == errno.EACCES:
-                msg = "Unable to access or modify target files"
-            else:
-                msg = f"OS error occurred while copying: {error}"
-
-            raise click.ClickException(msg) from error
-
-        click.echo("Installed all files successfully")
-
-    elif config_format == InitFormats.JSON:
+    if config_format == InitFormats.JSON:
         config_path = pathlib.Path(CONFIG_SUBDIR)
         if pathlib.Path.exists(config_path):
             msg = f"The directory {CONFIG_SUBDIR} already exists. Please run the 'update' command instead"
@@ -371,23 +301,6 @@ def update(config_format: str) -> None:
                 ENTRY_SCRIPT_DEFAULT_NAME
             )
             click.echo('Updated entry script')
-        case UpdateFormats.EXCEL:
-            config_path = pathlib.Path(CONFIG_SUBDIR)
-            if not pathlib.Path.is_dir(config_path):
-                msg = f"The {CONFIG_SUBDIR} directory does not exist. Please run the 'init' command instead"
-
-                raise click.ClickException(msg)
-
-            try:
-                _update_excel_files()
-                click.echo("Updated all files successfully")
-            except OSError as error:
-                if error.errno == errno.EACCES:
-                    msg = "Unable to access or modify target files"
-                else:
-                    msg = f"OS error occurred while copying: {error}"
-
-                raise click.ClickException(msg) from error
         case UpdateFormats.JSON:
             config_path = pathlib.Path(CONFIG_SUBDIR)
             if not pathlib.Path.is_dir(config_path):
@@ -405,51 +318,6 @@ def update(config_format: str) -> None:
                     msg = f"OS error occurred while copying: {error}"
 
                 raise click.ClickException(msg) from error
-
-
-def _install_excel_files(entry_script: str) -> None:
-    """
-    Install the directories and files required for the Excel entry script.
-
-    Parameters
-    ----------
-    entry_script
-        The name of the entry script that will be generated
-
-    Raises
-    ------
-    NotADirectoryError
-        The templates directory was not found
-    OSError
-        Usually when there's a file permissions error
-    shutil.Error
-        Shutil failed for some reason
-    """
-    # create the folders
-    for dir_name in INIT_DIRS:
-        try:
-            pathlib.Path.mkdir(
-                pathlib.Path(dir_name)
-            )
-            click.echo(f"Created directory {dir_name}")
-        except FileExistsError:
-            click.echo(f"The directory {dir_name} already exists, omitting the creation")
-
-    actual_templates_dir = _find_templates_dir()
-    # @todo: check if dir has expected files
-
-    if actual_templates_dir is None:
-        raise NotADirectoryError
-
-    shutil.copytree(
-        f'{actual_templates_dir}/{CONFIG_SUBDIR}',
-        CONFIG_SUBDIR,
-        dirs_exist_ok=True,
-    )
-    shutil.copy(
-        f'{actual_templates_dir}/__main__.py',
-        entry_script
-    )
 
 
 def _install_json_files(entry_script: str) -> None:
@@ -485,14 +353,13 @@ def _install_json_files(entry_script: str) -> None:
 
     templates_path = pathlib.Path(actual_templates_dir)
     config_source = templates_path / CONFIG_SUBDIR
-    # copy the shared config files and the JSON parameters file, but not the Excel parameters file
     for name in ('.env', 'custom_calculations.py', PARAMETERS_JSON_FILE):
         source = config_source / name
         if source.is_file():
             shutil.copy(source, pathlib.Path(CONFIG_SUBDIR) / name)
 
     shutil.copy(
-        templates_path / JSON_ENTRY_SCRIPT_NAME,
+        templates_path / ENTRY_SCRIPT_DEFAULT_NAME,
         entry_script,
     )
 
@@ -534,7 +401,7 @@ def _ensure_json_workspace(entry_script: str) -> None:
     entry_path = pathlib.Path(entry_script)
     if not entry_path.exists():
         shutil.copy(
-            templates_path / JSON_ENTRY_SCRIPT_NAME,
+            templates_path / ENTRY_SCRIPT_DEFAULT_NAME,
             entry_path,
         )
         click.echo(f"Created entry script {entry_script}")
@@ -686,31 +553,6 @@ def _update_entry_script(
         source_entry_script_path,
         destination_entry_script_path
     )
-
-
-def _update_excel_files() -> None:
-    """
-    Update the Excel configuration files into the Config subdirectory, renaming any existing file beforehand.
-
-    Raises
-    ------
-    NotADirectoryError
-        The templates directory was not found
-    OSError
-        File permissions or shutil error
-    """
-    actual_templates_dir = _find_templates_dir()
-    if actual_templates_dir is None:
-        raise NotADirectoryError
-
-    actual_templates_path = pathlib.Path(actual_templates_dir)
-    config_path = pathlib.Path(CONFIG_SUBDIR)
-    template_file_path = actual_templates_path / CONFIG_SUBDIR / PARAMETERS_EXCEL_FILE
-
-    local_file = config_path / template_file_path.name
-    if pathlib.Path.exists(local_file):
-        _safe_rename_file(local_file)
-    shutil.copy(template_file_path, local_file)
 
 
 def _update_json_files() -> None:
