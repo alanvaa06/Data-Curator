@@ -122,10 +122,63 @@ class StubMarketDataProvider(DataProviderInterface):
 class RecordingOutputHandler(OutputHandlerInterface):
     def __init__(self):
         self.identifiers = []
+        self._lock = threading.Lock()
 
     def output_data(self, *, main_identifier, columns):
-        self.identifiers.append(main_identifier)
+        with self._lock:
+            self.identifiers.append(main_identifier)
         return True
+
+
+class TestMainParallelCompute:
+    def test_all_identifiers_processed_with_parallel_compute(self):
+        identifiers = ('AAA', 'BBB', 'CCC', 'DDD', 'EEE', 'FFF', 'GGG', 'HHH')
+        handler = RecordingOutputHandler()
+        data_curator.main(
+            configuration=_build_configuration(identifiers),
+            market_data_provider=StubMarketDataProvider(),
+            fundamental_data_provider=None,
+            output_handlers=[handler],
+            max_concurrent_fetches=4,
+            max_concurrent_computations=4,
+        )
+        assert sorted(handler.identifiers) == sorted(identifiers)
+
+    def test_default_keeps_sequential_deterministic_order(self):
+        identifiers = ('AAA', 'BBB', 'CCC', 'DDD')
+        handler = RecordingOutputHandler()
+        data_curator.main(
+            configuration=_build_configuration(identifiers),
+            market_data_provider=StubMarketDataProvider(),
+            fundamental_data_provider=None,
+            output_handlers=[handler],
+            max_concurrent_fetches=4,
+        )
+        assert handler.identifiers == list(identifiers)
+
+    def test_invalid_max_concurrent_computations_rejected(self):
+        for bad in (0, -1, True, 'x', None):
+            with pytest.raises(PassedArgumentError):
+                data_curator.main(
+                    configuration=_build_configuration(('AAA',)),
+                    market_data_provider=StubMarketDataProvider(),
+                    fundamental_data_provider=None,
+                    output_handlers=[RecordingOutputHandler()],
+                    max_concurrent_computations=bad,
+                )
+
+    def test_failed_identifier_skipped_with_parallel_compute(self):
+        identifiers = ('AAA', 'BAD', 'CCC', 'DDD')
+        handler = RecordingOutputHandler()
+        data_curator.main(
+            configuration=_build_configuration(identifiers),
+            market_data_provider=StubMarketDataProvider(fail_identifiers=('BAD',)),
+            fundamental_data_provider=None,
+            output_handlers=[handler],
+            max_concurrent_fetches=2,
+            max_concurrent_computations=2,
+        )
+        assert sorted(handler.identifiers) == ['AAA', 'CCC', 'DDD']
 
 
 class TestMainParallelFetch:

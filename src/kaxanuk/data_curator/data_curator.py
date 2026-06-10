@@ -50,6 +50,7 @@ def main(
     output_handlers: list[OutputHandlerInterface],
     custom_calculation_modules: list[types.ModuleType]|None = None,
     max_concurrent_fetches: int = 8,
+    max_concurrent_computations: int = 1,
     logger_level: int = logging.WARNING,
     logger_format: str = "[%(levelname)s] %(message)s",
     logger_file: str | bytes | os.PathLike | None = None,
@@ -75,6 +76,13 @@ def main(
         Maximum number of identifiers whose data is downloaded concurrently.
         1 reproduces fully sequential fetching. Values above 32 are effectively
         capped by the shared HTTP connection pool size.
+    max_concurrent_computations
+        Maximum number of identifiers whose columns are calculated and output
+        concurrently. 1 (the default) keeps the column calculation and output
+        stage fully sequential, preserving deterministic output handler order.
+        Higher values process each identifier's columns in worker threads;
+        output file contents are unchanged but completion order may vary, so
+        only use with output handlers that are thread-safe across identifiers.
     logger_level
         All logs of priority logger_level or higher will be printed to stderr
     logger_format
@@ -135,6 +143,15 @@ def main(
 
         raise PassedArgumentError(msg)
 
+    if (
+        not isinstance(max_concurrent_computations, int)
+        or isinstance(max_concurrent_computations, bool)
+        or max_concurrent_computations < 1
+    ):
+        msg = "max_concurrent_computations passed to main must be an integer of 1 or more"
+
+        raise PassedArgumentError(msg)
+
     if custom_calculation_modules is None:
         custom_calculation_modules = []
 
@@ -153,6 +170,12 @@ def main(
             max_workers=max_concurrent_fetches,
             thread_name_prefix='data_curator_fetch',
         )
+        compute_executor = None
+        if max_concurrent_computations > 1:
+            compute_executor = concurrent.futures.ThreadPoolExecutor(
+                max_workers=max_concurrent_computations,
+                thread_name_prefix='data_curator_compute',
+            )
         try:
             identifiers = configuration.identifiers
             max_pending_fetches = max_concurrent_fetches * 2
@@ -165,6 +188,10 @@ def main(
                 ]
             ] = collections.deque()
             next_identifier_index = 0
+            pending_computes: collections.deque[
+                concurrent.futures.Future[None]
+            ] = collections.deque()
+            max_pending_computes = max_concurrent_computations * 2
 
             while pending_fetches or next_identifier_index < len(identifiers):
                 # keep up to max_pending_fetches downloads in flight, ahead of consumption
@@ -232,26 +259,37 @@ def main(
 
                     continue
 
-                column_builder = ColumnBuilder(
-                    calculation_modules=calculation_modules,
-                    configuration=configuration,
-                    dividend_data=full_dividend_data,
-                    fundamental_data=full_fundamental_data,
-                    market_data=full_market_data,
-                    split_data=full_split_data,
-                )
-                output_columns = column_builder.process_columns(configuration.columns)
-
-                for output_handler in output_handlers:
-                    output_handler.output_data(
+                if compute_executor is None:
+                    _compute_and_output_identifier(
                         main_identifier=main_identifier,
-                        columns=output_columns
+                        configuration=configuration,
+                        calculation_modules=calculation_modules,
+                        output_handlers=output_handlers,
+                        market_data=full_market_data,
+                        fundamental_data=full_fundamental_data,
+                        dividend_data=full_dividend_data,
+                        split_data=full_split_data,
+                    )
+                else:
+                    # bound the compute queue so fetches don't outrun computation unbounded
+                    while len(pending_computes) >= max_pending_computes:
+                        pending_computes.popleft().result()
+                    pending_computes.append(
+                        compute_executor.submit(
+                            _compute_and_output_identifier,
+                            main_identifier=main_identifier,
+                            configuration=configuration,
+                            calculation_modules=calculation_modules,
+                            output_handlers=output_handlers,
+                            market_data=full_market_data,
+                            fundamental_data=full_fundamental_data,
+                            dividend_data=full_dividend_data,
+                            split_data=full_split_data,
+                        )
                     )
 
-                logging.getLogger(__name__).info(
-                    "Output processed for: %s",
-                    main_identifier
-                )
+            while pending_computes:
+                pending_computes.popleft().result()
         except (
             ApiEndpointError,
             ColumnBuilderCircularDependenciesError,
@@ -266,6 +304,8 @@ def main(
             return
         finally:
             executor.shutdown(wait=True, cancel_futures=True)
+            if compute_executor is not None:
+                compute_executor.shutdown(wait=True, cancel_futures=True)
     except (
         ApiEndpointError,
         ColumnBuilderCircularDependenciesError,
@@ -275,6 +315,46 @@ def main(
         logging.getLogger(__name__).critical(str(error))
     else:
         logging.getLogger(__name__).info("Finished processing data!")
+
+
+def _compute_and_output_identifier(
+    *,
+    main_identifier: str,
+    configuration: Configuration,
+    calculation_modules: list[types.ModuleType],
+    output_handlers: list[OutputHandlerInterface],
+    market_data: MarketData,
+    fundamental_data: FundamentalData,
+    dividend_data: DividendData,
+    split_data: SplitData,
+) -> None:
+    """
+    Calculate the output columns for one identifier and pass them to the output handlers.
+
+    Safe to run concurrently for different identifiers, as each ColumnBuilder is
+    independent; output handlers must tolerate concurrent calls for different
+    identifiers when used with max_concurrent_computations > 1.
+    """
+    column_builder = ColumnBuilder(
+        calculation_modules=calculation_modules,
+        configuration=configuration,
+        dividend_data=dividend_data,
+        fundamental_data=fundamental_data,
+        market_data=market_data,
+        split_data=split_data,
+    )
+    output_columns = column_builder.process_columns(configuration.columns)
+
+    for output_handler in output_handlers:
+        output_handler.output_data(
+            main_identifier=main_identifier,
+            columns=output_columns
+        )
+
+    logging.getLogger(__name__).info(
+        "Output processed for: %s",
+        main_identifier
+    )
 
 
 def _fetch_identifier_data(

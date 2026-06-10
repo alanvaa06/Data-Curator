@@ -29,3 +29,30 @@ Interpretation:
   worth far more, and it also reduces handshake-related transient failures.
 - Real-world WAN latency is typically higher than the simulated 75 ms, which
   increases the absolute time saved proportionally.
+
+## Addendum (2026-06-10): compute-stage threading experiment
+
+Tested `max_concurrent_computations` (threaded per-identifier column calculation +
+output) after observing that the sequential compute stage, not fetching, bounds
+wall-clock once the prefetch pipeline is warm (24 tickers, 8 fetch workers: ~2.3s
+total of which ~1.1s is compute at zero latency).
+
+| Columns | compute=1 | compute=4 | Verdict |
+|---------|-----------|-----------|---------|
+| 6 market columns | 2.62 s | 2.68 s | no gain |
+| +18 heavy calculations (volatility/SMA/EMA/MACD/RSI/CMF) | 3.24 s | 3.27 s | no gain |
+
+Interpretation: the compute stage is GIL-bound. Profiling (12 tickers, zero
+latency) shows the time goes to per-row entity assembly — ~610k `isinstance` and
+~480k `getattr` calls in `data_blocks`/`entities`/`DataColumn` — pure-Python call
+overhead that threads cannot parallelize on a standard (GIL) CPython build.
+`max_concurrent_computations` is kept (default 1 = unchanged behavior): it becomes
+useful on free-threaded CPython builds and harms nothing otherwise.
+
+Real-run reference: a production S&P 500 run (499 tickers, full FMP data, 201
+columns) measured from output file timestamps took 392 s ≈ 0.79 s/ticker, of which
+fetch accounts for roughly 0.15 s/ticker at 8 workers — confirming compute as the
+dominant cost in production.
+
+Next real lever (out of scope here): vectorize entity assembly / column packing to
+eliminate the per-row Python call storms, or process-based compute parallelism.
