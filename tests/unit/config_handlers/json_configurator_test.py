@@ -8,6 +8,11 @@ from kaxanuk.data_curator import __parameters_format_version__
 from kaxanuk.data_curator.config_handlers.json_configurator import JsonConfigurator
 from kaxanuk.data_curator.data_providers import DataProviderInterface
 from kaxanuk.data_curator.entities import Configuration
+from kaxanuk.data_curator.exceptions import (
+    ConfigurationError,
+    ConfigurationHandlerError,
+    DataCuratorError,
+)
 
 
 class FakeProvider(DataProviderInterface):
@@ -98,7 +103,7 @@ def test_getters_return_selected_dependencies(tmp_path):
     assert configurator.get_logger_level() == logging.INFO
 
 
-def test_missing_file_exits(tmp_path):
+def test_missing_file_raises(tmp_path):
     def make():
         return JsonConfigurator(
             file_path=str(tmp_path / 'nope.json'),
@@ -106,12 +111,11 @@ def test_missing_file_exits(tmp_path):
             output_handlers=handlers(),
         )
 
-    with pytest.raises(SystemExit) as excinfo:
+    with pytest.raises(ConfigurationHandlerError, match='not found'):
         make()
-    assert excinfo.value.code == 1
 
 
-def test_missing_api_key_exits_with_clear_error(tmp_path, capsys):
+def test_missing_api_key_raises_with_clear_error(tmp_path, capsys):
     from kaxanuk.data_curator.exceptions import DataProviderMissingKeyError
 
     class KeyDemandingProvider(FakeProvider):
@@ -121,21 +125,20 @@ def test_missing_api_key_exits_with_clear_error(tmp_path, capsys):
             super().__init__(api_key)
 
     path = write_config(tmp_path, valid_config_dict())
-    with pytest.raises(SystemExit) as excinfo:
+    with pytest.raises(DataCuratorError):
         JsonConfigurator(
             file_path=path,
             data_providers={'financial_modeling_prep': {'class': KeyDemandingProvider, 'api_key': None}},
             output_handlers=handlers(),
         )
-    assert excinfo.value.code == 1
     captured = capsys.readouterr()
     assert 'API key' in captured.err + captured.out
 
 
-def test_invalid_json_exits(tmp_path):
+def test_invalid_json_raises(tmp_path):
     path = tmp_path / 'data_curator_parameters.json'
     path.write_text('{not valid json', encoding='utf-8')
-    with pytest.raises(SystemExit):
+    with pytest.raises(ConfigurationHandlerError, match='Invalid JSON'):
         JsonConfigurator(
             file_path=str(path),
             data_providers=providers(),
@@ -143,43 +146,43 @@ def test_invalid_json_exits(tmp_path):
         )
 
 
-def test_missing_general_key_exits(tmp_path):
+def test_missing_general_key_raises(tmp_path):
     data = valid_config_dict()
     del data['general']['period']
-    with pytest.raises(SystemExit):
+    with pytest.raises(ConfigurationHandlerError, match='period'):
         build(tmp_path, data)()
 
 
-def test_stale_format_version_exits(tmp_path):
+def test_stale_format_version_raises(tmp_path):
     data = valid_config_dict()
     data['parameters_format_version'] = '0.0.1'
-    with pytest.raises(SystemExit):
+    with pytest.raises(DataCuratorError):
         build(tmp_path, data)()
 
 
-def test_unknown_market_provider_exits(tmp_path):
+def test_unknown_market_provider_raises(tmp_path):
     data = valid_config_dict()
     data['general']['market_data_provider'] = 'made_up'
-    with pytest.raises(SystemExit):
+    with pytest.raises(DataCuratorError):
         build(tmp_path, data)()
 
 
-def test_invalid_logger_level_exits(tmp_path):
+def test_invalid_logger_level_raises(tmp_path):
     data = valid_config_dict()
     data['general']['logger_level'] = 'verbose'
-    with pytest.raises(SystemExit):
+    with pytest.raises(DataCuratorError):
         build(tmp_path, data)()
 
 
-def test_invalid_date_exits(tmp_path):
+def test_invalid_date_raises(tmp_path):
     data = valid_config_dict()
     data['general']['start_date'] = '01/01/1990'
-    with pytest.raises(SystemExit):
+    with pytest.raises(ConfigurationError, match='start_date'):
         build(tmp_path, data)()
 
 
-def test_bad_column_prefix_exits(tmp_path):
+def test_bad_column_prefix_raises(tmp_path):
     data = valid_config_dict()
     data['columns'] = ['not_a_valid_column']
-    with pytest.raises(SystemExit):
+    with pytest.raises(DataCuratorError):
         build(tmp_path, data)()

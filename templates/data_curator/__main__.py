@@ -46,34 +46,38 @@ def run():
             output_base_dir = configured_dir.strip()
     except (OSError, json.JSONDecodeError):
         pass  # missing/invalid file is reported properly by the configurator below
-    configurator = kaxanuk.data_curator.config_handlers.JsonConfigurator(
-        file_path=parameters_json_file,
-        data_providers={
-            'financial_modeling_prep': {
-                'class': kaxanuk.data_curator.data_providers.FinancialModelingPrep,
-                'api_key': os.getenv('KNDC_API_KEY_FMP'),   # set this up in the Config/.env file
+    try:
+        configurator = kaxanuk.data_curator.config_handlers.JsonConfigurator(
+            file_path=parameters_json_file,
+            data_providers={
+                'financial_modeling_prep': {
+                    'class': kaxanuk.data_curator.data_providers.FinancialModelingPrep,
+                    'api_key': os.getenv('KNDC_API_KEY_FMP'),   # set this up in the Config/.env file
+                },
+                'lseg_workspace': {
+                    'class': kaxanuk.data_curator.data_providers.LsegWorkspace,
+                    'api_key': os.getenv('KNDC_API_KEY_LSEG'),  # set this up in the Config/.env file
+                },
+                'yahoo_finance': {
+                    'class': kaxanuk.data_curator.load_data_provider_extension(
+                        extension_name='yahoo_finance',
+                        extension_class_name='YahooFinance',
+                    ),
+                    'api_key': None     # this provider doesn't use API key
+                },
             },
-            'lseg_workspace': {
-                'class': kaxanuk.data_curator.data_providers.LsegWorkspace,
-                'api_key': os.getenv('KNDC_API_KEY_LSEG'),  # set this up in the Config/.env file
-            },
-            'yahoo_finance': {
-                'class': kaxanuk.data_curator.load_data_provider_extension(
-                    extension_name='yahoo_finance',
-                    extension_class_name='YahooFinance',
+            output_handlers={
+                'csv': kaxanuk.data_curator.output_handlers.CsvOutput(
+                    output_base_dir=output_base_dir,
                 ),
-                'api_key': None     # this provider doesn't use API key
+                'parquet': kaxanuk.data_curator.output_handlers.ParquetOutput(
+                    output_base_dir=output_base_dir,
+                ),
             },
-        },
-        output_handlers={
-            'csv': kaxanuk.data_curator.output_handlers.CsvOutput(
-                output_base_dir=output_base_dir,
-            ),
-            'parquet': kaxanuk.data_curator.output_handlers.ParquetOutput(
-                output_base_dir=output_base_dir,
-            ),
-        },
-    )
+        )
+    except kaxanuk.data_curator.exceptions.DataCuratorError:
+        # the configurator already logged the error details
+        return False
 
     # Run this puppy! Returns False when a fatal error aborted the run.
     return kaxanuk.data_curator.main(

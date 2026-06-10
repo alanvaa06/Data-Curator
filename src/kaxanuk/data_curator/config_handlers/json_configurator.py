@@ -6,7 +6,6 @@ import datetime
 import json
 import logging
 import pathlib
-import sys
 import typing
 
 from kaxanuk.data_curator.config_handlers import _resolver
@@ -51,6 +50,13 @@ class JsonConfigurator(ConfiguratorInterface):
             All the output handlers options that the configuration file will choose from
         logger_format
             The format for the logger messages. will be injected to logging.Formatter()
+
+        Raises
+        ------
+        ConfigurationError
+            A configuration value is invalid
+        ConfigurationHandlerError
+            The configuration file is missing, malformed, or doesn't match the expected format
         """
         logger = logging.getLogger(__name__)
         logger.setLevel(logging.INFO)
@@ -110,7 +116,9 @@ class JsonConfigurator(ConfiguratorInterface):
         ) as error:
             msg = f"An error was encountered when parsing your configuration file: {error!s}"
             logging.getLogger(__name__).critical(msg)
-            sys.exit(1)
+            logger.handlers.clear()
+
+            raise
 
     def get_configuration(self) -> Configuration:
         return self._configuration
