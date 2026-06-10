@@ -304,6 +304,68 @@ class TestRunEndpoints:
             server.shutdown()
 
 
+class TestRunOutputRedaction:
+    def test_api_keys_redacted_from_captured_output(self, tmp_path):
+        config_editor.reset_run_state()
+        script = tmp_path / 'entry.py'
+        script.write_text(
+            "print('GET https://api.example.com/data?apikey=SuperSecret123&symbol=AAPL ok')\n"
+            "print('apiKey=AnotherSecret456 also')\n",
+            encoding='utf-8',
+        )
+        assert config_editor.start_pipeline_run(script) is True
+        status = _wait_for_run_completion()
+        assert 'SuperSecret123' not in status['output']
+        assert 'AnotherSecret456' not in status['output']
+        assert 'apikey=***' in status['output']
+        assert 'symbol=AAPL' in status['output']
+
+
+class TestRunProgress:
+    def test_count_files_modified_since(self, tmp_path):
+        import time as time_module
+        (tmp_path / 'old.csv').write_text('x', encoding='utf-8')
+        cutoff = time_module.time() + 10
+        assert config_editor._count_files_modified_since(tmp_path, cutoff) == 0
+        assert config_editor._count_files_modified_since(tmp_path / 'missing', 0) == 0
+        assert config_editor._count_files_modified_since(tmp_path, 0) == 1
+
+    def test_status_reports_progress_and_elapsed(self, tmp_path):
+        import json as json_module
+        config_editor.reset_run_state()
+        config_path = tmp_path / 'cfg.json'
+        config = config_editor.build_default_config()
+        config['identifiers'] = ['AAA', 'BBB']
+        config_path.write_text(json_module.dumps(config), encoding='utf-8')
+        output_dir = tmp_path / 'Output'
+        script = tmp_path / 'entry.py'
+        script.write_text(
+            "import pathlib, time\n"
+            "out = pathlib.Path(r'" + str(output_dir) + "')\n"
+            "out.mkdir(exist_ok=True)\n"
+            "(out / 'AAA.csv').write_text('a')\n"
+            "(out / 'BBB.csv').write_text('b')\n"
+            "print('done')\n",
+            encoding='utf-8',
+        )
+        assert config_editor.start_pipeline_run(
+            script,
+            config_path=config_path,
+            output_dir=output_dir,
+        ) is True
+        status = _wait_for_run_completion()
+        assert status['state'] == 'done'
+        assert status['progress'] == {'done': 2, 'total': 2}
+        assert status['elapsed'] >= 0
+
+    def test_idle_status_has_no_progress(self):
+        config_editor.reset_run_state()
+        status = config_editor.get_run_status()
+        assert status['state'] == 'idle'
+        assert status['progress'] is None
+        assert status['elapsed'] is None
+
+
 class TestRunManager:
     def test_run_executes_script_and_captures_output(self, tmp_path):
         config_editor.reset_run_state()
