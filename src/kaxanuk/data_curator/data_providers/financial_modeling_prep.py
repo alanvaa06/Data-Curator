@@ -1,6 +1,7 @@
 import datetime
 import enum
 import logging
+import threading
 import typing
 
 import pyarrow
@@ -75,6 +76,7 @@ class FinancialModelingPrep(
         STOCK_SPLIT = 'https://financialmodelingprep.com/stable/splits'
 
     _is_paid_account_plan = None
+    _account_plan_lock: typing.ClassVar[threading.Lock] = threading.Lock()
 
     _dividend_data_endpoint_map: typing.Final[EndpointFieldMap] = {
         Endpoints.STOCK_DIVIDEND: {
@@ -374,42 +376,15 @@ class FinancialModelingPrep(
         ------
         ConnectionError
         """
-        if self._get_paid_account_status() is False:
-            max_records_download_limit = self.MAX_FREE_ACCOUNT_RECORDS_DOWNLOAD_LIMIT
-        else:
-            max_records_download_limit = self.MAX_RECORDS_DOWNLOAD_LIMIT
-
-        endpoint_id = self.Endpoints.STOCK_DIVIDEND.name
-
-        try:
-            # Attempt to download the data, possibly with a paid account download limit
-            dividend_raw_data = self._request_data(
-                endpoint_id,
-                self.Endpoints.STOCK_DIVIDEND,
-                main_identifier,
-                {
-                    'apikey': self.api_key,
-                    'limit': max_records_download_limit,
-                    'symbol': main_identifier,
-                }
-            )
-        except DataProviderPaymentError as error:
-            if self._get_paid_account_status() is None:
-                # Attempt to download the data with a free account download limit
-                dividend_raw_data = self._request_data(
-                    endpoint_id,
-                    self.Endpoints.STOCK_DIVIDEND,
-                    main_identifier,
-                    {
-                        'apikey': self.api_key,
-                        'limit': self.MAX_FREE_ACCOUNT_RECORDS_DOWNLOAD_LIMIT,
-                        'symbol': main_identifier,
-                    }
-                )
-                # If the download actually completed this time, looks like we're using a free account
-                self._set_paid_account_status(is_paid_account_plan=False)
-            else:
-                raise error
+        dividend_raw_data = self._request_data_with_account_plan_fallback(
+            self.Endpoints.STOCK_DIVIDEND.name,
+            self.Endpoints.STOCK_DIVIDEND,
+            main_identifier,
+            {
+                'apikey': self.api_key,
+                'symbol': main_identifier,
+            }
+        )
 
         endpoint_tables = DataProviderToolkit.create_endpoint_tables_from_json_mapping({
             self.Endpoints.STOCK_DIVIDEND:
@@ -488,45 +463,22 @@ class FinancialModelingPrep(
         ConnectionError
 
         """
+        fundamental_income_raw_data = self._request_data_with_account_plan_fallback(
+            self.Endpoints.INCOME_STATEMENT.name,
+            self.Endpoints.INCOME_STATEMENT,
+            main_identifier,
+            {
+                'apikey': self.api_key,
+                'period': self._periods[period],
+                'symbol': main_identifier,
+            }
+        )
+
+        # recompute after the income request possibly downgraded the plan status
         if self._get_paid_account_status() is False:
             max_records_download_limit = self.MAX_FREE_ACCOUNT_RECORDS_DOWNLOAD_LIMIT
         else:
             max_records_download_limit = self.MAX_RECORDS_DOWNLOAD_LIMIT
-
-        income_endpoint_id = self.Endpoints.INCOME_STATEMENT.name
-
-        try:
-            # Attempt to download the data, possibly with a paid account download limit
-            fundamental_income_raw_data = self._request_data(
-                income_endpoint_id,
-                self.Endpoints.INCOME_STATEMENT,
-                main_identifier,
-                {
-                    'apikey': self.api_key,
-                    'limit': max_records_download_limit,
-                    'period': self._periods[period],
-                    'symbol': main_identifier,
-                }
-            )
-        except DataProviderPaymentError as error:
-            if self._get_paid_account_status() is None:
-                # Attempt to download the data with a free account download limit
-                fundamental_income_raw_data = self._request_data(
-                    income_endpoint_id,
-                    self.Endpoints.INCOME_STATEMENT,
-                    main_identifier,
-                    {
-                        'apikey': self.api_key,
-                        'limit': self.MAX_FREE_ACCOUNT_RECORDS_DOWNLOAD_LIMIT,
-                        'period': self._periods[period],
-                        'symbol': main_identifier,
-                    }
-                )
-                # If the download actually completed this time, looks like we're using a free account
-                self._set_paid_account_status(is_paid_account_plan=False)
-                max_records_download_limit = self.MAX_FREE_ACCOUNT_RECORDS_DOWNLOAD_LIMIT
-            else:
-                raise error
 
         balance_endpoint_id = self.Endpoints.BALANCE_SHEET_STATEMENT.name
         fundamental_balance_sheet_raw_data = self._request_data(
@@ -920,42 +872,15 @@ class FinancialModelingPrep(
         ------
         ConnectionError
         """
-        if self._get_paid_account_status() is False:
-            max_records_download_limit = self.MAX_FREE_ACCOUNT_RECORDS_DOWNLOAD_LIMIT
-        else:
-            max_records_download_limit = self.MAX_RECORDS_DOWNLOAD_LIMIT
-
-        endpoint_id = self.Endpoints.STOCK_SPLIT.name
-
-        try:
-            # Attempt to download the data, possibly with a paid account download limit
-            split_raw_data = self._request_data(
-                endpoint_id,
-                self.Endpoints.STOCK_SPLIT,
-                main_identifier,
-                {
-                    'apikey': self.api_key,
-                    'limit': max_records_download_limit,
-                    'symbol': main_identifier,
-                }
-            )
-        except DataProviderPaymentError as error:
-            if self._get_paid_account_status() is None:
-                # Attempt to download the data with a free account download limit
-                split_raw_data = self._request_data(
-                    endpoint_id,
-                    self.Endpoints.STOCK_SPLIT,
-                    main_identifier,
-                    {
-                        'apikey': self.api_key,
-                        'limit': self.MAX_FREE_ACCOUNT_RECORDS_DOWNLOAD_LIMIT,
-                        'symbol': main_identifier,
-                    }
-                )
-                # If the download actually completed this time, looks like we're using a free account
-                self._set_paid_account_status(is_paid_account_plan=False)
-            else:
-                raise error
+        split_raw_data = self._request_data_with_account_plan_fallback(
+            self.Endpoints.STOCK_SPLIT.name,
+            self.Endpoints.STOCK_SPLIT,
+            main_identifier,
+            {
+                'apikey': self.api_key,
+                'symbol': main_identifier,
+            }
+        )
 
         endpoint_tables = DataProviderToolkit.create_endpoint_tables_from_json_mapping({
             self.Endpoints.STOCK_SPLIT:
@@ -1042,6 +967,88 @@ class FinancialModelingPrep(
         # @todo: throw exception for connection errors unrelated to api key
 
         return test_data is not None
+
+    def _request_data_with_account_plan_fallback(
+        self,
+        endpoint_id: str,
+        endpoint_url: str,
+        main_identifier: str,
+        params_without_limit: dict[str, str],
+    ) -> str | None:
+        """
+        Request endpoint data using the account plan's download limit, downgrading the plan status on HTTP 402.
+
+        Thread-safe: when multiple fetch workers hit the payment-required fallback
+        concurrently, the plan status is probed and downgraded exactly once, and the
+        losers of the race retry with the free account limit instead of spuriously
+        failing their identifiers.
+
+        Parameters
+        ----------
+        endpoint_id
+            the internal name of the endpoint, for error logging purposes
+        endpoint_url
+            the base URL of the endpoint
+        main_identifier
+            The security's main identifier (ticker, etc.) used by the data provider
+        params_without_limit
+            the query parameters, excluding the 'limit' parameter handled here
+
+        Returns
+        -------
+        The raw data from the webservice endpoint, or None on error
+
+        Raises
+        ------
+        DataProviderPaymentError
+            When the request fails with HTTP 402 even at the free account limit
+        """
+        if self._get_paid_account_status() is False:
+            max_records_download_limit = self.MAX_FREE_ACCOUNT_RECORDS_DOWNLOAD_LIMIT
+        else:
+            max_records_download_limit = self.MAX_RECORDS_DOWNLOAD_LIMIT
+
+        try:
+            # Attempt to download the data, possibly with a paid account download limit
+            return self._request_data(
+                endpoint_id,
+                endpoint_url,
+                main_identifier,
+                {
+                    **params_without_limit,
+                    'limit': max_records_download_limit,
+                }
+            )
+        except DataProviderPaymentError:
+            with FinancialModelingPrep._account_plan_lock:
+                request_used_paid_limit = (
+                    max_records_download_limit == self.MAX_RECORDS_DOWNLOAD_LIMIT
+                )
+                if (
+                    self._get_paid_account_status() is None
+                    or (
+                        # another worker downgraded the plan while our request was in flight
+                        self._get_paid_account_status() is False
+                        and request_used_paid_limit
+                    )
+                ):
+                    # Attempt to download the data with a free account download limit
+                    response = self._request_data(
+                        endpoint_id,
+                        endpoint_url,
+                        main_identifier,
+                        {
+                            **params_without_limit,
+                            'limit': self.MAX_FREE_ACCOUNT_RECORDS_DOWNLOAD_LIMIT,
+                        }
+                    )
+                    # If the download actually completed this time, looks like we're using a free account
+                    if self._get_paid_account_status() is None:
+                        self._set_paid_account_status(is_paid_account_plan=False)
+
+                    return response
+                else:
+                    raise
 
     @classmethod
     def _get_paid_account_status(

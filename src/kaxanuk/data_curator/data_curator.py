@@ -73,7 +73,8 @@ def main(
         searched in kaxanuk.data_curator.features.calculations
     max_concurrent_fetches
         Maximum number of identifiers whose data is downloaded concurrently.
-        1 reproduces fully sequential fetching.
+        1 reproduces fully sequential fetching. Values above 32 are effectively
+        capped by the shared HTTP connection pool size.
     logger_level
         All logs of priority logger_level or higher will be printed to stderr
     logger_format
@@ -156,7 +157,12 @@ def main(
             identifiers = configuration.identifiers
             max_pending_fetches = max_concurrent_fetches * 2
             pending_fetches: collections.deque[
-                tuple[str, concurrent.futures.Future]
+                tuple[
+                    str,
+                    concurrent.futures.Future[
+                        tuple[MarketData, FundamentalData, DividendData, SplitData]
+                    ],
+                ]
             ] = collections.deque()
             next_identifier_index = 0
 
@@ -246,6 +252,18 @@ def main(
                     "Output processed for: %s",
                     main_identifier
                 )
+        except (
+            ApiEndpointError,
+            ColumnBuilderCircularDependenciesError,
+            ColumnBuilderCustomFunctionNotFoundError,
+            ColumnBuilderUnavailableEntityFieldError,
+        ) as error:
+            # logged before the executor drain in the finally block, so the
+            # failure is visible immediately instead of after in-flight
+            # downloads finish
+            logging.getLogger(__name__).critical(str(error))
+
+            return
         finally:
             executor.shutdown(wait=True, cancel_futures=True)
     except (

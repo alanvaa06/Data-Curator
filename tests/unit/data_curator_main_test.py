@@ -17,6 +17,7 @@ from kaxanuk.data_curator.entities import (
 )
 from kaxanuk.data_curator.exceptions import (
     ApiEndpointError,
+    DataProviderPaymentError,
     IdentifierNotFoundError,
     PassedArgumentError,
 )
@@ -70,12 +71,24 @@ def _build_configuration(identifiers):
 
 
 class StubMarketDataProvider(DataProviderInterface):
-    def __init__(self, *, fail_identifiers=(), fatal_identifiers=(), barrier=None):
+    def __init__(
+        self,
+        *,
+        fail_identifiers=(),
+        fatal_identifiers=(),
+        payment_fail_identifiers=(),
+        barrier=None,
+        fetch_started_hook=None,
+    ):
         self.fail_identifiers = set(fail_identifiers)
         self.fatal_identifiers = set(fatal_identifiers)
+        self.payment_fail_identifiers = set(payment_fail_identifiers)
         self.barrier = barrier
+        self.fetch_started_hook = fetch_started_hook
 
     def get_market_data(self, *, main_identifier, start_date, end_date):
+        if self.fetch_started_hook is not None:
+            self.fetch_started_hook(main_identifier)
         if self.barrier is not None:
             # only passes if at least 2 fetches run concurrently
             self.barrier.wait(timeout=10)
@@ -85,6 +98,9 @@ class StubMarketDataProvider(DataProviderInterface):
         if main_identifier in self.fatal_identifiers:
             msg = f"{main_identifier} endpoint exploded"
             raise ApiEndpointError(msg)
+        if main_identifier in self.payment_fail_identifiers:
+            msg = f"{main_identifier} requires payment"
+            raise DataProviderPaymentError(msg)
         return _build_market_data(main_identifier, start_date, end_date)
 
     def get_dividend_data(self, *, main_identifier, start_date, end_date):
@@ -183,6 +199,67 @@ class TestMainParallelFetch:
             max_concurrent_fetches=2,
         )
         assert handler.identifiers == ['AAA']
+
+    def test_output_order_preserved_when_first_identifier_finishes_last(self):
+        identifiers = ('AAA', 'BBB', 'CCC', 'DDD', 'EEE', 'FFF')
+        release_first = threading.Event()
+
+        def fetch_started_hook(main_identifier):
+            if main_identifier == 'AAA':
+                # block the first identifier until the last one has started fetching
+                released = release_first.wait(timeout=10)
+                if not released:
+                    msg = 'AAA was never released, fetches are not concurrent'
+                    raise RuntimeError(msg)
+            elif main_identifier == 'FFF':
+                release_first.set()
+
+        handler = RecordingOutputHandler()
+        data_curator.main(
+            configuration=_build_configuration(identifiers),
+            market_data_provider=StubMarketDataProvider(fetch_started_hook=fetch_started_hook),
+            fundamental_data_provider=None,
+            output_handlers=[handler],
+            max_concurrent_fetches=6,
+        )
+        assert handler.identifiers == list(identifiers)
+
+    def test_window_refills_and_prefetch_is_bounded(self):
+        identifiers = tuple(f'TK{i}' for i in range(10))
+        handler = RecordingOutputHandler()
+        outputs_seen_when_window_refilled = []
+
+        def fetch_started_hook(main_identifier):
+            if main_identifier == 'TK4':
+                # workers=2 gives a window of 4, so the 5th identifier can only be
+                # submitted after the first consumed identifier produced output
+                outputs_seen_when_window_refilled.append(list(handler.identifiers))
+
+        data_curator.main(
+            configuration=_build_configuration(identifiers),
+            market_data_provider=StubMarketDataProvider(fetch_started_hook=fetch_started_hook),
+            fundamental_data_provider=None,
+            output_handlers=[handler],
+            max_concurrent_fetches=2,
+        )
+        assert handler.identifiers == list(identifiers)
+        # the 5th identifier's fetch must start only after at least the first
+        # identifier was consumed and output (bounded prefetch, refilled window)
+        assert len(outputs_seen_when_window_refilled) == 1
+        assert len(outputs_seen_when_window_refilled[0]) >= 1
+        assert outputs_seen_when_window_refilled[0][0] == 'TK0'
+
+    def test_payment_error_identifier_skipped_others_processed(self):
+        identifiers = ('AAA', 'BAD', 'CCC')
+        handler = RecordingOutputHandler()
+        data_curator.main(
+            configuration=_build_configuration(identifiers),
+            market_data_provider=StubMarketDataProvider(payment_fail_identifiers=('BAD',)),
+            fundamental_data_provider=None,
+            output_handlers=[handler],
+            max_concurrent_fetches=2,
+        )
+        assert handler.identifiers == ['AAA', 'CCC']
 
     @pytest.mark.parametrize('bad_value', [0, -1, 1.5, True])
     def test_invalid_max_concurrent_fetches_rejected(self, bad_value):
