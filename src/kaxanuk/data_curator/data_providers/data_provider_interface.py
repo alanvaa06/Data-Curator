@@ -353,11 +353,12 @@ class DataProviderInterface(metaclass=abc.ABCMeta):
             with DataProviderInterface._http_client_lock:
                 if DataProviderInterface._http_client is None:
                     DataProviderInterface._http_client = httpx.Client(
-                        verify=cls._load_ssl_context(),
-                        timeout=httpx.Timeout(cls._HTTP_TIMEOUT_SECONDS),
+                        follow_redirects=True,  # urllib followed redirects transparently, keep parity
+                        verify=DataProviderInterface._load_ssl_context(),
+                        timeout=httpx.Timeout(DataProviderInterface._HTTP_TIMEOUT_SECONDS),
                         limits=httpx.Limits(
-                            max_connections=cls._HTTP_MAX_CONNECTIONS,
-                            max_keepalive_connections=cls._HTTP_MAX_KEEPALIVE_CONNECTIONS,
+                            max_connections=DataProviderInterface._HTTP_MAX_CONNECTIONS,
+                            max_keepalive_connections=DataProviderInterface._HTTP_MAX_KEEPALIVE_CONNECTIONS,
                         ),
                     )
 
@@ -435,12 +436,12 @@ class DataProviderInterface(metaclass=abc.ABCMeta):
         )
         attempt_number = 0
         response = None
-        client = cls._get_http_client()
 
         while attempt_number < cls._MAX_CONNECTION_RETRIES:
             attempt_number += 1
             try:
-                http_response = client.get(url)
+                # fetched per attempt so a concurrently closed client gets recreated
+                http_response = cls._get_http_client().get(url)
             except httpx.HTTPError as error:
                 cls._raise_or_wait_before_retry(
                     endpoint_id=endpoint_id,
@@ -455,7 +456,7 @@ class DataProviderInterface(metaclass=abc.ABCMeta):
             if status_code == http.HTTPStatus.PAYMENT_REQUIRED.value:
                 detailed_error_message = http_response.text
                 if len(detailed_error_message) < 1:
-                    detailed_error_message = f"HTTP code {status_code}"
+                    detailed_error_message = f"HTTP Error {status_code}: {http_response.reason_phrase}"
 
                 raise DataProviderPaymentError(detailed_error_message)
             elif (
@@ -488,6 +489,14 @@ class DataProviderInterface(metaclass=abc.ABCMeta):
                     error_description=f"HTTP code {status_code}",
                     cause=None,
                 )
+            elif not http_response.is_success:
+                # 1xx or residual 3xx; urllib raised HTTPError for these, so keep failing fast
+                msg = " ".join([
+                    f"Data provider server error accessing endpoint {endpoint_id},",
+                    f"returned unexpected HTTP code {status_code}",
+                ])
+
+                raise ApiEndpointError(msg)
             else:
                 response = http_response.text
                 if response:
@@ -523,7 +532,7 @@ class DataProviderInterface(metaclass=abc.ABCMeta):
         ApiEndpointError
             When the maximum number of request attempts has been reached
         """
-        if attempt_number >= (cls._MAX_CONNECTION_RETRIES - 1):  # last attempt
+        if attempt_number == (cls._MAX_CONNECTION_RETRIES - 1):  # last attempt, kept identical to urllib-era logic
             msg = " ".join([
                 f"Data provider server error accessing endpoint {endpoint_id}",
                 (

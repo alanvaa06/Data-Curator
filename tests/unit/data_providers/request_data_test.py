@@ -1,3 +1,5 @@
+import concurrent.futures
+
 import httpx
 import pytest
 
@@ -73,10 +75,38 @@ class TestRequestData:
 
     def test_transport_errors_retried_then_raise(self, monkeypatch):
         monkeypatch.setattr(DataProviderInterface, '_REQUEST_RETRY_TIME', 0)
+        calls = []
 
         def handler(request):
+            calls.append(request)
             error_message = 'connection refused'
             raise httpx.ConnectError(error_message, request=request)
+
+        _install_mock_client(handler)
+        with pytest.raises(ApiEndpointError):
+            DataProviderInterface._request_data(
+                'TEST_ENDPOINT', 'https://example.com/endpoint', 'AAPL', {},
+            )
+        assert len(calls) == DataProviderInterface._MAX_CONNECTION_RETRIES - 1
+
+    def test_empty_success_bodies_return_empty_without_raising(self):
+        calls = []
+
+        def handler(request):
+            calls.append(request)
+            return httpx.Response(200, text='')
+
+        _install_mock_client(handler)
+        result = DataProviderInterface._request_data(
+            'TEST_ENDPOINT', 'https://example.com/endpoint', 'AAPL', {},
+        )
+        # parity with the urllib-era behavior: exhaust all attempts, return falsy body
+        assert result == ''
+        assert len(calls) == DataProviderInterface._MAX_CONNECTION_RETRIES
+
+    def test_unexpected_status_raises_api_endpoint_error(self):
+        def handler(request):
+            return httpx.Response(304)
 
         _install_mock_client(handler)
         with pytest.raises(ApiEndpointError):
@@ -132,3 +162,17 @@ class TestRequestData:
         client_a = DataProviderInterface._get_http_client()
         client_b = FinancialModelingPrep._get_http_client()
         assert client_a is client_b
+
+    def test_http_client_follows_redirects(self):
+        client = DataProviderInterface._get_http_client()
+        assert client.follow_redirects is True
+
+    def test_http_client_lazy_init_is_thread_safe(self):
+        with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
+            clients = list(
+                executor.map(
+                    lambda _: DataProviderInterface._get_http_client(),
+                    range(16)
+                )
+            )
+        assert len({id(client) for client in clients}) == 1
