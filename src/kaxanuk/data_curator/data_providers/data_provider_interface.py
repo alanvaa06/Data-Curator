@@ -35,6 +35,10 @@ class DataProviderInterface(metaclass=abc.ABCMeta):
     Any data provider implementing this interface MUST implement all of the methods below marked with
     the @abc.abstractmethod decorator.
 
+    The get data type methods are invoked concurrently from multiple worker threads when
+    data_curator.main runs with max_concurrent_fetches > 1 (the default), so implementations
+    must be thread-safe.
+
     After the abstract method definitions we have some concrete helpers and attributes that can be
     optionally used inside any method that requires them, or they can be overriden by the implementing
     class.

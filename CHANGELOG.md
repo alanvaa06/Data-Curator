@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [Unreleased]
+### Added
+- `data_curator.main` new `max_concurrent_fetches` parameter (default 8): identifiers' data is now downloaded concurrently through a bounded prefetch pipeline while column calculation and output stay sequential and deterministic; pass 1 for fully sequential fetching
+- `benchmarks/` harness with a local mock FMP server for reproducible end-to-end performance measurement (4.1x faster at default settings on the reference workload, see `benchmarks/RESULTS.md`)
+
+### Changed
+- HTTP transport for data providers switched from per-request `urllib` to a shared pooled `httpx` client: connections are reused across requests (keep-alive), eliminating per-request TCP/TLS handshakes; requests now have an explicit 30 second timeout instead of potentially hanging forever
+- `httpx` is now an explicit dependency (it was already present transitively via `lseg-data`)
+
+### Fixed
+- FMP free-account fallback: concurrent HTTP 402 responses could spuriously skip identifiers or duplicate probe requests; the account-plan downgrade is now thread-safe and shared by the dividend, fundamental and split endpoints
+
+
 ## [0.49.0] - 2026-05-26
 ### Added
 - `DataProviderToolkit.drop_discrepant_processed_endpoint_tables_rows` for dropping the discrepant rows
