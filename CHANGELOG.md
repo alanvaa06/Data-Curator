@@ -8,8 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
+- `start` CLI command: one-command workflow that scaffolds the JSON workspace if missing (never overwriting existing files), opens the parameter panel, and lets you run the system directly from the browser via the new **Save & run** button.
 - JSON configuration format (`Config/data_curator_parameters.json`) read by the new `JsonConfigurator`.
 - `config-editor` CLI command: a lightweight local HTML editor for managing run parameters (providers, dates, period, identifiers, and a searchable output-column picker). Binds to `127.0.0.1`, no new runtime dependencies.
+- Editor server endpoints `POST /api/run` / `GET /api/run` to launch the entry script in the background and poll its status/output from the panel.
 - `init json` / `update json` scaffolding and a JSON entry-script template.
 
 ### Deprecated

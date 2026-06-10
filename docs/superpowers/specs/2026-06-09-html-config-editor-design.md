@@ -154,3 +154,21 @@ Fake providers/output handlers follow the existing patterns under
 User-guide pages that reference the Excel config (`zero_coder.rst`, `quick_start.rst`,
 `component_integrator.rst`) get follow-up updates to describe the JSON + editor path as the
 default, with Excel noted as the legacy fallback. CHANGELOG entry added.
+
+## Addendum (2026-06-09): seamless one-command UX
+
+User feedback: three commands (`init json` → `config-editor` → `run`) is too much friction.
+Resolution, same architectural constraints (loopback-only stdlib server, no new deps,
+critical architecture untouched):
+
+- **`start` CLI command** — the single user-facing entry point. Ensures the JSON workspace
+  exists via `_ensure_json_workspace()` (creates only missing dirs/files, never overwrites),
+  then serves the panel. New users run exactly one command, ever.
+- **In-panel run** — the editor server gains `POST /api/run` (launches the entry script via
+  `subprocess` in a background thread; 409 when already running, 400 when the entry script is
+  missing) and `GET /api/run` (state: idle/running/done/failed + captured output + returncode).
+  The page gains a **Save & run** button that saves the config, triggers the run, polls every
+  2s, and renders the output log. Run output is captured at process completion (no streaming —
+  accepted v1 limitation).
+- `init json`, `config-editor`, and `run` remain available as advanced/granular commands;
+  `config-editor` also passes the entry script so the run button works there too.

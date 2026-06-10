@@ -33,48 +33,42 @@ The system can run either on your local Python environment or on Docker.
 
         cd /path/to/your/datacurator/project
 
-**Configuration (HTML editor)**
+**One-command workflow**
 
-1. Open a terminal and run:
+Run a single command from your project directory:
 
-   .. code-block:: bash
+.. code-block:: bash
 
-      kaxanuk.data_curator init json
+   kaxanuk.data_curator start
 
-   This will create two subdirectories: ``Config`` and ``Output``, along with the entry script ``__main__.py``.
+This does everything:
 
-2. Launch the parameter editor and adjust your settings in the browser:
+1. Creates the ``Config`` and ``Output`` directories, the configuration file and the entry
+   script if they don't exist yet (existing files are never overwritten).
+2. Opens the parameter panel in your browser (``http://127.0.0.1:8753``), where you pick the
+   data providers, dates, period, output format, identifiers, and output columns.
+3. Click **Save & run** to save your parameters and run the system directly from the panel;
+   the run output appears on the page and the data is saved in the ``Output`` folder.
 
-   .. code-block:: bash
+Stop the panel with ``Ctrl+C`` in the terminal.
 
-      kaxanuk.data_curator config-editor
+If any provider requires an API key, edit the ``Config/.env`` file and set the key using the
+variable indicated in the provider documentation. Do not add quotes or extra spaces.
 
-   This opens a local page (``http://127.0.0.1:8753``) where you can pick the data providers,
-   dates, period, output format, identifiers, and output columns. Click **Save** to write
-   ``Config/data_curator_parameters.json``. Stop the editor with ``Ctrl+C``.
+*On macOS, the `.env` file may be hidden. Use `Cmd + Shift + .` to show hidden files.*
 
-3. If any provider requires an API key, edit the ``Config/.env`` file and set the key using the variable indicated in the provider documentation. Do not add quotes or extra spaces.
+**Advanced: separate commands**
 
-   *On macOS, the `.env` file may be hidden. Use `Cmd + Shift + .` to show hidden files.*
+Each step is also available as its own command if you prefer finer control:
+
+.. code-block:: bash
+
+   kaxanuk.data_curator init json        # scaffold the workspace
+   kaxanuk.data_curator config-editor    # edit parameters in the browser
+   kaxanuk.data_curator run              # run the system headlessly
 
 **Legacy: Excel configuration**
 
 The Excel workflow is still supported as a fallback. Run ``kaxanuk.data_curator init excel`` to
-scaffold an ``Config/data_curator_parameters.xlsx`` file and edit it directly. New projects
-should prefer the JSON + editor path above.
-
-**Usage**
-
-You can run the tool using:
-
-.. code-block:: bash
-
-   kaxanuk.data_curator run
-
-Or by running the main script directly:
-
-.. code-block:: bash
-
-   python __main__.py
-
-The system will pull the data for the configured tickers and save results in the ``Output`` folder.
+scaffold an ``Config/data_curator_parameters.xlsx`` file and edit it directly, then
+``kaxanuk.data_curator run``. New projects should prefer the ``start`` workflow above.

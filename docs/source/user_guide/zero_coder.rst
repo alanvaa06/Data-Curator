@@ -7,10 +7,10 @@ In “zero-coder” mode, everything is configured without writing Python code. 
 
 .. note::
 
-   The recommended zero-coder path is now the JSON configuration with the built-in HTML editor:
-   run ``kaxanuk.data_curator init json`` and then ``kaxanuk.data_curator config-editor`` to manage
-   your parameters in the browser (see :ref:`quick_start`). The Excel workbook workflow described
-   below is still supported as a legacy fallback.
+   The recommended zero-coder path is now a single command: ``kaxanuk.data_curator start``.
+   It sets up the workspace, opens the parameter panel in your browser, and lets you run the
+   system with the **Save & run** button (see :ref:`quick_start`). The Excel workbook workflow
+   described below is still supported as a legacy fallback.
 
 Direct Setup (No Containers)
 ----------------------------
