@@ -1,4 +1,7 @@
 import json
+import threading
+import urllib.error
+import urllib.request
 
 import pytest
 
@@ -74,3 +77,79 @@ def test_build_catalog_response_has_options_and_groups():
     assert 'quarterly' in response['options']['period']
     assert 'csv' in response['options']['output_format']
     assert 'info' in response['options']['logger_level']
+
+
+def _run_server(server):
+    server.serve_forever()
+
+
+def _start(tmp_path):
+    config_path = tmp_path / config_editor.CONFIG_FILENAME
+    server = config_editor.build_server(config_path, port=0)
+    thread = threading.Thread(target=_run_server, args=(server,), daemon=True)
+    thread.start()
+    port = server.server_address[1]
+    return server, f'http://127.0.0.1:{port}'
+
+
+def _get(url):
+    with urllib.request.urlopen(url) as response:
+        return response.status, response.read().decode('utf-8')
+
+
+def _post(url, data):
+    request = urllib.request.Request(
+        url,
+        data=json.dumps(data).encode('utf-8'),
+        headers={'Content-Type': 'application/json'},
+        method='POST',
+    )
+    try:
+        with urllib.request.urlopen(request) as response:
+            return response.status
+    except urllib.error.HTTPError as error:
+        return error.code
+
+
+def test_server_serves_page(tmp_path):
+    server, base = _start(tmp_path)
+    try:
+        status, body = _get(base + '/')
+        assert status == 200
+        assert '<html' in body.lower() or '<!doctype' in body.lower()
+    finally:
+        server.shutdown()
+
+
+def test_server_returns_config_and_catalog(tmp_path):
+    server, base = _start(tmp_path)
+    try:
+        status, body = _get(base + '/api/config')
+        assert status == 200
+        assert 'general' in json.loads(body)
+        status, body = _get(base + '/api/catalog')
+        assert 'groups' in json.loads(body)
+    finally:
+        server.shutdown()
+
+
+def test_server_saves_valid_config(tmp_path):
+    server, base = _start(tmp_path)
+    try:
+        payload = config_editor.build_default_config()
+        payload['identifiers'] = ['AAPL']
+        assert _post(base + '/api/config', payload) == 200
+        saved = json.loads((tmp_path / config_editor.CONFIG_FILENAME).read_text(encoding='utf-8'))
+        assert saved['identifiers'] == ['AAPL']
+    finally:
+        server.shutdown()
+
+
+def test_server_rejects_invalid_config(tmp_path):
+    server, base = _start(tmp_path)
+    try:
+        payload = config_editor.build_default_config()
+        payload['general']['period'] = 'weekly'
+        assert _post(base + '/api/config', payload) == 400
+    finally:
+        server.shutdown()

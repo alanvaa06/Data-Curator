@@ -172,3 +172,89 @@ def _try_date(value: typing.Any) -> datetime.date | None:
     except (TypeError, ValueError):
 
         return None
+
+
+def _read_page() -> str:
+    resource = importlib.resources.files(
+        'kaxanuk.data_curator.services'
+    ).joinpath(PAGE_RESOURCE)
+
+    return resource.read_text(encoding='utf-8')
+
+
+def build_server(
+    config_path: pathlib.Path | str,
+    port: int = DEFAULT_PORT,
+) -> http.server.HTTPServer:
+    """Build (but do not start) the editor HTTP server bound to localhost."""
+    config_path = pathlib.Path(config_path)
+    page = _read_page()
+
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def log_message(self, *args: typing.Any) -> None:
+            pass
+
+        def _send(self, status: int, body: bytes, content_type: str) -> None:
+            self.send_response(status)
+            self.send_header('Content-Type', content_type)
+            self.send_header('Content-Length', str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def _send_json(self, status: int, data: typing.Any) -> None:
+            self._send(status, json.dumps(data).encode('utf-8'), 'application/json')
+
+        def do_GET(self) -> None:
+            if self.path in ('/', '/index.html'):
+                self._send(200, page.encode('utf-8'), 'text/html; charset=utf-8')
+            elif self.path == '/api/config':
+                self._send_json(200, load_config(config_path))
+            elif self.path == '/api/catalog':
+                self._send_json(200, build_catalog_response())
+            else:
+                self._send_json(404, {'error': 'not found'})
+
+        def do_POST(self) -> None:
+            if self.path != '/api/config':
+                self._send_json(404, {'error': 'not found'})
+
+                return
+
+            length = int(self.headers.get('Content-Length', 0))
+            raw = self.rfile.read(length)
+            try:
+                payload = json.loads(raw.decode('utf-8'))
+            except json.JSONDecodeError:
+                self._send_json(400, {'errors': ['Invalid JSON']})
+
+                return
+
+            try:
+                save_config(config_path, payload)
+            except ValueError as error:
+                self._send_json(400, {'errors': str(error).split('; ')})
+
+                return
+
+            self._send_json(200, {'status': 'saved'})
+
+    return http.server.HTTPServer((HOST, port), Handler)
+
+
+def serve(
+    config_path: pathlib.Path | str,
+    port: int = DEFAULT_PORT,
+    *,
+    open_browser: bool = True,
+) -> None:
+    """Start the editor server and block until interrupted."""
+    server = build_server(config_path, port=port)
+    url = f"http://{HOST}:{server.server_address[1]}"
+    if open_browser:
+        webbrowser.open(url)
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        server.server_close()
