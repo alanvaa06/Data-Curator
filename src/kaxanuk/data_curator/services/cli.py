@@ -21,14 +21,17 @@ from kaxanuk.data_curator import (
     __package_name__,
     __package_title__,
 )
+from kaxanuk.data_curator.services import config_editor
 
 
 CONFIG_SUBDIR = 'Config'
 DATA_DIR = sysconfig.get_path('data')
 DEV_TEMPLATES_SUBDIR = 'templates/data_curator'
 ENTRY_SCRIPT_DEFAULT_NAME = '__main__.py'
+JSON_ENTRY_SCRIPT_NAME = 'json_entry_script.py'
 OUTPUT_SUBDIR = 'Output'
 PARAMETERS_EXCEL_FILE = 'data_curator_parameters.xlsx'
+PARAMETERS_JSON_FILE = 'data_curator_parameters.json'
 TEMPLATES_DIR = f'{DATA_DIR}/data_curator'
 
 INIT_DIRS = (
@@ -201,6 +204,32 @@ def run(entry_script_locations: list[str]) -> None:
         ])
 
         raise click.ClickException(msg) from e
+
+
+@cli.command(name='config-editor')
+@click.option(
+    '--port',
+    default=config_editor.DEFAULT_PORT,
+    help=f"Port for the local editor server. Default: {config_editor.DEFAULT_PORT}",
+    type=click.INT,
+)
+@click.option(
+    '--no-browser',
+    is_flag=True,
+    default=False,
+    help="Do not open a browser window automatically.",
+)
+def config_editor_command(port: int, no_browser: bool) -> None:    # noqa: FBT001
+    """
+    Launch the local HTML editor for the JSON configuration file.
+    """
+    config_path = pathlib.Path(CONFIG_SUBDIR) / PARAMETERS_JSON_FILE
+    click.echo(f"Starting config editor at http://{config_editor.HOST}:{port} (Ctrl+C to stop)")
+    config_editor.serve(
+        config_path,
+        port=port,
+        open_browser=not no_browser,
+    )
 
 
 @cli.command()
