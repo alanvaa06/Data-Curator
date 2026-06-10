@@ -1,9 +1,26 @@
 import json
+import os
 import pathlib
+import subprocess
+import sys
 
 from click.testing import CliRunner
 
 from kaxanuk.data_curator.services import cli as cli_module
+
+
+def test_package_is_executable_as_module():
+    src_dir = pathlib.Path(cli_module.__file__).resolve().parents[3]
+    env = {**os.environ, 'PYTHONPATH': str(src_dir)}
+    result = subprocess.run(
+        [sys.executable, '-m', 'kaxanuk.data_curator', '--help'],
+        capture_output=True,
+        text=True,
+        env=env,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    assert 'start' in result.stdout
 
 
 def _repo_templates():

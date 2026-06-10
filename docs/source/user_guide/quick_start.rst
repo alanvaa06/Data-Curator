@@ -41,6 +41,15 @@ Run a single command from your project directory:
 
    kaxanuk.data_curator start
 
+.. tip::
+
+   If your terminal reports the command is not found (the Python scripts directory is not on
+   your PATH), use the module form instead — it always works:
+
+   .. code-block:: bash
+
+      python -m kaxanuk.data_curator start
+
 This does everything:
 
 1. Creates the ``Config`` and ``Output`` directories, the configuration file and the entry

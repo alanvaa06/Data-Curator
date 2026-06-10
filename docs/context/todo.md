@@ -8,5 +8,6 @@ Status: pending | in_progress | done
 ## Follow-ups
 - [pending] Refactor `ExcelConfigurator` to delegate its post-parse logic to `config_handlers/_resolver.py`, behind characterization tests, to remove duplication.
 - [pending] Update remaining docs that reference the xlsx (`component_integrator.rst`, `custom_calculator.rst`, release notes) to mention the JSON + editor default.
-- [pending] Dev environment: the active interpreter loads a stale non-editable install from Python 3.14 site-packages; reinstall editable (`pdm run install_dev`) so the CLI reflects `src/` outside pytest.
+- [done] Dev environment: stale non-editable install replaced with `pip install --user -e .`; CLI now reflects `src/`. Added package `__main__.py` so `python -m kaxanuk.data_curator` works regardless of PATH.
+- [pending] PATH: `%APPDATA%\Python\Python314\Scripts` is not on PATH, so the bare `kaxanuk.data_curator` command needs either that dir added to PATH manually or the `python -m kaxanuk.data_curator` form.
 - [pending] Panel run output: stream logs live (currently captured at process completion); consider line-buffered reads or SSE.
