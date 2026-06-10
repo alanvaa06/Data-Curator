@@ -5,3 +5,4 @@ One line per session. Newest last.
 - 2026-06-09: replaced Excel config with JSON + local HTML editor (`config-editor` CLI) on branch `feat/html-config-editor`; brainstorm → spec → TDD plan → 11 tasks executed sequentially; 708 tests pass.
 - 2026-06-09 (later): simplified UX to one `start` command (auto-scaffold + panel + in-panel Save & run); TDD, 718 tests pass, e2e smoke verified.
 - 2026-06-09 (later): fixed env (stale install + PATH) with editable install + package `__main__.py`; fixed panel dark-mode contrast and column list layout (light-dark() palette, sorted groups, all/none toggles); verified via live DOM/computed-style inspection.
+- 2026-06-09 (later): panel UX round 2 — collapsible column groups, one-click index presets (S&P 500: 503 / Nasdaq 100: 101 / Russell 2000: 1935, bundled from Wikipedia + Vanguard VTWO), viewport-locked no-scroll layout; verified end-to-end in user's Chrome.
