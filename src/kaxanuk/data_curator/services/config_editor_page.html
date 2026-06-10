@@ -5,27 +5,51 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Data Curator — parameters</title>
 <style>
-  :root { color-scheme: light dark; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
-  body { margin: 0; padding: 24px; max-width: 960px; }
-  h1 { font-size: 18px; font-weight: 500; margin: 0 0 4px; }
-  .sub { color: #666; font-size: 13px; margin: 0 0 20px; }
-  fieldset { border: 1px solid #ccc; border-radius: 8px; margin: 0 0 18px; padding: 14px 16px; }
-  legend { font-size: 13px; color: #555; padding: 0 6px; }
+  :root {
+    color-scheme: light dark;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --bg: light-dark(#fafafa, #131316);
+    --card: light-dark(#ffffff, #1c1c21);
+    --border: light-dark(#c5c5cc, #3f3f46);
+    --border-soft: light-dark(#e3e3e8, #2c2c33);
+    --text: light-dark(#1c1c1e, #e9e9ec);
+    --muted: light-dark(#5c5c66, #a8a8b2);
+    --accent: light-dark(#185fa5, #378add);
+    --accent-contrast: light-dark(#ffffff, #06243d);
+    --accent-bg: light-dark(#e6f1fb, #0c447c);
+    --accent-text: light-dark(#0c447c, #b5d4f4);
+    --ok: light-dark(#0f6e56, #5dcaa5);
+    --err: light-dark(#a32d2d, #f09595);
+    --row-hover: light-dark(#f0f0f4, #26262d);
+  }
+  body { margin: 0; padding: 24px; max-width: 960px; background: var(--bg); color: var(--text); }
+  h1 { font-size: 18px; font-weight: 600; margin: 0 0 4px; }
+  .sub { color: var(--muted); font-size: 13px; margin: 0 0 20px; }
+  fieldset { background: var(--card); border: 1px solid var(--border-soft); border-radius: 10px; margin: 0 0 18px; padding: 14px 16px; }
+  legend { font-size: 13px; font-weight: 600; color: var(--muted); padding: 0 6px; }
   .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px 16px; }
-  label { display: block; font-size: 12px; color: #555; margin-bottom: 4px; }
-  input, select { width: 100%; box-sizing: border-box; padding: 7px 8px; font-size: 14px; border: 1px solid #bbb; border-radius: 6px; background: Field; color: FieldText; }
+  label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  input, select { width: 100%; box-sizing: border-box; padding: 7px 8px; font-size: 14px; border: 1px solid var(--border); border-radius: 6px; background: Field; color: FieldText; }
+  input[type="checkbox"] { width: 15px; height: 15px; margin: 0; flex: none; accent-color: var(--accent); cursor: pointer; }
   .row { display: flex; gap: 8px; margin-bottom: 10px; }
   .row input { flex: 1; }
-  button { padding: 7px 12px; font-size: 13px; border: 1px solid #999; border-radius: 6px; background: ButtonFace; color: ButtonText; cursor: pointer; }
+  button { padding: 7px 12px; font-size: 13px; border: 1px solid var(--border); border-radius: 6px; background: var(--card); color: var(--text); cursor: pointer; }
+  button:hover { background: var(--row-hover); }
+  #run { background: var(--accent); border-color: var(--accent); color: var(--accent-contrast); font-weight: 600; }
+  #run:hover { opacity: 0.9; }
   .chips { display: flex; flex-wrap: wrap; gap: 6px; }
-  .chip { display: inline-flex; align-items: center; gap: 6px; background: #e6f1fb; color: #0c447c; padding: 4px 8px; border-radius: 6px; font-size: 13px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; background: var(--accent-bg); color: var(--accent-text); padding: 4px 8px; border-radius: 6px; font-size: 13px; }
   .chip button { border: none; background: none; cursor: pointer; color: inherit; padding: 0; font-size: 14px; }
-  .cols { max-height: 360px; overflow: auto; border: 1px solid #ddd; border-radius: 6px; padding: 8px; }
-  .col { display: flex; align-items: center; gap: 8px; padding: 3px 4px; font-size: 13px; font-family: ui-monospace, monospace; }
-  .grouphdr { font-weight: 500; font-family: system-ui; font-size: 12px; color: #555; margin: 10px 0 4px; }
-  .bar { position: sticky; top: 0; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 0; background: Canvas; }
+  .cols { max-height: 420px; overflow: auto; border: 1px solid var(--border-soft); border-radius: 6px; }
+  .col { display: flex; align-items: center; gap: 10px; padding: 4px 12px; font-size: 13px; font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; color: var(--text); cursor: pointer; }
+  .col:hover { background: var(--row-hover); }
+  .grouphdr { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; gap: 8px; font-weight: 600; font-family: system-ui; font-size: 12px; color: var(--text); background: var(--card); margin: 0; padding: 8px 12px 6px; border-bottom: 1px solid var(--border-soft); }
+  .gcount { color: var(--muted); font-weight: 400; }
+  .gactions { margin-left: auto; display: flex; gap: 4px; }
+  .mini { padding: 2px 8px; font-size: 11px; border-radius: 5px; color: var(--muted); }
+  .bar { position: sticky; top: 0; z-index: 2; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 0; background: var(--bg); }
   .status { font-size: 13px; }
-  .ok { color: #0f6e56; } .err { color: #a32d2d; }
+  .ok { color: var(--ok); } .err { color: var(--err); }
 </style>
 </head>
 <body>
@@ -99,26 +123,55 @@ function addIdentifier() {
   if (v && !state.identifiers.includes(v)) { state.identifiers.push(v); input.value = ''; renderIdentifiers(); }
 }
 
+let groupCounters = [];
+
+function refreshCounts() {
+  const selected = new Set(state.columns);
+  for (const counter of groupCounters) {
+    const count = counter.columns.filter(c => selected.has(c)).length;
+    counter.span.textContent = count + '/' + counter.columns.length;
+  }
+  document.getElementById('colCount').textContent = state.columns.length;
+}
+
+function groupHeader(label, columns) {
+  const hdr = document.createElement('div'); hdr.className = 'grouphdr';
+  const title = document.createElement('span'); title.textContent = label;
+  const count = document.createElement('span'); count.className = 'gcount';
+  hdr.appendChild(title); hdr.appendChild(count);
+  if (columns.length) {
+    groupCounters.push({ span: count, columns: columns });
+    const actions = document.createElement('span'); actions.className = 'gactions';
+    const all = document.createElement('button'); all.className = 'mini'; all.textContent = 'all';
+    all.onclick = () => { for (const c of columns) { if (!state.columns.includes(c)) state.columns.push(c); } renderColumns(); };
+    const none = document.createElement('button'); none.className = 'mini'; none.textContent = 'none';
+    none.onclick = () => { state.columns = state.columns.filter(c => !columns.includes(c)); renderColumns(); };
+    actions.appendChild(all); actions.appendChild(none); hdr.appendChild(actions);
+  }
+  return hdr;
+}
+
 function renderColumns() {
   const root = document.getElementById('cols'); root.innerHTML = '';
+  groupCounters = [];
   const selected = new Set(state.columns);
   const filter = document.getElementById('colSearch').value.trim().toLowerCase();
   const known = new Set();
   for (const group of catalog.groups) {
-    const matches = group.columns.filter(c => !filter || c.toLowerCase().includes(filter));
+    group.columns.forEach(c => known.add(c));
+    const matches = [...group.columns].sort().filter(c => !filter || c.toLowerCase().includes(filter));
     if (!matches.length) continue;
-    const hdr = document.createElement('div'); hdr.className = 'grouphdr'; hdr.textContent = group.label; root.appendChild(hdr);
+    root.appendChild(groupHeader(group.label, matches));
     for (const col of matches) {
-      known.add(col);
       root.appendChild(columnRow(col, selected.has(col)));
     }
   }
-  const custom = state.columns.filter(c => !known.has(c) && (!filter || c.toLowerCase().includes(filter)));
+  const custom = state.columns.filter(c => !known.has(c) && (!filter || c.toLowerCase().includes(filter))).sort();
   if (custom.length) {
-    const hdr = document.createElement('div'); hdr.className = 'grouphdr'; hdr.textContent = 'Custom / other'; root.appendChild(hdr);
+    root.appendChild(groupHeader('Custom / other', custom));
     custom.forEach(c => root.appendChild(columnRow(c, true)));
   }
-  document.getElementById('colCount').textContent = state.columns.length;
+  refreshCounts();
 }
 
 function columnRow(col, checked) {
@@ -127,7 +180,7 @@ function columnRow(col, checked) {
   box.onchange = () => {
     if (box.checked) { if (!state.columns.includes(col)) state.columns.push(col); }
     else { state.columns = state.columns.filter(c => c !== col); }
-    document.getElementById('colCount').textContent = state.columns.length;
+    refreshCounts();
   };
   row.appendChild(box); row.appendChild(document.createTextNode(col));
   return row;
