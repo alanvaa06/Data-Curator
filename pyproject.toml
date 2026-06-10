@@ -20,6 +20,7 @@ classifiers = [
 ]
 dependencies = [    # dev dependencies are in the [tool.pdm.dev-dependencies] section
     "click>=8.1.7",
+    "httpx>=0.27",
     "networkx>=3.5",
     "openpyxl>=3.1.5",
     "packaging>=24.2",
@@ -230,10 +231,6 @@ ignore = [
     "D",   # Docs docstrings don't need to be strictly checked
 ]
 "docs/source/conf.py" = ["A001"] #  Variable `type` is shadowing a Python builtin, but that's literally part of the PyArrow interface
-"src/kaxanuk/data_curator/data_providers/data_provider_interface.py" = [
-    # @todo: we'll probably be able to remove following ignore on async http:
-    "S310"  # Audit URL open for permitted schemes
-]
 "src/kaxanuk/data_curator/entities/market_data_daily_row.py" = ["A003"]     # shadows open(), but not in a dataclass
 "src/kaxanuk/data_curator/features/calculations.py" = [
     "ANN",      # Keep code in calculations.py simpler, as it will be consulted for custom user calculations

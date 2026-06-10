@@ -7,11 +7,12 @@ import datetime
 import http
 import logging
 import ssl
+import threading
 import time
 import typing
-import urllib.error
 import urllib.parse
-import urllib.request
+
+import httpx
 
 from kaxanuk.data_curator.entities import (
     Configuration,
@@ -185,6 +186,11 @@ class DataProviderInterface(metaclass=abc.ABCMeta):
     _ssl_context = None
     _MAX_CONNECTION_RETRIES = 5
     _REQUEST_RETRY_TIME = 0.250  # seconds
+    _http_client: typing.ClassVar[httpx.Client | None] = None
+    _http_client_lock: typing.ClassVar[threading.Lock] = threading.Lock()
+    _HTTP_TIMEOUT_SECONDS = 30.0
+    _HTTP_MAX_CONNECTIONS = 32
+    _HTTP_MAX_KEEPALIVE_CONNECTIONS = 16
 
     @staticmethod
     def _build_url_with_identifier_path_and_query_params(
@@ -331,6 +337,47 @@ class DataProviderInterface(metaclass=abc.ABCMeta):
             )
 
     @classmethod
+    def _get_http_client(cls) -> httpx.Client:
+        """
+        Return the shared pooled HTTP client, lazily initializing it.
+
+        The client (and its connection pool) is shared by all provider classes and
+        threads; httpx.Client is thread-safe. The attribute is always read/written on
+        DataProviderInterface itself so subclasses don't fragment the pool.
+
+        Returns
+        -------
+        The shared httpx.Client instance
+        """
+        if DataProviderInterface._http_client is None:
+            with DataProviderInterface._http_client_lock:
+                if DataProviderInterface._http_client is None:
+                    DataProviderInterface._http_client = httpx.Client(
+                        verify=cls._load_ssl_context(),
+                        timeout=httpx.Timeout(cls._HTTP_TIMEOUT_SECONDS),
+                        limits=httpx.Limits(
+                            max_connections=cls._HTTP_MAX_CONNECTIONS,
+                            max_keepalive_connections=cls._HTTP_MAX_KEEPALIVE_CONNECTIONS,
+                        ),
+                    )
+
+        return DataProviderInterface._http_client
+
+    @classmethod
+    def _close_http_client(cls) -> None:
+        """
+        Close and discard the shared HTTP client, mainly for tests and clean shutdown.
+
+        Returns
+        -------
+        None
+        """
+        with DataProviderInterface._http_client_lock:
+            if DataProviderInterface._http_client is not None:
+                DataProviderInterface._http_client.close()
+                DataProviderInterface._http_client = None
+
+    @classmethod
     def _load_ssl_context(cls) -> ssl.SSLContext:
         """
         Load an SSL context for HTTP requests.
@@ -388,72 +435,106 @@ class DataProviderInterface(metaclass=abc.ABCMeta):
         )
         attempt_number = 0
         response = None
+        client = cls._get_http_client()
 
         while attempt_number < cls._MAX_CONNECTION_RETRIES:
             attempt_number += 1
             try:
-                # @todo: extract network connections to module, for unit testing etc.
-                http_request = urllib.request.Request(url)
-                with urllib.request.urlopen(
-                    http_request,
-                    context=cls._load_ssl_context()
-                ) as http_response:
-                    response = http_response.read().decode('utf-8')
+                http_response = client.get(url)
+            except httpx.HTTPError as error:
+                cls._raise_or_wait_before_retry(
+                    endpoint_id=endpoint_id,
+                    attempt_number=attempt_number,
+                    error_description=str(error),
+                    cause=error,
+                )
 
+                continue
+
+            status_code = http_response.status_code
+            if status_code == http.HTTPStatus.PAYMENT_REQUIRED.value:
+                detailed_error_message = http_response.text
+                if len(detailed_error_message) < 1:
+                    detailed_error_message = f"HTTP code {status_code}"
+
+                raise DataProviderPaymentError(detailed_error_message)
+            elif (
+                status_code == http.HTTPStatus.NOT_FOUND.value
+                and "No data found" in http_response.text
+            ):
+                msg = f"API Error accessing endpoint {endpoint_id}, returned error {http_response.text}"
+
+                raise IdentifierNotFoundError(msg)
+            elif (
+                http.HTTPStatus.BAD_REQUEST.value
+                <= status_code
+                < http.HTTPStatus.INTERNAL_SERVER_ERROR.value
+            ):  # client error, so no point in retrying
+                msg = " ".join([
+                    f"Data provider server error accessing endpoint {endpoint_id},",
+                    f"returned HTTP code {status_code}",
+                    (
+                        f"with message {http_response.text}"
+                        if len(http_response.text) > 0
+                        else ""
+                    )
+                ])
+
+                raise ApiEndpointError(msg)
+            elif status_code >= http.HTTPStatus.INTERNAL_SERVER_ERROR.value:
+                cls._raise_or_wait_before_retry(
+                    endpoint_id=endpoint_id,
+                    attempt_number=attempt_number,
+                    error_description=f"HTTP code {status_code}",
+                    cause=None,
+                )
+            else:
+                response = http_response.text
                 if response:
                     break
-            except (
-                urllib.error.URLError,
-                urllib.error.HTTPError,
-                urllib.error.ContentTooShortError
-            ) as error:
-                error_message = str(error)
-                if hasattr(error, 'code'):
-                    if (
-                        error.code == http.HTTPStatus.NOT_FOUND.value
-                        and "No data found" in error_message
-                    ):
-                        msg = f"API Error accessing endpoint {endpoint_id}, returned error {error_message}"
-
-                        raise IdentifierNotFoundError(msg) from error
-                    elif error.code == http.HTTPStatus.PAYMENT_REQUIRED.value:
-                        detailed_error_message = error.read().decode('utf-8')
-                        if len(detailed_error_message) < 1:
-                            detailed_error_message = error_message
-
-                        raise DataProviderPaymentError(detailed_error_message) from error
-
-                    if (
-                        error.code < http.HTTPStatus.INTERNAL_SERVER_ERROR.value # client error, so no point in retrying
-                    ):
-                        msg = " ".join([
-                            f"Data provider server error accessing endpoint {endpoint_id},",
-                            f"returned HTTP code {error.code}",
-                            (
-                                f"with message {error_message}"
-                                if len(error_message) > 0
-                                else ""
-                            )
-                        ])
-
-                        raise ApiEndpointError(msg) from error
-
-                if (
-                    attempt_number == (cls._MAX_CONNECTION_RETRIES - 1)  # last attempt
-                ):
-                    msg = " ".join([
-                        f"Data provider server error accessing endpoint {endpoint_id}",
-                        (
-                            f"with message {error_message}"
-                            if len(error_message) > 0
-                            else ""
-                        )
-                    ])
-
-                    raise ApiEndpointError(msg) from error
-                else:
-                    msg = f"API Server error on endpoint {endpoint_id}, retrying request attempt {attempt_number}"
-                    logging.getLogger(__name__).warning(msg)
-                    time.sleep(cls._REQUEST_RETRY_TIME)
 
         return response
+
+    @classmethod
+    def _raise_or_wait_before_retry(
+        cls,
+        *,
+        endpoint_id: str,
+        attempt_number: int,
+        error_description: str,
+        cause: Exception | None,
+    ) -> None:
+        """
+        Raise ApiEndpointError if retries are exhausted, otherwise log and sleep before the next attempt.
+
+        Parameters
+        ----------
+        endpoint_id
+            the internal name of the endpoint, for error logging purposes
+        attempt_number
+            the current request attempt number
+        error_description
+            description of the error that triggered the retry
+        cause
+            the underlying exception, if any, to chain to the raised error
+
+        Raises
+        ------
+        ApiEndpointError
+            When the maximum number of request attempts has been reached
+        """
+        if attempt_number >= (cls._MAX_CONNECTION_RETRIES - 1):  # last attempt
+            msg = " ".join([
+                f"Data provider server error accessing endpoint {endpoint_id}",
+                (
+                    f"with message {error_description}"
+                    if len(error_description) > 0
+                    else ""
+                )
+            ])
+
+            raise ApiEndpointError(msg) from cause
+
+        msg = f"API Server error on endpoint {endpoint_id}, retrying request attempt {attempt_number}"
+        logging.getLogger(__name__).warning(msg)
+        time.sleep(cls._REQUEST_RETRY_TIME)
