@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [Unreleased]
+### Added
+- JSON configuration format (`Config/data_curator_parameters.json`) read by the new `JsonConfigurator`.
+- `config-editor` CLI command: a lightweight local HTML editor for managing run parameters (providers, dates, period, identifiers, and a searchable output-column picker). Binds to `127.0.0.1`, no new runtime dependencies.
+- `init json` / `update json` scaffolding and a JSON entry-script template.
+
+### Deprecated
+- The Excel configuration format and `ExcelConfigurator` remain supported but are now the legacy fallback; the JSON + HTML editor path is the default.
+
+
 ## [0.49.0] - 2026-05-26
 ### Added
 - `DataProviderToolkit.drop_discrepant_processed_endpoint_tables_rows` for dropping the discrepant rows

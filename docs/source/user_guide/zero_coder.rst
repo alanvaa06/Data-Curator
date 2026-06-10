@@ -3,7 +3,14 @@
 Zero-Coder Workflow
 ====================
 
-In “zero-coder” mode, everything is configured via an Excel workbook (`Config/parameters_datacurator.xlsx`) and an optional `.env` file—no Python coding is required. Follow these steps to install, configure, and run Data Curator.
+In “zero-coder” mode, everything is configured without writing Python code. Follow these steps to install, configure, and run Data Curator.
+
+.. note::
+
+   The recommended zero-coder path is now the JSON configuration with the built-in HTML editor:
+   run ``kaxanuk.data_curator init json`` and then ``kaxanuk.data_curator config-editor`` to manage
+   your parameters in the browser (see :ref:`quick_start`). The Excel workbook workflow described
+   below is still supported as a legacy fallback.
 
 Direct Setup (No Containers)
 ----------------------------
