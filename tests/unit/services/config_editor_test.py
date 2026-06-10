@@ -218,6 +218,15 @@ class TestRunEndpoints:
         finally:
             server.shutdown()
 
+    def test_page_explains_server_requirement_when_offline(self, tmp_path):
+        server, base = _start(tmp_path)
+        try:
+            _, body = _get(base + '/')
+            assert 'needs the Data Curator server' in body
+            assert 'catch' in body
+        finally:
+            server.shutdown()
+
 
 class TestRunManager:
     def test_run_executes_script_and_captures_output(self, tmp_path):

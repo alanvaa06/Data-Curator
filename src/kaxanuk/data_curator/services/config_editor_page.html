@@ -83,8 +83,18 @@ const GENERAL_FIELDS = [
 let state = null, catalog = null;
 
 async function boot() {
-  catalog = await (await fetch('/api/catalog')).json();
-  state = await (await fetch('/api/config')).json();
+  try {
+    catalog = await (await fetch('/api/catalog')).json();
+    state = await (await fetch('/api/config')).json();
+  } catch (e) {
+    setStatus('Not connected', 'err');
+    document.getElementById('general').innerHTML =
+      '<p style="grid-column:1/-1; margin:0; font-size:14px; color:var(--err);">' +
+      'This page needs the Data Curator server — it cannot run as a standalone file.<br />' +
+      'Start it from your project directory with: <code>python -m kaxanuk.data_curator start</code><br />' +
+      'then open the address it prints (default <code>http://127.0.0.1:8753</code>).</p>';
+    return;
+  }
   renderGeneral(); renderIdentifiers(); renderColumns(); setStatus('');
 }
 
