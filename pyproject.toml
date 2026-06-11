@@ -37,11 +37,11 @@ requires-python = ">=3.12,<3.15"
 "kaxanuk.data_curator" = "kaxanuk.data_curator:cli"
 
 [project.urls]
-Homepage = "https://kaxanuk.mx"
-Documentation = "https://kaxanuk-data-curator.readthedocs.io/en/stable/api_reference/index.html"
-Repository = "https://github.com/KaxaNuk/Data-Curator"
-Issues = "https://github.com/KaxaNuk/Data-Curator/issues"
-Changelog = "https://github.com/KaxaNuk/Data-Curator/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/alanvaa06/Data-Curator"
+Documentation = "https://github.com/alanvaa06/Data-Curator/tree/main/docs/source"
+Repository = "https://github.com/alanvaa06/Data-Curator"
+Issues = "https://github.com/alanvaa06/Data-Curator/issues"
+Changelog = "https://github.com/alanvaa06/Data-Curator/blob/main/CHANGELOG.md"
 
 
 [dependency-groups]

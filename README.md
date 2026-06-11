@@ -2,9 +2,7 @@
 
 |                                                                                                                                                                                                                                                                                                                                                                                |
 |--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [![Python](https://img.shields.io/badge/python-3.12%20%7C%203.13%20%7C%203.14-blue?logo=python&logoColor=ffdd54)](https://www.python.org) [![PyPI - License](https://img.shields.io/pypi/l/kaxanuk.data-curator?color=blue)](LICENSE)                                                                                                                                          |
-| [![Build Status](https://github.com/KaxaNuk/Data-Curator/actions/workflows/main.yml/badge.svg)](https://github.com/KaxaNuk/Data-Curator/actions/workflows/main.yml) [![Read the Docs](https://app.readthedocs.org/projects/kaxanuk-data-curator/badge/?version=stable)](https://kaxanuk-data-curator.readthedocs.io/en/stable/)                                                |
-| [![PyPI - Version](https://img.shields.io/pypi/v/kaxanuk.data-curator?logo=pypi)](https://pypi.org/project/kaxanuk.data-curator) [![PyPI Downloads](https://static.pepy.tech/badge/kaxanuk-data-curator)](https://pepy.tech/projects/kaxanuk-data-curator) [![Powered by KaxaNuk](https://img.shields.io/badge/powered%20by-KaxaNuk-orange?colorB=orange)](https://kaxanuk.mx) |
+| [![Python](https://img.shields.io/badge/python-3.12%20%7C%203.13%20%7C%203.14-blue?logo=python&logoColor=ffdd54)](https://www.python.org) [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE) [![Build Status](https://github.com/alanvaa06/Data-Curator/actions/workflows/main.yml/badge.svg)](https://github.com/alanvaa06/Data-Curator/actions/workflows/main.yml) |
 
 Component library for downloading, validating, homogenizing, and combining financial stocks' data from different data providers.
 Can be run in standalone mode, configurable through a browser-based parameter panel, or as a component of a larger Python-based system. 
@@ -20,7 +18,7 @@ Features:
 
 
 ## Documentation
-Full documentation is available at [kaxanuk-data-curator.readthedocs.io](https://kaxanuk-data-curator.readthedocs.io/en/stable/).
+Full documentation sources live in [docs/source](docs/source); build them locally with `pdm run docs html`.
 
 ## Requirements
 The system can run either on your local Python (versions `3.12`, `3.13`, or `3.14`) or on Docker.
@@ -114,7 +112,7 @@ and adding their function name to the `columns` list in the `Config/data_curator
 into the parameter panel's column picker).
 As long as the names start with the `c_` prefix, the system will use them as any other feature.
 
-Check the [API Reference](https://kaxanuk-data-curator.readthedocs.io/en/stable/api_reference/index.html) to learn how to easily implement your own calculated features.
+Check the [API Reference](docs/source/api_reference) to learn how to easily implement your own calculated features.
 
 
 ## The Road to v1.0

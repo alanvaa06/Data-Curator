@@ -24,7 +24,7 @@ the data_curator_parameters.json file (or type it into the column picker of the 
 and press Enter). Don't forget that your function name needs to start with c_ as a prefix!
 
 See more examples of how to program custom functions by checking our built-in calculations at
-https://github.com/KaxaNuk/Data-Curator/blob/main/src/kaxanuk/data_curator/features/calculations.py
+https://github.com/alanvaa06/Data-Curator/blob/main/src/kaxanuk/data_curator/features/calculations.py
 """
 
 # Here you'll find helper functions for calculating more complicated features:

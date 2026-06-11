@@ -81,7 +81,7 @@ html_theme_options = {
     "icon_links": [
         {
             "name": "GitHub",
-            "url": "https://github.com/KaxaNuk/Data-Curator",
+            "url": "https://github.com/alanvaa06/Data-Curator",
             "icon": "fa-brands fa-square-github",
         },
     ],
