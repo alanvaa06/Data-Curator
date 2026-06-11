@@ -109,11 +109,30 @@ class DuckdbOutput(OutputHandlerInterface):
             f'{self._quote_identifier(name)} {column_type}'
             for (name, column_type, *_) in incoming_types
         )
+        incoming_names = {name for (name, *_) in incoming_types}
+        primary_key = (
+            f', PRIMARY KEY ({self._quote_identifier(self.IDENTIFIER_COLUMN)}, '
+            f'{self._quote_identifier(self.DATE_COLUMN)})'
+            if self.DATE_COLUMN in incoming_names
+            else ''
+        )
         connection.execute(
             f'CREATE TABLE IF NOT EXISTS {self._quote_identifier(self.TABLE_NAME)} ('
             f'{self._quote_identifier(self.IDENTIFIER_COLUMN)} VARCHAR, '
-            f'{column_definitions})'
+            f'{column_definitions}{primary_key})'
         )
+
+    def _table_has_primary_key(
+        self,
+        connection: duckdb.DuckDBPyConnection,
+    ) -> bool:
+        constraint = connection.execute(
+            "SELECT 1 FROM duckdb_constraints() "
+            "WHERE table_name = ? AND constraint_type = 'PRIMARY KEY'",
+            [self.TABLE_NAME],
+        ).fetchone()
+
+        return constraint is not None
 
     def _write_identifier_rows(
         self,
@@ -121,9 +140,24 @@ class DuckdbOutput(OutputHandlerInterface):
         main_identifier: str,
     ) -> None:
         table = self._quote_identifier(self.TABLE_NAME)
-        connection.execute(
-            f'INSERT INTO {table} BY NAME '
+        select_incoming = (
             f'SELECT ? AS {self._quote_identifier(self.IDENTIFIER_COLUMN)}, * '
-            'FROM incoming_columns',
-            [main_identifier],
+            'FROM incoming_columns'
         )
+        if self._table_has_primary_key(connection):
+            # upsert: restated (identifier, date) rows update in place, new dates append
+            connection.execute(
+                f'INSERT OR REPLACE INTO {table} BY NAME {select_incoming}',
+                [main_identifier],
+            )
+        else:
+            # no date column to key on: replace the identifier's rows wholesale
+            connection.execute(
+                f'DELETE FROM {table} '
+                f'WHERE {self._quote_identifier(self.IDENTIFIER_COLUMN)} = ?',
+                [main_identifier],
+            )
+            connection.execute(
+                f'INSERT INTO {table} BY NAME {select_incoming}',
+                [main_identifier],
+            )

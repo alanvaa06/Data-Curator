@@ -102,6 +102,34 @@ class TestDuckdbOutput:
         assert identifiers == {'AAPL', 'MSFT'}
         assert len(rows) == 4
 
+    def test_rerun_with_restated_values_updates_rows_without_duplicates(self, tmp_path):
+        handler = DuckdbOutput(output_base_dir=str(tmp_path))
+        handler.output_data(main_identifier='AAPL', columns=sample_table())
+        restated = pyarrow.table({
+            'm_date': [datetime.date(2024, 1, 3)],
+            'm_open': [184.22],
+            'm_close': [999.99],
+        })
+        handler.output_data(main_identifier='AAPL', columns=restated)
+        rows = read_duckdb_rows(tmp_path / 'data_curator.duckdb')
+        assert rows == [
+            ('AAPL', datetime.date(2024, 1, 2), 187.15, 185.64),
+            ('AAPL', datetime.date(2024, 1, 3), 184.22, 999.99),
+        ]
+
+    def test_new_dates_append_while_history_is_preserved(self, tmp_path):
+        handler = DuckdbOutput(output_base_dir=str(tmp_path))
+        handler.output_data(main_identifier='AAPL', columns=sample_table())
+        new_day = pyarrow.table({
+            'm_date': [datetime.date(2024, 1, 4)],
+            'm_open': [184.35],
+            'm_close': [181.91],
+        })
+        handler.output_data(main_identifier='AAPL', columns=new_day)
+        rows = read_duckdb_rows(tmp_path / 'data_curator.duckdb')
+        assert len(rows) == 3
+        assert rows[2] == ('AAPL', datetime.date(2024, 1, 4), 184.35, 181.91)
+
 
 class TestInMemoryOutput:
     def test_stores_table_per_identifier(self):
