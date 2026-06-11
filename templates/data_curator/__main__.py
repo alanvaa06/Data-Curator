@@ -70,6 +70,9 @@ def run():
                 'csv': kaxanuk.data_curator.output_handlers.CsvOutput(
                     output_base_dir=output_base_dir,
                 ),
+                'duckdb': kaxanuk.data_curator.output_handlers.DuckdbOutput(
+                    output_base_dir=output_base_dir,
+                ),
                 'parquet': kaxanuk.data_curator.output_handlers.ParquetOutput(
                     output_base_dir=output_base_dir,
                 ),
