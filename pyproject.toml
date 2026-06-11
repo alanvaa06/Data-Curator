@@ -20,6 +20,7 @@ classifiers = [
 ]
 dependencies = [    # dev dependencies are in the [tool.pdm.dev-dependencies] section
     "click>=8.1.7",
+    "duckdb>=1.0",
     "httpx>=0.27",
     "networkx>=3.5",
     "packaging>=24.2",
