@@ -277,9 +277,11 @@ ignore = [
     "DTZ001",   # Don't care about test datetime specifics
     "FBT003",   # Multiple external libraries require boolean positional arguments
     "D",        # Tests don't need to follow strict documentation requirements
+    "PLC0415",  # Tests may import lazily inside fixtures and test functions
     "PLR2004",  # No problem if magic values are usen in tests
     "RET",      # No need for return strictness in tests
     "S101",     # Permit use of pytest assert
+    "S310",     # Tests open http:// URLs against the local test server
     "SLF",      # Tests need private member access
     "TID252",   # Don't care about relative imports in tests
 ]

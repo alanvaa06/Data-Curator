@@ -33,7 +33,8 @@ def test_each_group_has_prefix_label_and_columns():
     catalog = load_catalog()
     for group in catalog['groups']:
         assert group['prefix'].endswith('_')
-        assert isinstance(group['label'], str) and group['label']
+        assert isinstance(group['label'], str)
+        assert group['label']
         assert len(group['columns']) > 0
         for column in group['columns']:
             assert column.startswith(group['prefix'])

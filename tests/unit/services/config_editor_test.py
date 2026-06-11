@@ -120,7 +120,7 @@ def test_save_rejects_invalid_payload(tmp_path):
     path = tmp_path / 'data_curator_parameters.json'
     payload = config_editor.build_default_config()
     payload['general']['period'] = 'weekly'
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='period'):
         config_editor.save_config(path, payload)
 
 
@@ -171,11 +171,11 @@ class TestEnvKeys:
         assert 'KNDC_API_KEY_LSEG=lsegkey' in env.read_text(encoding='utf-8')
 
     def test_save_rejects_unknown_variable(self, tmp_path):
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match='Unknown environment variable'):
             config_editor.save_env_values(tmp_path / '.env', {'EVIL_VAR': 'x'})
 
     def test_save_rejects_newlines_in_value(self, tmp_path):
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match='Invalid value'):
             config_editor.save_env_values(tmp_path / '.env', {'KNDC_API_KEY_FMP': 'a\nb'})
 
 
