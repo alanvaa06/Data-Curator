@@ -1,5 +1,6 @@
 import datetime
 
+import duckdb
 import pandas
 import pyarrow
 import pyarrow.csv
@@ -9,6 +10,7 @@ import pytest
 from kaxanuk.data_curator.exceptions import OutputHandlerError
 from kaxanuk.data_curator.output_handlers import (
     CsvOutput,
+    DuckdbOutput,
     InMemoryOutput,
     OutputHandlerInterface,
     ParquetOutput,
@@ -65,6 +67,42 @@ class TestParquetOutput:
         assert (nested_dir / 'MSFT.parquet').is_file()
 
 
+def read_duckdb_rows(database_path, order_by='main_identifier, m_date'):
+    connection = duckdb.connect(str(database_path), read_only=True)
+    try:
+        return connection.execute(
+            f'SELECT * FROM curated_data ORDER BY {order_by}'  # noqa: S608
+        ).fetchall()
+    finally:
+        connection.close()
+
+
+class TestDuckdbOutput:
+    def test_creates_database_file_in_missing_directory(self, tmp_path):
+        nested_dir = tmp_path / 'deeply' / 'nested' / 'Output'
+        handler = DuckdbOutput(output_base_dir=str(nested_dir))
+        assert handler.output_data(main_identifier='AAPL', columns=sample_table()) is True
+        assert (nested_dir / 'data_curator.duckdb').is_file()
+
+    def test_written_rows_roundtrip_data(self, tmp_path):
+        handler = DuckdbOutput(output_base_dir=str(tmp_path))
+        handler.output_data(main_identifier='AAPL', columns=sample_table())
+        rows = read_duckdb_rows(tmp_path / 'data_curator.duckdb')
+        assert rows == [
+            ('AAPL', datetime.date(2024, 1, 2), 187.15, 185.64),
+            ('AAPL', datetime.date(2024, 1, 3), 184.22, 184.25),
+        ]
+
+    def test_multiple_identifiers_share_one_table(self, tmp_path):
+        handler = DuckdbOutput(output_base_dir=str(tmp_path))
+        handler.output_data(main_identifier='AAPL', columns=sample_table())
+        handler.output_data(main_identifier='MSFT', columns=sample_table())
+        rows = read_duckdb_rows(tmp_path / 'data_curator.duckdb')
+        identifiers = {row[0] for row in rows}
+        assert identifiers == {'AAPL', 'MSFT'}
+        assert len(rows) == 4
+
+
 class TestInMemoryOutput:
     def test_stores_table_per_identifier(self):
         handler = InMemoryOutput()
@@ -97,5 +135,6 @@ class TestInMemoryOutput:
 
 def test_all_handlers_implement_the_interface():
     assert issubclass(CsvOutput, OutputHandlerInterface)
+    assert issubclass(DuckdbOutput, OutputHandlerInterface)
     assert issubclass(ParquetOutput, OutputHandlerInterface)
     assert issubclass(InMemoryOutput, OutputHandlerInterface)
