@@ -98,7 +98,11 @@ General
   (e.g., ``financial_modeling_prep``, ``lseg_workspace``, ``yahoo_finance``).
 - ``start_date`` / ``end_date`` (YYYY-MM-DD): first and last dates of the data fetch.
 - ``period``: fundamental data frequency, ``annual`` or ``quarterly``.
-- ``output_format``: choose between ``csv`` or ``parquet``.
+- ``output_format``: choose between ``csv``, ``parquet`` or ``duckdb``. The first two
+  write one file per identifier; ``duckdb`` writes all identifiers into a single
+  database file (``data_curator.duckdb``, table ``curated_data``) and re-runs update
+  existing rows in place instead of rewriting files, so you can refresh just the most
+  recent dates of a long history.
 - ``logger_level``: log verbosity (e.g., ``info``, ``debug``).
 - ``output_directory``: where output files are written (defaults to ``Output``). A directory
   outside cloud-synced locations (OneDrive/Dropbox) runs noticeably faster.

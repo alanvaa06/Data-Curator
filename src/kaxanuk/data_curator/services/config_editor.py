@@ -33,7 +33,7 @@ from kaxanuk.data_curator.entities.configuration import (
 
 HOST = '127.0.0.1'
 DEFAULT_PORT = 8753
-OUTPUT_FORMATS = ('csv', 'parquet')
+OUTPUT_FORMATS = ('csv', 'duckdb', 'parquet')
 CONFIG_FILENAME = 'data_curator_parameters.json'
 PAGE_RESOURCE = 'config_editor_page.html'
 RUN_TARGET_DEFAULT = '__main__.py'

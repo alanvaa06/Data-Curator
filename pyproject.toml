@@ -20,6 +20,7 @@ classifiers = [
 ]
 dependencies = [    # dev dependencies are in the [tool.pdm.dev-dependencies] section
     "click>=8.1.7",
+    "duckdb>=1.0",
     "httpx>=0.27",
     "networkx>=3.5",
     "packaging>=24.2",
@@ -259,6 +260,9 @@ ignore = [
 "src/kaxanuk/data_curator/modules/debugger.py" = [
     "PLC0415",  # Need to limit the debugger module import to specific envs
 ]
+"src/kaxanuk/data_curator/output_handlers/duckdb_output.py" = [
+    "S608",     # table/column names can't be bound parameters; all values use parameter binding
+]
 "src/kaxanuk/data_curator/services/cli.py" = [
     "D301",     # Escape sequences in docstrings are actually used by click
     "S603",     # The whole point of cli._run_entry_script is to actually run scripts
@@ -282,6 +286,7 @@ ignore = [
     "RET",      # No need for return strictness in tests
     "S101",     # Permit use of pytest assert
     "S310",     # Tests open http:// URLs against the local test server
+    "S603",     # Tests run subprocesses with sys.executable and fixed args — trusted input
     "SLF",      # Tests need private member access
     "TID252",   # Don't care about relative imports in tests
 ]

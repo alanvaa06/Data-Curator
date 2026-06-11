@@ -131,6 +131,7 @@ def test_build_catalog_response_has_options_and_groups():
     assert 'none' in response['options']['fundamental_data_provider']
     assert 'quarterly' in response['options']['period']
     assert 'csv' in response['options']['output_format']
+    assert 'duckdb' in response['options']['output_format']
     assert 'info' in response['options']['logger_level']
 
 

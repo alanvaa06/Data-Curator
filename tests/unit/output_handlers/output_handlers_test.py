@@ -1,5 +1,6 @@
 import datetime
 
+import duckdb
 import pandas
 import pyarrow
 import pyarrow.csv
@@ -9,6 +10,7 @@ import pytest
 from kaxanuk.data_curator.exceptions import OutputHandlerError
 from kaxanuk.data_curator.output_handlers import (
     CsvOutput,
+    DuckdbOutput,
     InMemoryOutput,
     OutputHandlerInterface,
     ParquetOutput,
@@ -65,6 +67,94 @@ class TestParquetOutput:
         assert (nested_dir / 'MSFT.parquet').is_file()
 
 
+def read_duckdb_rows(database_path, order_by='main_identifier, m_date'):
+    connection = duckdb.connect(str(database_path), read_only=True)
+    try:
+        return connection.execute(
+            f'SELECT * FROM curated_data ORDER BY {order_by}'  # noqa: S608
+        ).fetchall()
+    finally:
+        connection.close()
+
+
+class TestDuckdbOutput:
+    def test_creates_database_file_in_missing_directory(self, tmp_path):
+        nested_dir = tmp_path / 'deeply' / 'nested' / 'Output'
+        handler = DuckdbOutput(output_base_dir=str(nested_dir))
+        assert handler.output_data(main_identifier='AAPL', columns=sample_table()) is True
+        assert (nested_dir / 'data_curator.duckdb').is_file()
+
+    def test_written_rows_roundtrip_data(self, tmp_path):
+        handler = DuckdbOutput(output_base_dir=str(tmp_path))
+        handler.output_data(main_identifier='AAPL', columns=sample_table())
+        rows = read_duckdb_rows(tmp_path / 'data_curator.duckdb')
+        assert rows == [
+            ('AAPL', datetime.date(2024, 1, 2), 187.15, 185.64),
+            ('AAPL', datetime.date(2024, 1, 3), 184.22, 184.25),
+        ]
+
+    def test_multiple_identifiers_share_one_table(self, tmp_path):
+        handler = DuckdbOutput(output_base_dir=str(tmp_path))
+        handler.output_data(main_identifier='AAPL', columns=sample_table())
+        handler.output_data(main_identifier='MSFT', columns=sample_table())
+        rows = read_duckdb_rows(tmp_path / 'data_curator.duckdb')
+        identifiers = {row[0] for row in rows}
+        assert identifiers == {'AAPL', 'MSFT'}
+        assert len(rows) == 4
+
+    def test_rerun_with_restated_values_updates_rows_without_duplicates(self, tmp_path):
+        handler = DuckdbOutput(output_base_dir=str(tmp_path))
+        handler.output_data(main_identifier='AAPL', columns=sample_table())
+        restated = pyarrow.table({
+            'm_date': [datetime.date(2024, 1, 3)],
+            'm_open': [184.22],
+            'm_close': [999.99],
+        })
+        handler.output_data(main_identifier='AAPL', columns=restated)
+        rows = read_duckdb_rows(tmp_path / 'data_curator.duckdb')
+        assert rows == [
+            ('AAPL', datetime.date(2024, 1, 2), 187.15, 185.64),
+            ('AAPL', datetime.date(2024, 1, 3), 184.22, 999.99),
+        ]
+
+    def test_new_dates_append_while_history_is_preserved(self, tmp_path):
+        handler = DuckdbOutput(output_base_dir=str(tmp_path))
+        handler.output_data(main_identifier='AAPL', columns=sample_table())
+        new_day = pyarrow.table({
+            'm_date': [datetime.date(2024, 1, 4)],
+            'm_open': [184.35],
+            'm_close': [181.91],
+        })
+        handler.output_data(main_identifier='AAPL', columns=new_day)
+        rows = read_duckdb_rows(tmp_path / 'data_curator.duckdb')
+        assert len(rows) == 3
+        assert rows[2] == ('AAPL', datetime.date(2024, 1, 4), 184.35, 181.91)
+
+    def test_dateless_data_replaces_identifier_rows_on_rerun(self, tmp_path):
+        handler = DuckdbOutput(output_base_dir=str(tmp_path))
+        dateless = pyarrow.table({'m_open': [1.0, 2.0], 'm_close': [3.0, 4.0]})
+        handler.output_data(main_identifier='AAPL', columns=dateless)
+        handler.output_data(main_identifier='AAPL', columns=dateless)
+        rows = read_duckdb_rows(tmp_path / 'data_curator.duckdb', order_by='m_open')
+        assert len(rows) == 2
+
+    def test_later_run_with_new_column_extends_schema(self, tmp_path):
+        handler = DuckdbOutput(output_base_dir=str(tmp_path))
+        handler.output_data(main_identifier='AAPL', columns=sample_table())
+        extended = pyarrow.table({
+            'm_date': [datetime.date(2024, 1, 4)],
+            'm_open': [184.35],
+            'm_close': [181.91],
+            'c_returns': [0.012],
+        })
+        handler.output_data(main_identifier='AAPL', columns=extended)
+        rows = read_duckdb_rows(tmp_path / 'data_curator.duckdb')
+        assert len(rows) == 3
+        # original rows get NULL for the new column, new row carries its value
+        assert rows[0][4] is None
+        assert rows[2][4] == 0.012
+
+
 class TestInMemoryOutput:
     def test_stores_table_per_identifier(self):
         handler = InMemoryOutput()
@@ -97,5 +187,6 @@ class TestInMemoryOutput:
 
 def test_all_handlers_implement_the_interface():
     assert issubclass(CsvOutput, OutputHandlerInterface)
+    assert issubclass(DuckdbOutput, OutputHandlerInterface)
     assert issubclass(ParquetOutput, OutputHandlerInterface)
     assert issubclass(InMemoryOutput, OutputHandlerInterface)
