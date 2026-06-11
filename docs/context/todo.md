@@ -12,6 +12,15 @@ Status: pending | in_progress | done
 - [done] Output-handler unit tests; removed empty column_builder/instance_test.py.
 - [done] URLs/badges → alanvaa06/Data-Curator; RTD/PyPI badges dropped.
 
+## DuckDB output handler (plan: docs/superpowers/plans/2026-06-10-duckdb-output-handler.md)
+- [done] Task 1: duckdb dependency in pyproject.
+- [done] Task 2: DuckdbOutput basic write path (TDD).
+- [done] Task 3: upsert on (main_identifier, m_date) — restatements + incremental appends.
+- [done] Task 4: dateless replace semantics + schema evolution.
+- [done] Task 5: register 'duckdb' format (template entry script + config editor).
+- [done] Task 6: docs, full verification (801 tests, ruff, mypy, e2e smoke), context updates.
+- [pending] Follow-up: fetch-side incremental mode (auto start-date from MAX(m_date) per identifier + restatement buffer) — storage layer ready, needs orchestration change in data_curator.py.
+
 ## Follow-ups
 - [pending] Burn down the mypy ignore_errors baseline (fmp/lseg providers, data_blocks, column_builder, helpers, data_column).
 - [done] Dev environment: stale non-editable install replaced with `pip install --user -e .`; CLI now reflects `src/`. Added package `__main__.py` so `python -m kaxanuk.data_curator` works regardless of PATH.
