@@ -70,18 +70,13 @@
   .status { font-size: 13px; }
   .ok { color: var(--ok); } .err { color: var(--err); }
   #runLog { flex: 1; min-height: 0; overflow: auto; margin: 0; font-size: 12px; white-space: pre-wrap; }
-  .prow { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex: none; }
-  .pbar { flex: 1; height: 8px; border-radius: 4px; background: var(--border-soft); overflow: hidden; }
-  .pfill { height: 100%; width: 0%; border-radius: 4px; background: var(--accent); transition: width 0.6s ease; }
-  .pfill.indeterminate { width: 30%; animation: slide 1.2s ease-in-out infinite alternate; }
-  @keyframes slide { from { margin-left: 0; } to { margin-left: 70%; } }
-  .ptext, .ptimer { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .ptimer { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; margin-right: 6px; }
 </style>
 </head>
 <body>
 <div class="bar">
   <div><h1>Data Curator — parameters</h1><p class="sub" id="path">Config/data_curator_parameters.json</p></div>
-  <div><span class="status" id="status"></span> <button id="reload">Reload</button> <button id="save">Save</button> <button id="run">Save &amp; run</button></div>
+  <div><span class="status" id="status"></span> <span class="ptimer" id="ptimer"></span> <button id="reload">Reload</button> <button id="save">Save</button> <button id="run">Save &amp; run</button></div>
 </div>
 
 <div class="layout">
@@ -97,11 +92,6 @@
     </fieldset>
 
     <fieldset class="boxRun" id="runBox" style="display:none"><legend>Run output</legend>
-      <div class="prow">
-        <div class="pbar"><div class="pfill" id="pfill"></div></div>
-        <span class="ptext" id="ptext"></span>
-        <span class="ptimer" id="ptimer"></span>
-      </div>
       <pre id="runLog"></pre>
     </fieldset>
   </div>
@@ -350,22 +340,8 @@ function formatElapsed(seconds) {
   return m + ':' + s;
 }
 
-function updateProgress(status) {
-  const fill = document.getElementById('pfill');
-  const text = document.getElementById('ptext');
+function updateTimer(status) {
   document.getElementById('ptimer').textContent = formatElapsed(status.elapsed);
-  const progress = status.progress;
-  if (!progress) { fill.className = 'pfill'; fill.style.width = '0%'; text.textContent = ''; return; }
-  if (progress.total > 0) {
-    fill.className = 'pfill';
-    const pct = Math.round(100 * progress.done / progress.total);
-    fill.style.width = pct + '%';
-    text.textContent = progress.done + '/' + progress.total + ' identifiers';
-  } else {
-    fill.className = status.state === 'running' ? 'pfill indeterminate' : 'pfill';
-    fill.style.width = status.state === 'running' ? '' : '0%';
-    text.textContent = '';
-  }
 }
 
 async function saveAndRun() {
@@ -377,12 +353,12 @@ async function saveAndRun() {
     const data = await res.json();
     setStatus(data.state === 'running' ? 'Already running' : 'Run failed to start', 'err');
     document.getElementById('runLog').textContent = data.output || '';
-    updateProgress(data);
+    updateTimer(data);
     return;
   }
   setStatus('Running…');
   document.getElementById('runLog').textContent = 'Running… output appears when the run finishes.';
-  updateProgress({ state: 'running', elapsed: 0, progress: null });
+  updateTimer({ elapsed: 0 });
   startRunPolling();
 }
 
@@ -393,7 +369,7 @@ function firstCriticalLine(output) {
 
 async function pollRun() {
   const s = await (await fetch('/api/run')).json();
-  updateProgress(s);
+  updateTimer(s);
   if (s.state === 'running') return;
   document.getElementById('runLog').textContent = s.output || '(no output)';
   const critical = firstCriticalLine(s.output);

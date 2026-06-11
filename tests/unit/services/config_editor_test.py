@@ -82,32 +82,6 @@ class TestOutputDirectory:
             errors = config_editor.validate_config_payload(payload)
             assert any('output_directory' in e for e in errors), bad
 
-    def test_run_counts_progress_in_configured_directory(self, tmp_path):
-        import json as json_module
-        config_editor.reset_run_state()
-        custom_dir = tmp_path / 'MyResults'
-        config = config_editor.build_default_config()
-        config['identifiers'] = ['AAA']
-        config['general']['output_directory'] = str(custom_dir)
-        config_path = tmp_path / config_editor.CONFIG_FILENAME
-        config_path.write_text(json_module.dumps(config), encoding='utf-8')
-        entry = tmp_path / 'entry.py'
-        entry.write_text(
-            "import pathlib\n"
-            "out = pathlib.Path(r'" + str(custom_dir) + "')\n"
-            "out.mkdir(parents=True, exist_ok=True)\n"
-            "(out / 'AAA.csv').write_text('x')\n",
-            encoding='utf-8',
-        )
-        server, base = _start(tmp_path, entry=entry)
-        try:
-            assert _post_empty(base + '/api/run') == 200
-            status = _wait_for_run_completion()
-            assert status['state'] == 'done'
-            assert status['progress'] == {'done': 1, 'total': 1}
-        finally:
-            server.shutdown()
-
 
 def test_save_writes_valid_payload(tmp_path):
     path = tmp_path / 'data_curator_parameters.json'
@@ -385,78 +359,23 @@ class TestRunOutputRedaction:
         assert 'symbol=AAPL' in status['output']
 
 
-class TestRunProgress:
-    def test_count_files_modified_since(self, tmp_path):
-        import time as time_module
-        (tmp_path / 'old.csv').write_text('x', encoding='utf-8')
-        cutoff = time_module.time() + 10
-        assert config_editor._count_files_modified_since(tmp_path, cutoff) == 0
-        assert config_editor._count_files_modified_since(tmp_path / 'missing', 0) == 0
-        assert config_editor._count_files_modified_since(tmp_path, 0) == 1
-
-    def test_count_includes_nested_output_files(self, tmp_path):
-        (tmp_path / 'sub').mkdir()
-        (tmp_path / 'sub' / 'nested.csv').write_text('x', encoding='utf-8')
-        (tmp_path / 'top.csv').write_text('x', encoding='utf-8')
-        assert config_editor._count_files_modified_since(tmp_path, 0) == 2
-
-    def test_progress_count_is_cached_between_polls(self, tmp_path, monkeypatch):
-        calls = {'n': 0}
-        real_count = config_editor._count_files_modified_since
-
-        def counting(directory, since):
-            calls['n'] += 1
-            return real_count(directory, since)
-
-        monkeypatch.setattr(config_editor, '_count_files_modified_since', counting)
+class TestRunElapsed:
+    def test_status_reports_elapsed_without_progress(self, tmp_path):
         config_editor.reset_run_state()
-        with config_editor._run_lock:
-            config_editor._run_state.update(
-                state='running',
-                started_at=1.0,
-                identifiers_total=5,
-                output_dir=str(tmp_path),
-            )
-        config_editor.get_run_status()
-        config_editor.get_run_status()
-        config_editor.get_run_status()
-        assert calls['n'] == 1
-        config_editor.reset_run_state()
-
-    def test_status_reports_progress_and_elapsed(self, tmp_path):
-        import json as json_module
-        config_editor.reset_run_state()
-        config_path = tmp_path / 'cfg.json'
-        config = config_editor.build_default_config()
-        config['identifiers'] = ['AAA', 'BBB']
-        config_path.write_text(json_module.dumps(config), encoding='utf-8')
-        output_dir = tmp_path / 'Output'
         script = tmp_path / 'entry.py'
-        script.write_text(
-            "import pathlib, time\n"
-            "out = pathlib.Path(r'" + str(output_dir) + "')\n"
-            "out.mkdir(exist_ok=True)\n"
-            "(out / 'AAA.csv').write_text('a')\n"
-            "(out / 'BBB.csv').write_text('b')\n"
-            "print('done')\n",
-            encoding='utf-8',
-        )
-        assert config_editor.start_pipeline_run(
-            script,
-            config_path=config_path,
-            output_dir=output_dir,
-        ) is True
+        script.write_text("print('done')\n", encoding='utf-8')
+        assert config_editor.start_pipeline_run(script) is True
         status = _wait_for_run_completion()
         assert status['state'] == 'done'
-        assert status['progress'] == {'done': 2, 'total': 2}
         assert status['elapsed'] >= 0
+        assert 'progress' not in status
 
-    def test_idle_status_has_no_progress(self):
+    def test_idle_status_has_no_elapsed(self):
         config_editor.reset_run_state()
         status = config_editor.get_run_status()
         assert status['state'] == 'idle'
-        assert status['progress'] is None
         assert status['elapsed'] is None
+        assert 'progress' not in status
 
 
 class TestRunManager:

@@ -52,15 +52,8 @@ _RUN_STATE_IDLE: dict[str, typing.Any] = {
     'returncode': None,
     'started_at': None,
     'finished_at': None,
-    'identifiers_total': 0,
-    'output_dir': None,
 }
 _run_state: dict[str, typing.Any] = dict(_RUN_STATE_IDLE)
-
-# counting output files walks the whole directory, which gets expensive on large
-# (and cloud-synced) output folders — cache it so 1s status polls stay cheap
-PROGRESS_CACHE_SECONDS = 5.0
-_progress_cache: dict[str, typing.Any] = {'key': None, 'at': 0.0, 'count': 0}
 
 API_KEY_ENV_VARS = (
     'KNDC_API_KEY_FMP',
@@ -286,66 +279,23 @@ def _try_date(value: typing.Any) -> datetime.date | None:
         return None
 
 
-def _count_files_modified_since(
-    directory: pathlib.Path | str | None,
-    since: float,
-) -> int:
-    if directory is None:
-
-        return 0
-
-    directory = pathlib.Path(directory)
-    if not directory.is_dir():
-
-        return 0
-
-    return sum(
-        1
-        for path in directory.rglob('*')
-        if path.is_file() and path.stat().st_mtime >= since
-    )
-
-
 def get_run_status() -> dict[str, typing.Any]:
     """
     Return a snapshot of the current pipeline run state.
 
-    While a run is active (or after it finishes) the snapshot includes 'elapsed'
-    seconds and a 'progress' mapping with the count of identifiers whose output
-    file has been written versus the configured total.
+    While a run is active (or after it finishes) the snapshot includes the
+    'elapsed' seconds since it started.
     """
     with _run_lock:
         snapshot = dict(_run_state)
 
     if snapshot['started_at'] is None:
         snapshot['elapsed'] = None
-        snapshot['progress'] = None
     else:
         end = snapshot['finished_at'] if snapshot['finished_at'] is not None else time.time()
         snapshot['elapsed'] = round(end - snapshot['started_at'], 1)
-        total = snapshot['identifiers_total']
-        now = time.time()
-        cache_key = (snapshot['output_dir'], snapshot['started_at'], snapshot['finished_at'])
-        with _run_lock:
-            cache_valid = (
-                _progress_cache['key'] == cache_key
-                and (now - _progress_cache['at']) < PROGRESS_CACHE_SECONDS
-            )
-            written = _progress_cache['count'] if cache_valid else None
-        if written is None:
-            written = _count_files_modified_since(
-                snapshot['output_dir'],
-                # half-second margin against filesystem mtime granularity
-                snapshot['started_at'] - 0.5,
-            )
-            with _run_lock:
-                _progress_cache.update(key=cache_key, at=now, count=written)
-        snapshot['progress'] = {
-            'done': min(written, total) if total else written,
-            'total': total,
-        }
 
-    for internal_key in ('started_at', 'finished_at', 'identifiers_total', 'output_dir'):
+    for internal_key in ('started_at', 'finished_at'):
         del snapshot[internal_key]
 
     return snapshot
@@ -355,13 +305,10 @@ def reset_run_state() -> None:
     """Reset the pipeline run state to idle (mainly for tests)."""
     with _run_lock:
         _run_state.update(_RUN_STATE_IDLE)
-        _progress_cache.update(key=None, at=0.0, count=0)
 
 
 def start_pipeline_run(
     entry_script: pathlib.Path | str,
-    config_path: pathlib.Path | str | None = None,
-    output_dir: pathlib.Path | str | None = None,
 ) -> bool:
     """
     Run the entry script in a background thread, capturing its output.
@@ -370,10 +317,6 @@ def start_pipeline_run(
     ----------
     entry_script
         The script to execute
-    config_path
-        The JSON configuration file, used to determine the identifier total for progress
-    output_dir
-        The directory where output files appear, used to measure progress
 
     Returns
     -------
@@ -381,19 +324,6 @@ def start_pipeline_run(
     entry script is missing (state set to 'failed' in that case).
     """
     entry_path = pathlib.Path(entry_script)
-    identifiers_total = 0
-    if config_path is not None:
-        try:
-            parsed_config = load_config(config_path)
-            identifiers_total = len(parsed_config.get('identifiers', []))
-            if output_dir is None:
-                configured_dir = parsed_config.get('general', {}).get('output_directory')
-                if isinstance(configured_dir, str) and configured_dir.strip():
-                    output_dir = configured_dir.strip()
-        except (OSError, json.JSONDecodeError):
-            identifiers_total = 0
-    if output_dir is None:
-        output_dir = 'Output'
 
     with _run_lock:
         if _run_state['state'] == 'running':
@@ -417,8 +347,6 @@ def start_pipeline_run(
             returncode=None,
             started_at=time.time(),
             finished_at=None,
-            identifiers_total=identifiers_total,
-            output_dir=str(output_dir),
         )
 
     def _worker() -> None:
@@ -525,7 +453,7 @@ def build_server(
 
                 self._send_json(200, {'status': 'saved'})
             elif self.path == '/api/run':
-                if start_pipeline_run(run_target, config_path=config_file):
+                if start_pipeline_run(run_target):
                     self._send_json(200, {'status': 'started'})
                 else:
                     status = get_run_status()
