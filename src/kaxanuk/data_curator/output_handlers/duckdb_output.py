@@ -122,6 +122,22 @@ class DuckdbOutput(OutputHandlerInterface):
             f'{column_definitions}{primary_key})'
         )
 
+        # runs with new calculated columns extend the table; existing rows get NULL
+        existing_columns = {
+            row[0]
+            for row in connection.execute(
+                'SELECT column_name FROM information_schema.columns '
+                'WHERE table_name = ?',
+                [self.TABLE_NAME],
+            ).fetchall()
+        }
+        for (name, column_type, *_) in incoming_types:
+            if name not in existing_columns:
+                connection.execute(
+                    f'ALTER TABLE {self._quote_identifier(self.TABLE_NAME)} '
+                    f'ADD COLUMN {self._quote_identifier(name)} {column_type}'
+                )
+
     def _table_has_primary_key(
         self,
         connection: duckdb.DuckDBPyConnection,

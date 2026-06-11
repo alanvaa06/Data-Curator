@@ -130,6 +130,30 @@ class TestDuckdbOutput:
         assert len(rows) == 3
         assert rows[2] == ('AAPL', datetime.date(2024, 1, 4), 184.35, 181.91)
 
+    def test_dateless_data_replaces_identifier_rows_on_rerun(self, tmp_path):
+        handler = DuckdbOutput(output_base_dir=str(tmp_path))
+        dateless = pyarrow.table({'m_open': [1.0, 2.0], 'm_close': [3.0, 4.0]})
+        handler.output_data(main_identifier='AAPL', columns=dateless)
+        handler.output_data(main_identifier='AAPL', columns=dateless)
+        rows = read_duckdb_rows(tmp_path / 'data_curator.duckdb', order_by='m_open')
+        assert len(rows) == 2
+
+    def test_later_run_with_new_column_extends_schema(self, tmp_path):
+        handler = DuckdbOutput(output_base_dir=str(tmp_path))
+        handler.output_data(main_identifier='AAPL', columns=sample_table())
+        extended = pyarrow.table({
+            'm_date': [datetime.date(2024, 1, 4)],
+            'm_open': [184.35],
+            'm_close': [181.91],
+            'c_returns': [0.012],
+        })
+        handler.output_data(main_identifier='AAPL', columns=extended)
+        rows = read_duckdb_rows(tmp_path / 'data_curator.duckdb')
+        assert len(rows) == 3
+        # original rows get NULL for the new column, new row carries its value
+        assert rows[0][4] is None
+        assert rows[2][4] == 0.012
+
 
 class TestInMemoryOutput:
     def test_stores_table_per_identifier(self):
