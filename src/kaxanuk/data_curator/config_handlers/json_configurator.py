@@ -123,7 +123,7 @@ class JsonConfigurator(ConfiguratorInterface):
     def get_configuration(self) -> Configuration:
         return self._configuration
 
-    def get_fundamental_data_provider(self) -> DataProviderInterface:
+    def get_fundamental_data_provider(self) -> DataProviderInterface | None:
         return self._fundamental_data_provider
 
     def get_logger_level(self) -> int:

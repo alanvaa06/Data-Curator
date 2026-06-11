@@ -44,8 +44,12 @@ jobs:
 
       - name: Lint with ruff
         run: |
-          # stop the build if linting fails 
+          # stop the build if linting fails
           ruff check .
+
+      - name: Type check with mypy
+        run: |
+          mypy
 
       - name: Test with pytest
         run: |

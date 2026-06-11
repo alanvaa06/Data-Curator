@@ -87,6 +87,22 @@ files = [
 mypy_path = "src/"
 namespace_packages = true
 
+# Baseline: these modules predate type checking and fail mypy (~1200 errors,
+# mostly the two provider god-modules). They are excluded so the rest of the
+# codebase stays enforced in CI; remove entries from this list as they get fixed.
+[[tool.mypy.overrides]]
+module = [
+    "kaxanuk.data_curator.data_blocks.*",
+    "kaxanuk.data_curator.data_providers.data_provider_interface",
+    "kaxanuk.data_curator.data_providers.financial_modeling_prep",
+    "kaxanuk.data_curator.data_providers.lseg_workspace",
+    "kaxanuk.data_curator.features.helpers",
+    "kaxanuk.data_curator.modules.data_column",
+    "kaxanuk.data_curator.services.column_builder",
+    "kaxanuk.data_curator.services.data_provider_toolkit",
+]
+ignore_errors = true
+
 [[tool.mypy.overrides]]
 module = "pyarrow.*"
 ignore_missing_imports = true

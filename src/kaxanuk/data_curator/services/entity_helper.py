@@ -17,7 +17,7 @@ from kaxanuk.data_curator.exceptions import (
 # Protocol for type-checking dataclasses
 @typing.runtime_checkable
 class DataclassProtocol(typing.Protocol):
-    __dataclass_fields__: dict
+    __dataclass_fields__: typing.ClassVar[dict]
 
 
 def detect_field_type_errors(
@@ -40,19 +40,20 @@ def detect_field_type_errors(
     for field in dataclasses.fields(dataclass_entity):
         field_name = field.name
         field_type = field.type
-        is_nullable = (
+        if (
             isinstance(field_type, types.UnionType)
             and len(field_type.__args__) == 2
             and field_type.__args__[1] == types.NoneType
-        )
-        if is_nullable:
+        ):
             # for a nullable type, get the non-null type
+            is_nullable = True
             base_field_type = field_type.__args__[0]
         elif isinstance(field_type, types.GenericAlias):
             # skip check of non-simple types
 
             continue
         else:
+            is_nullable = False
             base_field_type = field_type
 
         field_value = getattr(dataclass_entity, field_name)

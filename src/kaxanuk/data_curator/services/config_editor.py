@@ -473,7 +473,7 @@ def build_server(
     entry_script: pathlib.Path | str = RUN_TARGET_DEFAULT,
 ) -> http.server.HTTPServer:
     """Build (but do not start) the editor HTTP server bound to localhost."""
-    config_path = pathlib.Path(config_path)
+    config_file = pathlib.Path(config_path)
     run_target = pathlib.Path(entry_script)
 
     class Handler(http.server.BaseHTTPRequestHandler):
@@ -495,13 +495,13 @@ def build_server(
                 # read per request so server restarts are never needed to pick up page updates
                 self._send(200, _read_page().encode('utf-8'), 'text/html; charset=utf-8')
             elif self.path == '/api/config':
-                self._send_json(200, load_config(config_path))
+                self._send_json(200, load_config(config_file))
             elif self.path == '/api/catalog':
                 self._send_json(200, build_catalog_response())
             elif self.path == '/api/run':
                 self._send_json(200, get_run_status())
             elif self.path == '/api/env':
-                self._send_json(200, read_env_status(config_path.parent / '.env'))
+                self._send_json(200, read_env_status(config_file.parent / '.env'))
             else:
                 self._send_json(404, {'error': 'not found'})
 
@@ -517,7 +517,7 @@ def build_server(
                     return
 
                 try:
-                    save_config(config_path, payload)
+                    save_config(config_file, payload)
                 except ValueError as error:
                     self._send_json(400, {'errors': str(error).split('; ')})
 
@@ -525,7 +525,7 @@ def build_server(
 
                 self._send_json(200, {'status': 'saved'})
             elif self.path == '/api/run':
-                if start_pipeline_run(run_target, config_path=config_path):
+                if start_pipeline_run(run_target, config_path=config_file):
                     self._send_json(200, {'status': 'started'})
                 else:
                     status = get_run_status()
@@ -540,7 +540,7 @@ def build_server(
                         msg = "Expected a JSON object"
 
                         raise ValueError(msg)
-                    save_env_values(config_path.parent / '.env', payload)
+                    save_env_values(config_file.parent / '.env', payload)
                 except (json.JSONDecodeError, ValueError) as error:
                     self._send_json(400, {'errors': [str(error)]})
 

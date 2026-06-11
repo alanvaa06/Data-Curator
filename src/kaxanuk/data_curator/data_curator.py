@@ -57,7 +57,7 @@ def main(
     max_concurrent_computations: int = 1,
     logger_level: int = logging.WARNING,
     logger_format: str = "[%(levelname)s] %(message)s",
-    logger_file: str | bytes | os.PathLike | None = None,
+    logger_file: str | os.PathLike[str] | None = None,
 ) -> bool:
     """
     Run the data curator system.

@@ -17,7 +17,7 @@ class ConfiguratorInterface(metaclass=abc.ABCMeta):
         ...
 
     @abc.abstractmethod
-    def get_fundamental_data_provider(self) -> DataProviderInterface:
+    def get_fundamental_data_provider(self) -> DataProviderInterface | None:
         ...
 
     @abc.abstractmethod
