@@ -124,9 +124,9 @@ class DuckdbOutput(OutputHandlerInterface):
 
         # runs with new calculated columns extend the table; existing rows get NULL
         existing_columns = {
-            row[0]
+            row[0]: row[1]
             for row in connection.execute(
-                'SELECT column_name FROM information_schema.columns '
+                'SELECT column_name, data_type FROM information_schema.columns '
                 'WHERE table_name = ?',
                 [self.TABLE_NAME],
             ).fetchall()
@@ -137,6 +137,37 @@ class DuckdbOutput(OutputHandlerInterface):
                     f'ALTER TABLE {self._quote_identifier(self.TABLE_NAME)} '
                     f'ADD COLUMN {self._quote_identifier(name)} {column_type}'
                 )
+            elif (
+                existing_columns[name] != column_type
+                and name != self.DATE_COLUMN
+            ):
+                self._promote_column_type(connection, name, existing_columns[name])
+
+    def _promote_column_type(
+        self,
+        connection: duckdb.DuckDBPyConnection,
+        column_name: str,
+        existing_type: str,
+    ) -> None:
+        """
+        Widen a table column so both its current values and the incoming ones fit.
+
+        Decimal precision is inferred per ticker from the observed values (e.g. an
+        all-zero column types as DECIMAL(1,0)), so later tickers can carry wider
+        values than the table column admits. DuckDB's UNION type inference computes
+        the common super type; only widen when it differs from the current type.
+        """
+        quoted_name = self._quote_identifier(column_name)
+        quoted_table = self._quote_identifier(self.TABLE_NAME)
+        (_, promoted_type, *_rest) = connection.execute(
+            f'DESCRIBE SELECT {quoted_name} FROM {quoted_table} '
+            f'UNION ALL SELECT {quoted_name} FROM incoming_columns'
+        ).fetchall()[0]
+        if promoted_type != existing_type:
+            connection.execute(
+                f'ALTER TABLE {quoted_table} '
+                f'ALTER COLUMN {quoted_name} SET DATA TYPE {promoted_type}'
+            )
 
     def _table_has_primary_key(
         self,

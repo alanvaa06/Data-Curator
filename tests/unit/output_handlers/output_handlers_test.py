@@ -1,4 +1,5 @@
 import datetime
+import decimal
 
 import duckdb
 import pandas
@@ -137,6 +138,39 @@ class TestDuckdbOutput:
         handler.output_data(main_identifier='AAPL', columns=dateless)
         rows = read_duckdb_rows(tmp_path / 'data_curator.duckdb', order_by='m_open')
         assert len(rows) == 2
+
+    def test_wider_decimal_values_in_later_write_promote_column_type(self, tmp_path):
+        # first ticker all-zero decimals infer DECIMAL(1,0); later real values must still fit
+        handler = DuckdbOutput(output_base_dir=str(tmp_path))
+        narrow = pyarrow.table({
+            'm_date': [datetime.date(2024, 1, 2)],
+            'fcf_fx_effect': pyarrow.array([decimal.Decimal('0')]),
+        })
+        handler.output_data(main_identifier='AAPL', columns=narrow)
+        wide = pyarrow.table({
+            'm_date': [datetime.date(2024, 1, 2)],
+            'fcf_fx_effect': pyarrow.array([decimal.Decimal('104773000')]),
+        })
+        handler.output_data(main_identifier='ABNB', columns=wide)
+        rows = read_duckdb_rows(tmp_path / 'data_curator.duckdb')
+        assert rows[0][2] == decimal.Decimal('0')
+        assert rows[1][2] == decimal.Decimal('104773000')
+
+    def test_all_null_column_in_first_write_accepts_values_later(self, tmp_path):
+        handler = DuckdbOutput(output_base_dir=str(tmp_path))
+        nulls = pyarrow.table({
+            'm_date': [datetime.date(2024, 1, 2)],
+            'c_metric': pyarrow.array([None], type=pyarrow.null()),
+        })
+        handler.output_data(main_identifier='AAPL', columns=nulls)
+        values = pyarrow.table({
+            'm_date': [datetime.date(2024, 1, 2)],
+            'c_metric': [1234567890.5],
+        })
+        handler.output_data(main_identifier='ABNB', columns=values)
+        rows = read_duckdb_rows(tmp_path / 'data_curator.duckdb')
+        assert rows[0][2] is None
+        assert rows[1][2] == 1234567890.5
 
     def test_later_run_with_new_column_extends_schema(self, tmp_path):
         handler = DuckdbOutput(output_base_dir=str(tmp_path))
