@@ -1,8 +1,11 @@
 import datetime
 import decimal
 
+import pytest
+
 from kaxanuk.data_curator.data_providers.banxico_sie import BanxicoSie
 from kaxanuk.data_curator.entities import EconomicIndicatorData
+from kaxanuk.data_curator.exceptions import DataProviderMissingKeyError
 
 SAMPLE = {
     "bmx": {"series": [
@@ -105,3 +108,32 @@ def test_validate_api_key_true_when_token_set():
 def test_validate_api_key_false_when_none():
     provider = BanxicoSie(api_key=None)
     assert provider.validate_api_key() is False
+
+
+def test_get_economic_data_raises_without_token():
+    """get_economic_data must fail fast with DataProviderMissingKeyError — no network needed."""
+    provider = BanxicoSie(api_key=None)
+    with pytest.raises(DataProviderMissingKeyError):
+        provider.get_economic_data(
+            series_ids=["SF61745"],
+            start_date=datetime.date(2020, 1, 1),
+            end_date=datetime.date(2020, 3, 1),
+        )
+
+
+SAMPLE_NUMERIC_DATO = {
+    "bmx": {"series": [
+        {"idSerie": "SF61745", "titulo": "Tasa objetivo",
+         "datos": [{"fecha": "01/01/2020", "dato": 7.25}]},
+    ]}
+}
+
+
+def test_parse_numeric_dato():
+    """A numeric (float/int) dato in the JSON must parse to the correct Decimal."""
+    data = BanxicoSie._parse_series_payload(
+        SAMPLE_NUMERIC_DATO,
+        start_date=datetime.date(2020, 1, 1),
+        end_date=datetime.date(2020, 1, 1),
+    )
+    assert data["SF61745"].rows["2020-01-01"].value == decimal.Decimal("7.25")

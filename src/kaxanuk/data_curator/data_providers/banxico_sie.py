@@ -14,6 +14,7 @@ from kaxanuk.data_curator.data_providers.macro_data_provider_interface import (
     MacroDataProviderInterface,
 )
 from kaxanuk.data_curator.entities import EconomicIndicatorData, EconomicIndicatorRow
+from kaxanuk.data_curator.exceptions import DataProviderMissingKeyError
 
 _BASE = "https://www.banxico.org.mx/SieAPIRest/service/v1/series"
 _MISSING = {"N/E", "", None}
@@ -35,6 +36,9 @@ class BanxicoSie(MacroDataProviderInterface):
         end_date: datetime.date,
     ) -> dict[str, EconomicIndicatorData]:
         """Fetch economic series from Banxico SIE and return as entities."""
+        if not self._token:
+            msg = "Banxico SIE requires an API token (set KNDC_API_KEY_BANXICO)"
+            raise DataProviderMissingKeyError(msg)
         ids = ",".join(series_ids)
         url = f"{_BASE}/{ids}/datos/{start_date.isoformat()}/{end_date.isoformat()}"
         response = httpx.get(url, headers={"Bmx-Token": self._token or ""}, timeout=30)
@@ -71,7 +75,7 @@ class BanxicoSie(MacroDataProviderInterface):
                 value = (
                     None
                     if raw in _MISSING
-                    else decimal.Decimal(raw.replace(",", ""))
+                    else decimal.Decimal(str(raw).replace(",", ""))
                 )
                 rows[iso] = EconomicIndicatorRow(
                     date=datetime.date.fromisoformat(iso), value=value
