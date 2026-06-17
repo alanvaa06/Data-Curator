@@ -6,6 +6,7 @@ __all__ = [
     'BanxicoSie',
     'DataProviderInterface',
     'FinancialModelingPrep',
+    'Inegi',
     'LsegWorkspace',
     'MacroDataProviderInterface',
     'NotFoundDataProvider',
@@ -15,6 +16,7 @@ __all__ = [
 # make these modules part of the public API of the base namespace
 from kaxanuk.data_curator.data_providers.banxico_sie import BanxicoSie
 from kaxanuk.data_curator.data_providers.data_provider_interface import DataProviderInterface
+from kaxanuk.data_curator.data_providers.inegi import Inegi
 from kaxanuk.data_curator.data_providers.macro_data_provider_interface import MacroDataProviderInterface
 from kaxanuk.data_curator.data_providers.financial_modeling_prep import FinancialModelingPrep
 from kaxanuk.data_curator.data_providers.lseg_workspace import LsegWorkspace
