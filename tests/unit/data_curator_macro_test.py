@@ -6,14 +6,17 @@ These tests prove:
   * each identifier's output table carries the requested e_* macro column,
     forward-filled to a real value; and
   * with no macro providers, main() stays fully backward-compatible (no e_* columns).
+  * a fatal error in the macro fetch causes main() to return False, NOT raise.
 """
 
 import datetime
 import decimal
 import threading
 
+import httpx
+
 from kaxanuk.data_curator import data_curator
-from kaxanuk.data_curator.data_providers import DataProviderInterface
+from kaxanuk.data_curator.data_providers import DataProviderInterface, MacroDataProviderInterface
 from kaxanuk.data_curator.entities import (
     Configuration,
     DividendData,
@@ -202,3 +205,67 @@ class TestMainMacroBackwardCompatibility:
         for identifier in ('AAA', 'BBB'):
             column_names = handler.tables[identifier].column_names
             assert not any(name.startswith('e_') for name in column_names)
+
+
+class RaisingMacroProvider(MacroDataProviderInterface):
+    """A macro provider whose get_economic_data always raises, to test the fatal-error contract."""
+
+    def __init__(self, *, error: Exception, provider_name: str = "banxico_sie"):
+        self.macro_provider_name = provider_name
+        self._error = error
+
+    def get_economic_data(self, *, series_ids, start_date, end_date):
+        raise self._error
+
+    def validate_api_key(self):
+        return None
+
+
+class TestMainMacroFatalErrorContract:
+    """main() must return False on a fatal macro fetch error, never raise."""
+
+    def test_httpx_connect_error_returns_false(self):
+        """A network blip (httpx.ConnectError) from the macro provider returns False, not raise."""
+        handler = CaptureOutputHandler()
+
+        result = data_curator.main(
+            configuration=_build_configuration(
+                ('AAA',),
+                ('m_close', 'e_mx_target_rate'),
+            ),
+            market_data_provider=StubMarketDataProvider(),
+            fundamental_data_provider=None,
+            output_handlers=[handler],
+            macro_data_providers=[
+                RaisingMacroProvider(
+                    error=httpx.ConnectError("boom"),
+                    provider_name="banxico_sie",
+                )
+            ],
+        )
+
+        assert result is False
+
+    def test_httpx_http_status_error_returns_false(self):
+        """An HTTP 500 from the macro provider (httpx.HTTPStatusError) returns False, not raise."""
+        handler = CaptureOutputHandler()
+        request = httpx.Request("GET", "https://example.com")
+        response = httpx.Response(500, request=request)
+
+        result = data_curator.main(
+            configuration=_build_configuration(
+                ('AAA',),
+                ('m_close', 'e_mx_target_rate'),
+            ),
+            market_data_provider=StubMarketDataProvider(),
+            fundamental_data_provider=None,
+            output_handlers=[handler],
+            macro_data_providers=[
+                RaisingMacroProvider(
+                    error=httpx.HTTPStatusError("server error", request=request, response=response),
+                    provider_name="banxico_sie",
+                )
+            ],
+        )
+
+        assert result is False

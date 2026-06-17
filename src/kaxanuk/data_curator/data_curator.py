@@ -18,6 +18,7 @@ import os
 import sys
 import types
 
+import httpx
 import pyarrow
 
 from kaxanuk.data_curator.config_handlers._resolver import resolve_macro_requests
@@ -36,6 +37,7 @@ from kaxanuk.data_curator.exceptions import (
     ColumnBuilderCustomFunctionNotFoundError,
     ColumnBuilderUnavailableEntityFieldError,
     DataBlockRowEntityErrorGroup,
+    DataCuratorError,
     DataProviderPaymentError,
     EntityProcessingError,
     InjectedDependencyError,
@@ -188,10 +190,18 @@ def main(
         # Macro series are non-ticker: fetch once for the whole run, then broadcast to every identifier.
         economic_data: dict[str, EconomicIndicatorData] = {}
         if macro_data_providers:
-            economic_data = _fetch_macro_data(
-                configuration=configuration,
-                macro_data_providers=macro_data_providers,
-            )
+            try:
+                economic_data = _fetch_macro_data(
+                    configuration=configuration,
+                    macro_data_providers=macro_data_providers,
+                )
+            except (httpx.HTTPError, DataCuratorError) as error:
+                # macro adapters raise raw httpx errors (ConnectError, HTTPStatusError,
+                # TimeoutException) and DataCuratorError subtypes (DataProviderMissingKeyError,
+                # ConfigurationError); treat all as fatal and mirror the existing pattern
+                logging.getLogger(__name__).critical(str(error))
+
+                return False
 
         executor = concurrent.futures.ThreadPoolExecutor(
             max_workers=max_concurrent_fetches,
@@ -475,6 +485,11 @@ def _fetch_macro_data(
     for provider_name, requests in by_provider.items():
         provider = providers_by_name.get(provider_name)
         if provider is None:
+            logging.getLogger(__name__).warning(
+                "Macro provider %r is required by the selected columns but is not registered in "
+                "macro_data_providers; those columns will fail during computation.",
+                provider_name,
+            )
             continue
         series_ids = [series_id for (_column, series_id) in requests]
         fetched = provider.get_economic_data(
@@ -485,6 +500,14 @@ def _fetch_macro_data(
         for (column, series_id) in requests:
             if series_id in fetched:
                 economic_data[column] = fetched[series_id]
+            else:
+                logging.getLogger(__name__).warning(
+                    "Provider %r returned no data for series %r (column %r); "
+                    "that column will fail during computation.",
+                    provider_name,
+                    series_id,
+                    column,
+                )
 
     return economic_data
 
