@@ -85,7 +85,16 @@ class Dbnomics(MacroDataProviderInterface):
             # Annual — must be a 4-digit year
             return f"{parts[0]}-01-01"
         if len(parts) == _PERIOD_PARTS_MONTHLY:
-            # Monthly — YYYY-MM
+            # Monthly — YYYY-MM.
+            # TODO: add quarter/week/semester support once a live payload is available
+            #       (e.g. "2020-Q1", "2020-W01", "2020-S1"); deferred for v1 — mirrors
+            #       the INEGI adapter's quarterly TODO in inegi.py.
+            if not parts[1].isdigit():
+                msg = (
+                    f"Unsupported DBnomics sub-annual period"
+                    f" (quarter/week/semester not yet handled): {period!r}"
+                )
+                raise ValueError(msg)
             return f"{parts[0]}-{parts[1]}-01"
         if len(parts) == _PERIOD_PARTS_DAILY:
             # Daily — YYYY-MM-DD (validate via fromisoformat)
@@ -119,7 +128,7 @@ class Dbnomics(MacroDataProviderInterface):
             doc = docs[0]
             periods = doc.get("period", [])
             values = doc.get("value", [])
-            for period, raw in zip(periods, values, strict=False):
+            for period, raw in zip(periods, values, strict=True):
                 iso = Dbnomics._period_to_iso(period)
                 value = (
                     None

@@ -49,3 +49,46 @@ def test_malformed_payload_raises_api_endpoint_error(monkeypatch):
     with pytest.raises(ApiEndpointError):
         Dbnomics(api_key=None).get_economic_data(
             series_ids=["X"], start_date=datetime.date(2020, 1, 1), end_date=datetime.date(2020, 3, 1))
+
+
+def test_unsorted_periods_sorted_ascending():
+    """sorted() in _parse_series_payload must order rows by ISO key, not insertion order."""
+    payload = {"series": {"docs": [
+        {"period": ["2020-03", "2020-01", "2020-02"],
+         "value":  [3.0,       1.0,       2.0]}
+    ]}}
+    data = Dbnomics._parse_series_payload(
+        payload, requested_id="X",
+        start_date=datetime.date(2020, 1, 1), end_date=datetime.date(2020, 3, 1),
+    )
+    keys = list(data["X"].rows.keys())
+    assert keys == ["2020-01-01", "2020-02-01", "2020-03-01"]
+    assert data["X"].rows["2020-01-01"].value == decimal.Decimal("1.0")
+    assert data["X"].rows["2020-02-01"].value == decimal.Decimal("2.0")
+    assert data["X"].rows["2020-03-01"].value == decimal.Decimal("3.0")
+
+
+def test_quarter_period_raises_api_endpoint_error(monkeypatch):
+    """A DBnomics quarter-notation period must surface as ApiEndpointError."""
+    class _FakeResponse:
+        def raise_for_status(self): pass
+        def json(self): return {"series": {"docs": [{"period": ["2020-Q1"], "value": [1.0]}]}}
+    monkeypatch.setattr(httpx, "get", lambda *a, **k: _FakeResponse())
+    with pytest.raises(ApiEndpointError):
+        Dbnomics(api_key=None).get_economic_data(
+            series_ids=["X"],
+            start_date=datetime.date(2020, 1, 1),
+            end_date=datetime.date(2020, 3, 31),
+        )
+
+
+def test_mismatched_array_lengths_raises():
+    """strict=True in zip must raise ValueError when period and value arrays differ in length."""
+    payload = {"series": {"docs": [
+        {"period": ["2020-01", "2020-02"], "value": [1.0]}
+    ]}}
+    with pytest.raises(ValueError, match="zip"):
+        Dbnomics._parse_series_payload(
+            payload, requested_id="X",
+            start_date=datetime.date(2020, 1, 1), end_date=datetime.date(2020, 2, 1),
+        )
