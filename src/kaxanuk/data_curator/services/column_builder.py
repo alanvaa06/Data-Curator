@@ -11,6 +11,7 @@ import pyarrow
 from kaxanuk.data_curator.entities import (
     Configuration,
     DividendData,
+    EconomicIndicatorData,
     FundamentalData,
     FundamentalDataRow,
     MarketData,
@@ -70,6 +71,7 @@ class ColumnBuilder:
         fundamental_data: FundamentalData,
         market_data: MarketData,
         split_data: SplitData,
+        economic_data: dict[str, EconomicIndicatorData] | None = None,
     ):
         self.calculation_modules = calculation_modules
 
@@ -121,6 +123,16 @@ class ColumnBuilder:
             split_data.rows
         )
 
+        # Macro series are non-ticker: forward-fill each whole series onto the ticker's market dates.
+        # Keyed by the FULL column name (e.g. 'e_mx_target_rate'), unlike m_/f_ which key by post-prefix name.
+        self.infilled_economic_data_rows = {
+            column: self._infill_data(
+                iter(market_data.daily_rows.keys()),
+                series.rows
+            )
+            for column, series in (economic_data or {}).items()
+        }
+
     def process_columns(
         self,
         columns: tuple[ColumnIdentifier, ...]
@@ -156,6 +168,7 @@ class ColumnBuilder:
             calculation_modules=self.calculation_modules,
             expanded_dividend_data_rows=self.expanded_dividend_data_rows,
             expanded_split_data_rows=self.expanded_split_data_rows,
+            infilled_economic_data_rows=self.infilled_economic_data_rows,
             infilled_fundamental_data_rows=self.infilled_fundamental_data_rows,
             market_data_rows=self.market_data.daily_rows,
         )
@@ -173,6 +186,7 @@ class ColumnBuilder:
                 calculation_modules=self.calculation_modules,
                 expanded_dividend_data_rows=self.expanded_dividend_data_rows,
                 expanded_split_data_rows=self.expanded_split_data_rows,
+                infilled_economic_data_rows=self.infilled_economic_data_rows,
                 infilled_fundamental_data_rows=self.infilled_fundamental_data_rows,
                 market_data_rows=self.market_data.daily_rows,
             )
@@ -578,6 +592,7 @@ class ColumnBuilder:
         calculation_modules: CalculationModules,
         expanded_dividend_data_rows: ExpandedDatedFactors,
         expanded_split_data_rows: ExpandedDatedFactors,
+        infilled_economic_data_rows: DataRows,
         infilled_fundamental_data_rows: DataRows,
         market_data_rows: dict[str, MarketDataDailyRow],
     ) -> None:
@@ -628,6 +643,7 @@ class ColumnBuilder:
                                 calculation_modules=calculation_modules,
                                 expanded_dividend_data_rows=expanded_dividend_data_rows,
                                 expanded_split_data_rows=expanded_split_data_rows,
+                                infilled_economic_data_rows=infilled_economic_data_rows,
                                 infilled_fundamental_data_rows=infilled_fundamental_data_rows,
                                 market_data_rows=market_data_rows,
                             )
@@ -656,6 +672,14 @@ class ColumnBuilder:
                             expanded_dividend_data_rows,
                             column_name
                         )
+                case 'e':       # macro economic indicators (non-ticker, broadcast to all identifiers)
+                    if column not in infilled_economic_data_rows:
+                        msg = f"Column not available in economic data: {column}"
+                        raise ColumnBuilderUnavailableEntityFieldError(msg)
+                    completed_columns[column] = cls._generate_column(
+                        infilled_economic_data_rows[column],
+                        'value',
+                    )
                 case 'f':       # fundamental data
                     if not cls._property_exists_in_class(FundamentalDataRow, column_name):
                         msg = f"Column not available in fundamental data: {column}"
