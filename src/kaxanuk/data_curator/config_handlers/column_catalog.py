@@ -7,7 +7,7 @@ import json
 import typing
 
 
-def _load_bundled_json(filename: str) -> dict[str, typing.Any]:
+def _load_bundled_json(filename: str) -> typing.Any:
     resource = importlib.resources.files(
         'kaxanuk.data_curator.config_handlers'
     ).joinpath(filename)
