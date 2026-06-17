@@ -72,3 +72,35 @@ def test_malformed_payload_raises_api_endpoint_error(monkeypatch):
             start_date=datetime.date(2020, 1, 1),
             end_date=datetime.date(2020, 3, 1),
         )
+
+
+def test_http_error_does_not_leak_token(monkeypatch):
+    """A 401 HTTPStatusError must NOT expose the token in the raised message or cause chain."""
+    secret_url = "https://www.inegi.org.mx/app/api/indicadores/desarrolladores/jsonxml/INDICATOR/216064/es/00/false/BIE/2.0/SUPERSECRET?type=json"  # noqa: S105
+    req = httpx.Request("GET", secret_url)
+    resp = httpx.Response(401, request=req)
+    err = httpx.HTTPStatusError(
+        f"Client error '401 Unauthorized' for url '{secret_url}'",
+        request=req,
+        response=resp,
+    )
+
+    class _FakeResponse:
+        def raise_for_status(self):
+            raise err
+
+        def json(self):  # pragma: no cover — never reached
+            return {}
+
+    monkeypatch.setattr(httpx, "get", lambda *args, **kwargs: _FakeResponse())
+
+    with pytest.raises(ApiEndpointError) as excinfo:
+        Inegi(api_key="SUPERSECRET").get_economic_data(
+            series_ids=["216064"],
+            start_date=datetime.date(2020, 1, 1),
+            end_date=datetime.date(2020, 3, 1),
+        )
+
+    assert "SUPERSECRET" not in str(excinfo.value)
+    assert "401" in str(excinfo.value)
+    assert excinfo.value.__cause__ is None

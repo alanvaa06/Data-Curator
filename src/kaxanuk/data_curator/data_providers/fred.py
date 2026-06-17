@@ -60,8 +60,19 @@ class Fred(MacroDataProviderInterface):
                         end_date=end_date,
                     )
                 )
-            except (httpx.HTTPError, ValueError, LookupError, decimal.InvalidOperation, TypeError) as error:
-                msg = f"FRED request or response parsing failed for series {sid!r}: {error}"
+            except httpx.HTTPStatusError as error:
+                # Do NOT interpolate the error — its str() contains the full request
+                # URL, which carries the api_key query parameter.
+                msg = f"FRED request failed for series {sid!r}: HTTP {error.response.status_code}"
+                raise ApiEndpointError(msg) from None
+            except httpx.HTTPError as error:
+                # connect / timeout / other transport errors — type name only;
+                # the str() may also contain the URL.
+                msg = f"FRED request failed for series {sid!r}: {type(error).__name__}"
+                raise ApiEndpointError(msg) from None
+            except (ValueError, LookupError, decimal.InvalidOperation, TypeError) as error:
+                # Parse errors do not contain secrets; safe to include detail.
+                msg = f"FRED response parsing failed for series {sid!r}: {error}"
                 raise ApiEndpointError(msg) from error
         return out
 

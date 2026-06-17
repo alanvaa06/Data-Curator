@@ -90,3 +90,34 @@ def test_validate_api_key_true_when_set():
 
 def test_validate_api_key_false_when_none():
     assert Fred(api_key=None).validate_api_key() is False
+
+
+def test_http_error_does_not_leak_api_key(monkeypatch):
+    """A 401 HTTPStatusError must NOT expose the api_key in the raised message or cause chain."""
+    req = httpx.Request("GET", "https://api.stlouisfed.org/fred/series/observations?api_key=SUPERSECRET")
+    resp = httpx.Response(401, request=req)
+    err = httpx.HTTPStatusError(
+        "Client error '401 Unauthorized' for url 'https://api.stlouisfed.org/fred/series/observations?api_key=SUPERSECRET'",
+        request=req,
+        response=resp,
+    )
+
+    class _FakeResponse:
+        def raise_for_status(self):
+            raise err
+
+        def json(self):  # pragma: no cover — never reached
+            return {}
+
+    monkeypatch.setattr(httpx, "get", lambda *a, **k: _FakeResponse())
+
+    with pytest.raises(ApiEndpointError) as excinfo:
+        Fred(api_key="SUPERSECRET").get_economic_data(
+            series_ids=["X"],
+            start_date=datetime.date(2020, 1, 1),
+            end_date=datetime.date(2020, 3, 1),
+        )
+
+    assert "SUPERSECRET" not in str(excinfo.value)
+    assert "401" in str(excinfo.value)
+    assert excinfo.value.__cause__ is None
