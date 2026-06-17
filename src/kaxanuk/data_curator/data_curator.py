@@ -195,10 +195,8 @@ def main(
                     configuration=configuration,
                     macro_data_providers=macro_data_providers,
                 )
-            except (httpx.HTTPError, DataCuratorError) as error:
-                # macro adapters raise raw httpx errors (ConnectError, HTTPStatusError,
-                # TimeoutException) and DataCuratorError subtypes (DataProviderMissingKeyError,
-                # ConfigurationError); treat all as fatal and mirror the existing pattern
+            except (httpx.HTTPError, DataCuratorError, ValueError, LookupError) as error:
+                # untrusted external-I/O boundary: any fetch/parse failure is fatal -> return False
                 logging.getLogger(__name__).critical(str(error))
 
                 return False

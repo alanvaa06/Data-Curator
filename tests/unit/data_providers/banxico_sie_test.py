@@ -3,9 +3,11 @@ import decimal
 
 import pytest
 
+import httpx
+
 from kaxanuk.data_curator.data_providers.banxico_sie import BanxicoSie
 from kaxanuk.data_curator.entities import EconomicIndicatorData
-from kaxanuk.data_curator.exceptions import DataProviderMissingKeyError
+from kaxanuk.data_curator.exceptions import ApiEndpointError, DataProviderMissingKeyError
 
 SAMPLE = {
     "bmx": {"series": [
@@ -137,3 +139,30 @@ def test_parse_numeric_dato():
         end_date=datetime.date(2020, 1, 1),
     )
     assert data["SF61745"].rows["2020-01-01"].value == decimal.Decimal("7.25")
+
+
+def test_malformed_payload_raises_api_endpoint_error(monkeypatch):
+    """A malformed HTTP-200 body must surface as ApiEndpointError, not a raw traceback."""
+    # Payload returns a bad date string that cannot be parsed by strptime — triggers ValueError
+    malformed_payload = {
+        "bmx": {"series": [
+            {"idSerie": "X", "datos": [{"fecha": "bad-date", "dato": "1"}]},
+        ]}
+    }
+
+    class _FakeResponse:
+        def raise_for_status(self):
+            pass  # pretend HTTP 200
+
+        def json(self):
+            return malformed_payload
+
+    monkeypatch.setattr(httpx, "get", lambda *args, **kwargs: _FakeResponse())
+
+    provider = BanxicoSie(api_key="tok")
+    with pytest.raises(ApiEndpointError):
+        provider.get_economic_data(
+            series_ids=["X"],
+            start_date=datetime.date(2020, 1, 1),
+            end_date=datetime.date(2020, 1, 1),
+        )

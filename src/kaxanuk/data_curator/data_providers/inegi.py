@@ -15,7 +15,7 @@ from kaxanuk.data_curator.data_providers.macro_data_provider_interface import (
     MacroDataProviderInterface,
 )
 from kaxanuk.data_curator.entities import EconomicIndicatorData, EconomicIndicatorRow
-from kaxanuk.data_curator.exceptions import DataProviderMissingKeyError
+from kaxanuk.data_curator.exceptions import ApiEndpointError, DataProviderMissingKeyError
 
 _BASE = "https://www.inegi.org.mx/app/api/indicadores/desarrolladores/jsonxml/INDICATOR"
 _MISSING = {"", None}
@@ -43,16 +43,20 @@ class Inegi(MacroDataProviderInterface):
         out: dict[str, EconomicIndicatorData] = {}
         for sid in series_ids:
             url = f"{_BASE}/{sid}/es/00/false/BIE/2.0/{self._token}?type=json"
-            response = httpx.get(url, timeout=30)
-            response.raise_for_status()
-            out.update(
-                self._parse_series_payload(
-                    response.json(),
-                    requested_id=sid,
-                    start_date=start_date,
-                    end_date=end_date,
+            try:
+                response = httpx.get(url, timeout=30)
+                response.raise_for_status()
+                out.update(
+                    self._parse_series_payload(
+                        response.json(),
+                        requested_id=sid,
+                        start_date=start_date,
+                        end_date=end_date,
+                    )
                 )
-            )
+            except (httpx.HTTPError, ValueError, LookupError, decimal.InvalidOperation, TypeError) as error:
+                msg = f"INEGI request or response parsing failed for series {sid!r}: {error}"
+                raise ApiEndpointError(msg) from error
         return out
 
     @staticmethod

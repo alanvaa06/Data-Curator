@@ -17,6 +17,7 @@ import httpx
 
 from kaxanuk.data_curator import data_curator
 from kaxanuk.data_curator.data_providers import DataProviderInterface, MacroDataProviderInterface
+from kaxanuk.data_curator.exceptions import ApiEndpointError
 from kaxanuk.data_curator.entities import (
     Configuration,
     DividendData,
@@ -263,6 +264,28 @@ class TestMainMacroFatalErrorContract:
             macro_data_providers=[
                 RaisingMacroProvider(
                     error=httpx.HTTPStatusError("server error", request=request, response=response),
+                    provider_name="banxico_sie",
+                )
+            ],
+        )
+
+        assert result is False
+
+    def test_macro_provider_apierror_returns_false(self):
+        """A macro provider that raises ApiEndpointError must cause main() to return False, not raise."""
+        handler = CaptureOutputHandler()
+
+        result = data_curator.main(
+            configuration=_build_configuration(
+                ('AAA',),
+                ('m_close', 'e_mx_target_rate'),
+            ),
+            market_data_provider=StubMarketDataProvider(),
+            fundamental_data_provider=None,
+            output_handlers=[handler],
+            macro_data_providers=[
+                RaisingMacroProvider(
+                    error=ApiEndpointError("Banxico SIE request or response parsing failed: bad payload"),
                     provider_name="banxico_sie",
                 )
             ],

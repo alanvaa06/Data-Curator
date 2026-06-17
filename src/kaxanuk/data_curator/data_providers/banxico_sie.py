@@ -14,7 +14,7 @@ from kaxanuk.data_curator.data_providers.macro_data_provider_interface import (
     MacroDataProviderInterface,
 )
 from kaxanuk.data_curator.entities import EconomicIndicatorData, EconomicIndicatorRow
-from kaxanuk.data_curator.exceptions import DataProviderMissingKeyError
+from kaxanuk.data_curator.exceptions import ApiEndpointError, DataProviderMissingKeyError
 
 _BASE = "https://www.banxico.org.mx/SieAPIRest/service/v1/series"
 _MISSING = {"N/E", "", None}
@@ -41,12 +41,15 @@ class BanxicoSie(MacroDataProviderInterface):
             raise DataProviderMissingKeyError(msg)
         ids = ",".join(series_ids)
         url = f"{_BASE}/{ids}/datos/{start_date.isoformat()}/{end_date.isoformat()}"
-        response = httpx.get(url, headers={"Bmx-Token": self._token or ""}, timeout=30)
-        response.raise_for_status()
-
-        return self._parse_series_payload(
-            response.json(), start_date=start_date, end_date=end_date
-        )
+        try:
+            response = httpx.get(url, headers={"Bmx-Token": self._token or ""}, timeout=30)
+            response.raise_for_status()
+            return self._parse_series_payload(
+                response.json(), start_date=start_date, end_date=end_date
+            )
+        except (httpx.HTTPError, ValueError, LookupError, decimal.InvalidOperation, TypeError) as error:
+            msg = f"Banxico SIE request or response parsing failed: {error}"
+            raise ApiEndpointError(msg) from error
 
     @staticmethod
     def _parse_series_payload(

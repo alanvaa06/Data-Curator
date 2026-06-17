@@ -1,9 +1,10 @@
 import datetime
 import decimal
 import pytest
+import httpx
 from kaxanuk.data_curator.data_providers.inegi import Inegi
 from kaxanuk.data_curator.entities import EconomicIndicatorData
-from kaxanuk.data_curator.exceptions import DataProviderMissingKeyError
+from kaxanuk.data_curator.exceptions import ApiEndpointError, DataProviderMissingKeyError
 
 # Monthly INPC sample, NEWEST-FIRST as INEGI returns it, with a missing value:
 SAMPLE = {
@@ -43,3 +44,31 @@ def test_get_economic_data_raises_without_token():
     with pytest.raises(DataProviderMissingKeyError):
         Inegi(api_key=None).get_economic_data(
             series_ids=["216064"], start_date=datetime.date(2020, 1, 1), end_date=datetime.date(2020, 3, 1))
+
+
+def test_malformed_payload_raises_api_endpoint_error(monkeypatch):
+    """A malformed HTTP-200 body must surface as ApiEndpointError, not a raw traceback."""
+    # Payload has an unparseable TIME_PERIOD string — triggers ValueError in _period_to_iso
+    malformed_payload = {
+        "Series": [
+            {"INDICADOR": "216064", "FREQ": "8",
+             "OBSERVATIONS": [{"TIME_PERIOD": "not-a-date", "OBS_VALUE": "5.0"}]},
+        ]
+    }
+
+    class _FakeResponse:
+        def raise_for_status(self):
+            pass  # pretend HTTP 200
+
+        def json(self):
+            return malformed_payload
+
+    monkeypatch.setattr(httpx, "get", lambda *args, **kwargs: _FakeResponse())
+
+    provider = Inegi(api_key="tok")
+    with pytest.raises(ApiEndpointError):
+        provider.get_economic_data(
+            series_ids=["216064"],
+            start_date=datetime.date(2020, 1, 1),
+            end_date=datetime.date(2020, 3, 1),
+        )
