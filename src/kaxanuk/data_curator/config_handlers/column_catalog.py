@@ -38,3 +38,14 @@ def load_identifier_presets() -> dict[str, typing.Any]:
     'key', 'label' and 'identifiers' list.
     """
     return _load_bundled_json('identifier_presets.json')
+
+
+def load_macro_catalog() -> list[dict[str, typing.Any]]:
+    """
+    Load the bundled macro column catalog.
+
+    Returns
+    -------
+    A list of entries, each holding at minimum 'column', 'provider' and 'series_id'.
+    """
+    return _load_bundled_json('macro_catalog.json')

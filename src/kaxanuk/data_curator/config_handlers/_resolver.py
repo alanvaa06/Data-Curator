@@ -5,14 +5,14 @@ These functions translate parsed configuration values into the data providers, o
 handler, logger level and version checks shared by all ConfiguratorInterface implementations.
 """
 
-import json
+import functools
 import logging
-import pathlib
 import typing
 
 import packaging.version
 
 from kaxanuk.data_curator import __parameters_format_version__
+from kaxanuk.data_curator.config_handlers.column_catalog import load_macro_catalog
 from kaxanuk.data_curator.config_handlers.configurator_interface import ConfiguratorInterface
 from kaxanuk.data_curator.data_providers import (
     DataProviderInterface,
@@ -29,11 +29,10 @@ from kaxanuk.data_curator.output_handlers import OutputHandlerInterface
 
 NONE_DATA_PROVIDER = 'none'
 
-_MACRO_CATALOG_PATH = pathlib.Path(__file__).parent / "macro_catalog.json"
-_MACRO_CATALOG = {
-    row["column"]: row
-    for row in json.loads(_MACRO_CATALOG_PATH.read_text(encoding="utf-8"))
-}
+
+@functools.lru_cache(maxsize=1)
+def _macro_catalog_index() -> dict[str, dict]:
+    return {row['column']: row for row in load_macro_catalog()}
 
 
 def resolve_macro_requests(
@@ -53,7 +52,7 @@ def resolve_macro_requests(
     for column in columns:
         if not column.startswith("e_"):
             continue
-        entry = _MACRO_CATALOG.get(column)
+        entry = _macro_catalog_index().get(column)
         if entry is None:
             msg = f"Unknown macro column not in catalog: {column}"
 
@@ -198,6 +197,7 @@ def _instantiate_macro_provider(
         raise ConfigurationError(msg)
 
     try:
+        # Always pass api_key= (even when None) because all macro adapters declare (*, api_key: str | None).
         return provider_entry['class'](api_key=provider_entry.get('api_key'))
     except DataProviderMissingKeyError as error:
         msg = " ".join([
