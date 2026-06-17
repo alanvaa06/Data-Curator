@@ -12,6 +12,12 @@ KNDC_API_KEY_FMP : str
     Api key for the Financial Modeling Prep data provider
 KNDC_API_KEY_LSEG : str
     Api key for the LSEG Workspace data provider
+KNDC_API_KEY_BANXICO : str
+    Api key for the Banxico SIE macro data provider
+KNDC_API_KEY_INEGI : str
+    Api key for the INEGI macro data provider
+KNDC_API_KEY_FRED : str
+    Api key for the FRED (Federal Reserve Economic Data) macro data provider
 """
 
 import json
@@ -66,6 +72,24 @@ def run():
                     'api_key': None     # this provider doesn't use API key
                 },
             },
+            macro_data_providers={
+                'banxico_sie': {
+                    'class': kaxanuk.data_curator.data_providers.BanxicoSie,
+                    'api_key': os.getenv('KNDC_API_KEY_BANXICO'),  # set this up in the Config/.env file
+                },
+                'inegi': {
+                    'class': kaxanuk.data_curator.data_providers.Inegi,
+                    'api_key': os.getenv('KNDC_API_KEY_INEGI'),    # set this up in the Config/.env file
+                },
+                'fred': {
+                    'class': kaxanuk.data_curator.data_providers.Fred,
+                    'api_key': os.getenv('KNDC_API_KEY_FRED'),     # set this up in the Config/.env file
+                },
+                'dbnomics': {
+                    'class': kaxanuk.data_curator.data_providers.Dbnomics,
+                    'api_key': None,    # this provider doesn't use an API key
+                },
+            },
             output_handlers={
                 'csv': kaxanuk.data_curator.output_handlers.CsvOutput(
                     output_base_dir=output_base_dir,
@@ -87,6 +111,7 @@ def run():
         configuration=configurator.get_configuration(),
         market_data_provider=configurator.get_market_data_provider(),
         fundamental_data_provider=configurator.get_fundamental_data_provider(),
+        macro_data_providers=configurator.get_macro_data_providers(),
         output_handlers=[configurator.get_output_handler()],
         custom_calculation_modules=custom_calculation_modules,  # Optional
         max_concurrent_computations=4,  # column calculations in worker processes; set to 1 for fully sequential
