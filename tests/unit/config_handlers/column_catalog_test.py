@@ -1,6 +1,7 @@
 from kaxanuk.data_curator.config_handlers.column_catalog import (
     load_catalog,
     load_identifier_presets,
+    load_macro_catalog,
 )
 
 
@@ -46,3 +47,22 @@ def test_catalog_includes_market_and_calculation_columns():
     assert 'm_date' in all_columns
     assert 'm_close' in all_columns
     assert any(c.startswith('c_') for c in all_columns)
+
+
+class TestMacroCatalog:
+    def test_load_macro_catalog_returns_nonempty_list(self):
+        rows = load_macro_catalog()
+        assert isinstance(rows, list)
+        assert len(rows) > 0
+
+    def test_each_row_has_required_fields(self):
+        for row in load_macro_catalog():
+            assert row['column'].startswith('e_'), f"Unexpected prefix: {row['column']}"
+            assert row['provider']
+            assert row['series_id']
+            assert row['name']
+
+    def test_known_columns_present(self):
+        columns = [row['column'] for row in load_macro_catalog()]
+        assert 'e_mx_target_rate' in columns
+        assert 'e_us_cpi' in columns

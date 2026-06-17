@@ -23,6 +23,7 @@ from kaxanuk.data_curator import __parameters_format_version__
 from kaxanuk.data_curator.config_handlers.column_catalog import (
     load_catalog,
     load_identifier_presets,
+    load_macro_catalog,
 )
 from kaxanuk.data_curator.config_handlers.configurator_interface import ConfiguratorInterface
 from kaxanuk.data_curator.entities.configuration import (
@@ -108,12 +109,27 @@ def load_config(config_path: pathlib.Path | str) -> dict[str, typing.Any]:
     )
 
 
+def _build_macro_group() -> dict[str, typing.Any]:
+    """Build a catalog group entry for the e_ macro columns."""
+    macro_rows = load_macro_catalog()
+    return {
+        'prefix': 'e_',
+        'label': 'Economic (macro)',
+        'columns': [row['column'] for row in macro_rows],
+        'column_labels': {
+            row['column']: row['name']
+            for row in macro_rows
+        },
+    }
+
+
 def build_catalog_response() -> dict[str, typing.Any]:
     """Return the column catalog plus the valid option lists for the editor."""
     catalog = load_catalog()
+    groups = [*catalog['groups'], _build_macro_group()]
 
     return {
-        'groups': catalog['groups'],
+        'groups': groups,
         'identifier_presets': load_identifier_presets()['presets'],
         'options': {
             'market_data_provider': list(ConfiguratorInterface.CONFIGURATION_PROVIDERS_MARKET),

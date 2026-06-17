@@ -305,8 +305,9 @@ function renderColumns() {
     const expanded = filter ? true : !collapsedGroups.has(group.label);
     root.appendChild(groupHeader(group.label, matches, expanded));
     if (expanded) {
+      const labels = group.column_labels || {};
       for (const col of matches) {
-        root.appendChild(columnRow(col, selected.has(col)));
+        root.appendChild(columnRow(col, selected.has(col), labels[col]));
       }
     }
   }
@@ -321,7 +322,7 @@ function renderColumns() {
   refreshCounts();
 }
 
-function columnRow(col, checked) {
+function columnRow(col, checked, label) {
   const row = document.createElement('label'); row.className = 'col';
   const box = document.createElement('input'); box.type = 'checkbox'; box.checked = checked;
   box.onchange = () => {
@@ -329,7 +330,8 @@ function columnRow(col, checked) {
     else { state.columns = state.columns.filter(c => c !== col); }
     refreshCounts();
   };
-  row.appendChild(box); row.appendChild(document.createTextNode(col));
+  const displayText = label ? label + ' (' + col + ')' : col;
+  row.appendChild(box); row.appendChild(document.createTextNode(displayText));
   return row;
 }
 

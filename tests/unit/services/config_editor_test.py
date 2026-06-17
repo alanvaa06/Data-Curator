@@ -109,6 +109,22 @@ def test_build_catalog_response_has_options_and_groups():
     assert 'info' in response['options']['logger_level']
 
 
+def test_build_catalog_response_includes_macro_group():
+    response = config_editor.build_catalog_response()
+    groups = {g['prefix']: g for g in response['groups']}
+    assert 'e_' in groups, "e_ macro group missing from catalog response"
+    macro = groups['e_']
+    assert macro['label'] == 'Economic (macro)'
+    assert 'e_mx_target_rate' in macro['columns']
+    assert 'e_us_cpi' in macro['columns']
+    # human labels present via column_labels map
+    assert macro['column_labels']['e_mx_target_rate'] == 'MX target rate'
+    assert macro['column_labels']['e_us_cpi'] == 'US CPI (all items)'
+    # every column in the group has a label entry
+    for col in macro['columns']:
+        assert col in macro['column_labels'], f"Missing label for {col}"
+
+
 def test_build_catalog_response_includes_identifier_presets():
     response = config_editor.build_catalog_response()
     presets = {p['key']: p for p in response['identifier_presets']}
