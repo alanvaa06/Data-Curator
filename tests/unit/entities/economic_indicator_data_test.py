@@ -5,7 +5,10 @@ from kaxanuk.data_curator.entities import (
     EconomicIndicatorData,
     EconomicIndicatorRow,
 )
-from kaxanuk.data_curator.exceptions import EntityValueError
+from kaxanuk.data_curator.exceptions import (
+    EntityTypeError,
+    EntityValueError,
+)
 
 
 def test_row_holds_date_and_value():
@@ -48,3 +51,36 @@ def test_data_rejects_unsorted_rows():
             series_name="x",
             rows=rows,
         )
+
+
+def test_data_rejects_non_row_values():
+    rows = {
+        "2020-01-01": {"date": "2020-01-01", "value": "4.25"},
+    }
+    with pytest.raises(EntityValueError):
+        EconomicIndicatorData(
+            start_date=datetime.date(2020, 1, 1),
+            end_date=datetime.date(2020, 1, 1),
+            series_id="SF61745",
+            series_name="x",
+            rows=rows,
+        )
+
+
+def test_data_rejects_non_iso_date_keys():
+    rows = {
+        "2020-1-1": EconomicIndicatorRow(date=datetime.date(2020, 1, 1), value=decimal.Decimal("4.25")),
+    }
+    with pytest.raises(EntityValueError):
+        EconomicIndicatorData(
+            start_date=datetime.date(2020, 1, 1),
+            end_date=datetime.date(2020, 1, 1),
+            series_id="SF61745",
+            series_name="x",
+            rows=rows,
+        )
+
+
+def test_row_rejects_wrong_field_types():
+    with pytest.raises(EntityTypeError):
+        EconomicIndicatorRow(date="2020-01-01", value=decimal.Decimal("4.25"))
