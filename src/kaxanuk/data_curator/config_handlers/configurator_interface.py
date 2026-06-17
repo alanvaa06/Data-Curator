@@ -7,7 +7,10 @@ import logging
 import typing
 
 from kaxanuk.data_curator.entities import Configuration
-from kaxanuk.data_curator.data_providers import DataProviderInterface
+from kaxanuk.data_curator.data_providers import (
+    DataProviderInterface,
+    MacroDataProviderInterface,
+)
 from kaxanuk.data_curator.output_handlers import OutputHandlerInterface
 
 
@@ -22,6 +25,10 @@ class ConfiguratorInterface(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def get_logger_level(self) -> int:
+        ...
+
+    @abc.abstractmethod
+    def get_macro_data_providers(self) -> list[MacroDataProviderInterface]:
         ...
 
     @abc.abstractmethod

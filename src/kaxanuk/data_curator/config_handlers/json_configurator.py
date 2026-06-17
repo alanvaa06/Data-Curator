@@ -10,7 +10,10 @@ import typing
 
 from kaxanuk.data_curator.config_handlers import _resolver
 from kaxanuk.data_curator.config_handlers.configurator_interface import ConfiguratorInterface
-from kaxanuk.data_curator.data_providers import DataProviderInterface
+from kaxanuk.data_curator.data_providers import (
+    DataProviderInterface,
+    MacroDataProviderInterface,
+)
 from kaxanuk.data_curator.entities import Configuration
 from kaxanuk.data_curator.exceptions import (
     ConfigurationError,
@@ -35,6 +38,7 @@ class JsonConfigurator(ConfiguratorInterface):
         file_path: str,
         data_providers: dict[str, dict[str, typing.Any]],
         output_handlers: dict[str, OutputHandlerInterface],
+        macro_data_providers: dict[str, dict[str, typing.Any]] | None = None,
         logger_format: str = "[%(levelname)s] %(message)s",
     ):
         """
@@ -48,6 +52,9 @@ class JsonConfigurator(ConfiguratorInterface):
             All the data provider options that the configuration file will choose from, along with their API keys if any
         output_handlers
             All the output handlers options that the configuration file will choose from
+        macro_data_providers
+            All the macro (economic) data provider options the selected e_* columns will route to,
+            along with their API keys if any. Keyed by provider name (e.g. ``banxico_sie``, ``fred``).
         logger_format
             The format for the logger messages. will be injected to logging.Formatter()
 
@@ -109,6 +116,12 @@ class JsonConfigurator(ConfiguratorInterface):
                 columns=tuple(parsed.get('columns', [])),
             )
 
+            self._macro_data_providers = _resolver.select_macro_data_providers(
+                self._configuration.columns,
+                macro_data_providers or {},
+                logger,
+            )
+
             logger.handlers.clear()
         except (
             ConfigurationError,
@@ -128,6 +141,9 @@ class JsonConfigurator(ConfiguratorInterface):
 
     def get_logger_level(self) -> int:
         return self._logger_level
+
+    def get_macro_data_providers(self) -> list[MacroDataProviderInterface]:
+        return self._macro_data_providers
 
     def get_market_data_provider(self) -> DataProviderInterface:
         return self._market_data_provider

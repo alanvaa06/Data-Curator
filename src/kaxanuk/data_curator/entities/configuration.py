@@ -13,6 +13,7 @@ from kaxanuk.data_curator.exceptions import ConfigurationError
 CONFIGURATION_COLUMN_PREFIXES = {
     'c': 'calculations',
     'd': 'dividends',
+    'e': 'economic_macro',
     'f': 'fundamental_data',
     'fbs': 'fundamental_data_balance_sheet',
     'fcf': 'fundamental_data_cash_flow',

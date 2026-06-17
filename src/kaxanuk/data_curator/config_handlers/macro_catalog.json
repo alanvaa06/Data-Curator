@@ -1,0 +1,19 @@
+[
+  {"column": "e_us_cpi", "provider": "fred", "series_id": "CPIAUCSL", "name": "US CPI (all items)", "region": "US", "frequency": "monthly", "commercial_ok": "no"},
+  {"column": "e_us_core_cpi", "provider": "fred", "series_id": "CPILFESL", "name": "US core CPI", "region": "US", "frequency": "monthly", "commercial_ok": "no"},
+  {"column": "e_us_fed_funds", "provider": "fred", "series_id": "FEDFUNDS", "name": "US fed funds rate", "region": "US", "frequency": "monthly", "commercial_ok": "no"},
+  {"column": "e_us_2y", "provider": "fred", "series_id": "DGS2", "name": "US 2Y Treasury", "region": "US", "frequency": "daily", "commercial_ok": "no"},
+  {"column": "e_us_10y", "provider": "fred", "series_id": "DGS10", "name": "US 10Y Treasury", "region": "US", "frequency": "daily", "commercial_ok": "no"},
+  {"column": "e_us_unemployment", "provider": "fred", "series_id": "UNRATE", "name": "US unemployment", "region": "US", "frequency": "monthly", "commercial_ok": "no"},
+  {"column": "e_us_gdp", "provider": "fred", "series_id": "GDPC1", "name": "US real GDP", "region": "US", "frequency": "quarterly", "commercial_ok": "no"},
+  {"column": "e_us_m2", "provider": "fred", "series_id": "M2SL", "name": "US M2", "region": "US", "frequency": "monthly", "commercial_ok": "no"},
+  {"column": "e_mx_target_rate", "provider": "banxico_sie", "series_id": "SF61745", "name": "MX target rate", "region": "MX", "frequency": "daily", "commercial_ok": "unverified"},
+  {"column": "e_mx_tiie28", "provider": "banxico_sie", "series_id": "SF60648", "name": "MX TIIE 28d", "region": "MX", "frequency": "daily", "commercial_ok": "unverified"},
+  {"column": "e_mx_cetes28", "provider": "banxico_sie", "series_id": "SF60633", "name": "MX Cetes 28d", "region": "MX", "frequency": "daily", "commercial_ok": "unverified"},
+  {"column": "e_mx_usdmxn_fix", "provider": "banxico_sie", "series_id": "SF43718", "name": "USD/MXN FIX", "region": "MX", "frequency": "daily", "commercial_ok": "unverified"},
+  {"column": "e_mx_reserves", "provider": "banxico_sie", "series_id": "SF43707", "name": "MX intl reserves", "region": "MX", "frequency": "weekly", "commercial_ok": "unverified"},
+  {"column": "e_mx_inpc", "provider": "inegi", "series_id": "216064", "name": "MX INPC (headline CPI)", "region": "MX", "frequency": "monthly", "commercial_ok": "unverified"},
+  {"column": "e_mx_unemployment", "provider": "inegi", "series_id": "444612", "name": "MX unemployment (ENOE)", "region": "MX", "frequency": "monthly", "commercial_ok": "unverified"},
+  {"column": "e_ez_hicp", "provider": "dbnomics", "series_id": "Eurostat/prc_hicp_midx/M.I15.CP00.EA", "name": "Euro-area HICP", "region": "EZ", "frequency": "monthly", "commercial_ok": "unverified"},
+  {"column": "e_ecb_rate", "provider": "dbnomics", "series_id": "ECB/FM/B.U2.EUR.4F.KR.MRR_FR.LEV", "name": "ECB main refi rate", "region": "EZ", "frequency": "daily", "commercial_ok": "unverified"}
+]

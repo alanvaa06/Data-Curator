@@ -5,7 +5,9 @@ These functions translate parsed configuration values into the data providers, o
 handler, logger level and version checks shared by all ConfiguratorInterface implementations.
 """
 
+import json
 import logging
+import pathlib
 import typing
 
 import packaging.version
@@ -14,6 +16,7 @@ from kaxanuk.data_curator import __parameters_format_version__
 from kaxanuk.data_curator.config_handlers.configurator_interface import ConfiguratorInterface
 from kaxanuk.data_curator.data_providers import (
     DataProviderInterface,
+    MacroDataProviderInterface,
     NotFoundDataProvider,
 )
 from kaxanuk.data_curator.exceptions import (
@@ -25,6 +28,46 @@ from kaxanuk.data_curator.output_handlers import OutputHandlerInterface
 
 
 NONE_DATA_PROVIDER = 'none'
+
+_MACRO_CATALOG_PATH = pathlib.Path(__file__).parent / "macro_catalog.json"
+_MACRO_CATALOG = {
+    row["column"]: row
+    for row in json.loads(_MACRO_CATALOG_PATH.read_text(encoding="utf-8"))
+}
+
+
+def resolve_macro_requests(
+    columns: typing.Iterable[str],
+) -> dict[str, list[tuple[str, str]]]:
+    """
+    Map selected e_* columns to {provider_name: [(column, series_id), ...]}.
+
+    Non-macro columns (anything not prefixed with ``e_``) are ignored.
+
+    Raises
+    ------
+    ConfigurationError
+        A column prefixed with ``e_`` is not present in the macro catalog.
+    """
+    requests: dict[str, list[tuple[str, str]]] = {}
+    for column in columns:
+        if not column.startswith("e_"):
+            continue
+        entry = _MACRO_CATALOG.get(column)
+        if entry is None:
+            msg = f"Unknown macro column not in catalog: {column}"
+
+            raise ConfigurationError(msg)
+        requests.setdefault(entry["provider"], []).append(
+            (column, entry["series_id"])
+        )
+
+    return requests
+
+
+def required_macro_providers(columns: typing.Iterable[str]) -> set[str]:
+    """Return the set of provider names needed for the selected e_* columns."""
+    return set(resolve_macro_requests(columns).keys())
 
 
 def get_logger_level(level_name: str) -> int:
@@ -143,6 +186,68 @@ def select_fundamental_data_provider(
         raise ConfigurationError(msg)
 
     return _instantiate_provider(data_providers[provider_name])
+
+
+def _instantiate_macro_provider(
+    provider_name: str,
+    provider_entry: dict[str, typing.Any],
+) -> MacroDataProviderInterface:
+    if provider_entry.get('class') is None:
+        msg = f"Selected macro data provider implementation is missing: {provider_name}"
+
+        raise ConfigurationError(msg)
+
+    try:
+        return provider_entry['class'](api_key=provider_entry.get('api_key'))
+    except DataProviderMissingKeyError as error:
+        msg = " ".join([
+            f"Macro data provider {provider_name} requires an API key.",
+            "Set it in the Config/.env file (or through the API keys section of the configuration panel).",
+        ])
+
+        raise ConfigurationError(msg) from error
+
+
+def select_macro_data_providers(
+    columns: typing.Iterable[str],
+    macro_data_providers: dict[str, dict[str, typing.Any]],
+    logger: logging.Logger,
+) -> list[MacroDataProviderInterface]:
+    """
+    Resolve and instantiate the macro data providers required by the selected columns.
+
+    Returns an empty list when no e_* columns are selected.
+
+    Raises
+    ------
+    ConfigurationError
+        A required provider is not registered, missing an implementation, or its
+        API key is missing or invalid.
+    """
+    required = required_macro_providers(columns)
+    selected: list[MacroDataProviderInterface] = []
+    for provider_name in sorted(required):
+        if provider_name not in macro_data_providers:
+            msg = f"Macro data provider required by selected columns not found: {provider_name}"
+
+            raise ConfigurationError(msg)
+
+        provider = _instantiate_macro_provider(
+            provider_name,
+            macro_data_providers[provider_name],
+        )
+        is_api_key_valid = provider.validate_api_key()
+        if is_api_key_valid:
+            msg = f"API key validation succeeded for {provider.__class__.__name__}"
+            logger.info(msg)
+        elif is_api_key_valid is not None:
+            msg = f"Invalid API key for {provider.__class__.__name__}"
+
+            raise ConfigurationError(msg)
+
+        selected.append(provider)
+
+    return selected
 
 
 def validate_api_keys(
