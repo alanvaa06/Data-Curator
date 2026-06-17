@@ -171,5 +171,5 @@ def test_unknown_economic_column_raises():
     }
 
     builder = _builder(market, fundamentals, dividends, splits, economic_data)
-    with pytest.raises(ColumnBuilderUnavailableEntityFieldError):
+    with pytest.raises(ColumnBuilderUnavailableEntityFieldError, match="economic data"):
         builder.process_columns(("e_not_in_economic_data",))

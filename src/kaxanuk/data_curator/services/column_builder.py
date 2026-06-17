@@ -48,6 +48,8 @@ type CompletedColumns = dict[ColumnIdentifier, DataColumn | Configuration]
 type DataRows = dict[str, DataclassProtocol | None]
 # Type for factors expanded by date (example: dividends, splits)
 type ExpandedDatedFactors = dict[str, dict[str, typing.Any] | None]
+# Type for macro series keyed by full column name (e.g. 'e_mx_target_rate'), each value being infilled DataRows
+type InfilledSeriesByColumn = dict[str, DataRows]
 # Type for the container of the columns with unresolved dependencies
 type PostponedColumns = dict[ColumnIdentifier, list[ColumnIdentifier]]
 
@@ -592,7 +594,7 @@ class ColumnBuilder:
         calculation_modules: CalculationModules,
         expanded_dividend_data_rows: ExpandedDatedFactors,
         expanded_split_data_rows: ExpandedDatedFactors,
-        infilled_economic_data_rows: DataRows,
+        infilled_economic_data_rows: InfilledSeriesByColumn,
         infilled_fundamental_data_rows: DataRows,
         market_data_rows: dict[str, MarketDataDailyRow],
     ) -> None:
