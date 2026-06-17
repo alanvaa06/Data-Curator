@@ -22,12 +22,15 @@ Status: pending | in_progress | done
 - [pending] Follow-up: fetch-side incremental mode (auto start-date from MAX(m_date) per identifier + restatement buffer) — storage layer ready, needs orchestration change in data_curator.py.
 
 ## Macro-economic data layer (proposal: docs/superpowers/specs/2026-06-17-macro-data-layer-proposal.md)
-- [pending] Phase 0 GATE (research, do before any build): confirm INPC/CPI source-of-truth + exact series IDs (Banxico-CPI was refuted; INEGI assumed); read Banxico/INEGI redistribution licensing; check point-in-time/vintage + rate limits. [RESOLVED 2026-06-17: FRED ToU — permitted for this non-commercial OSS / BYO-key tool (clauses bind end-user not the MIT tool; redistribution-scoped); flips to disqualified for any commercial/ML-training use. Verbatim ToU unfetched (bot-blocked) = residual caveat.]
-- [pending] Phase 1: EconomicIndicatorRow/Data entities + EconomicIndicatorDataBlock (grouping_identifier_field=None) — TDD, test all-null + per-batch precision variance.
-- [pending] Phase 2: Banxico SIE + INEGI adapters behind new MacroDataProviderInterface (verified MX gate; thin direct-HTTP over aged community SDKs).
-- [pending] Phase 3: config (macro_data_provider + macro_series, format-version bump), main() global pre-loop fetch, ColumnBuilder e_* forward-fill infill.
-- [pending] Phase 4: output + e_ group in column_catalog.json + panel picker + docs; full provider registration checklist (incl. repo-root workspace __main__.py); panel Save&run smoke test.
-- [pending] Phase 5 (later): global layer — World Bank first (CC-BY redistributable), FRED only if TOU clears; revisit DBnomics aggregator for OECD/WB/IMF breadth after fresh verification.
+- [done] Phase 0 GATE (research): FRED ToU resolved 2026-06-17 — permitted for this non-commercial OSS / BYO-key tool (clauses bind end-user not the MIT tool; redistribution-scoped); flips to disqualified for any commercial/ML-training use. Verbatim ToU unfetched (bot-blocked) = residual caveat. INPC/headline-CPI source confirmed = INEGI (e_mx_inpc, series 216064).
+- [done] Phase 1: EconomicIndicatorRow/Data entities + EconomicIndicatorDataBlock (grouping_identifier_field=None) — TDD.
+- [done] Phase 2: Banxico SIE + INEGI adapters behind new MacroDataProviderInterface (verified MX gate; thin direct-HTTP). Capstone declared macro_provider_name ClassVar on the interface to close the mypy contract gap.
+- [done] Phase 3: config routing, main() global pre-loop fetch, ColumnBuilder case 'e' forward-fill infill.
+- [done] Phase 4: output + e_ group in column_catalog.json (17 e_* columns) + panel picker; README/CHANGELOG/docs-source docs. Registration checklist incl. repo-root workspace __main__.py done.
+- [done] Phase 5: global layer shipped in this iteration — FRED (US, BYO-key, non-commercial) + DBnomics (keyless RoW: Euro-area HICP, ECB rate) adapters behind the same interface. World Bank direct not added (DBnomics covers RoW; revisit if an aggregator-free single-license source is wanted).
+- [pending] INEGI GDP + core-CPI exact series IDs deferred (only headline INPC + ENOE unemployment wired so far).
+- [pending] Live-API smoke test through the panel Save&run path with real Banxico/INEGI/FRED tokens — not yet run (no tokens available); unit suite (862) is the current proof.
+- [pending] Quarter-period ('quarterly') macro support for DBnomics/INEGI period parsing (DBnomics adapter currently handles annual/monthly/daily; quarterly series need period-format handling).
 
 ## Follow-ups
 - [pending] Burn down the mypy ignore_errors baseline (fmp/lseg providers, data_blocks, column_builder, helpers, data_column).
