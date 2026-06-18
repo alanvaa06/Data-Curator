@@ -292,3 +292,156 @@ class TestMainMacroFatalErrorContract:
         )
 
         assert result is False
+
+
+class TestMainMacroStandaloneExport:
+    """
+    Standalone macro export: a run with NO identifiers but >=1 e_* column writes one
+    date,value table per e_* column, at the series' native cadence (no ticker, no forward-fill).
+    """
+
+    def test_standalone_macro_export_writes_one_table_per_e_column(self):
+        macro = FakeMacroProvider(
+            monthly_values={"SF61745": [("2024-01-03", "7.25"), ("2024-02-01", "7.50")]},
+            provider_name="banxico_sie",
+        )
+        handler = CaptureOutputHandler()
+
+        result = data_curator.main(
+            configuration=_build_configuration((), ('e_mx_target_rate',)),
+            market_data_provider=StubMarketDataProvider(),
+            fundamental_data_provider=None,
+            output_handlers=[handler],
+            macro_data_providers=[macro],
+        )
+
+        assert result is True
+        # output keyed by the e_* column name, not by any identifier
+        assert 'e_mx_target_rate' in handler.tables
+        table = handler.tables['e_mx_target_rate']
+        # exactly two columns, in order
+        assert table.column_names == ['date', 'value']
+        # native cadence preserved: the raw series dates, ascending, NOT broadcast to market dates
+        assert table.column('date').to_pylist() == [
+            datetime.date(2024, 1, 3),
+            datetime.date(2024, 2, 1),
+        ]
+        # raw values, no forward-fill
+        assert table.column('value').to_pylist() == [
+            decimal.Decimal('7.25'),
+            decimal.Decimal('7.50'),
+        ]
+
+    def test_standalone_macro_export_one_file_per_column_for_multiple_columns(self):
+        macro = FakeMacroProvider(
+            monthly_values={
+                "SF61745": [("2024-01-03", "7.25")],
+                "SF60633": [("2024-01-03", "10.50")],
+            },
+            provider_name="banxico_sie",
+        )
+        handler = CaptureOutputHandler()
+
+        result = data_curator.main(
+            configuration=_build_configuration((), ('e_mx_target_rate', 'e_mx_cetes28')),
+            market_data_provider=StubMarketDataProvider(),
+            fundamental_data_provider=None,
+            output_handlers=[handler],
+            macro_data_providers=[macro],
+        )
+
+        assert result is True
+        # one separate table per selected e_* column
+        assert set(handler.tables) == {'e_mx_target_rate', 'e_mx_cetes28'}
+        for column in ('e_mx_target_rate', 'e_mx_cetes28'):
+            assert handler.tables[column].column_names == ['date', 'value']
+
+    def test_standalone_macro_export_passes_nulls_through(self):
+        macro = FakeMacroProvider(
+            monthly_values={"SF61745": [("2024-01-03", "7.25"), ("2024-02-01", None)]},
+            provider_name="banxico_sie",
+        )
+        handler = CaptureOutputHandler()
+
+        result = data_curator.main(
+            configuration=_build_configuration((), ('e_mx_target_rate',)),
+            market_data_provider=StubMarketDataProvider(),
+            fundamental_data_provider=None,
+            output_handlers=[handler],
+            macro_data_providers=[macro],
+        )
+
+        assert result is True
+        # missing observation preserved as null, not filled
+        assert handler.tables['e_mx_target_rate'].column('value').to_pylist() == [
+            decimal.Decimal('7.25'),
+            None,
+        ]
+
+    def test_export_branch_not_taken_when_identifiers_present(self):
+        """Regression: with identifiers present, the per-ticker broadcast path runs, NOT the standalone branch."""
+        macro, _counter = _counting_macro_provider()
+        handler = CaptureOutputHandler()
+
+        result = data_curator.main(
+            configuration=_build_configuration(('AAA',), ('m_close', 'e_mx_target_rate')),
+            market_data_provider=StubMarketDataProvider(),
+            fundamental_data_provider=None,
+            output_handlers=[handler],
+            macro_data_providers=[macro],
+        )
+
+        assert result is True
+        # output keyed by identifier, and the macro column is a COLUMN, not its own table
+        assert set(handler.tables) == {'AAA'}
+        table = handler.tables['AAA']
+        assert 'm_close' in table.column_names
+        assert 'e_mx_target_rate' in table.column_names
+
+
+class TestMainEmptyIdentifiersGuard:
+    """A run with no identifiers AND no e_* columns is a misconfiguration, no longer a silent success."""
+
+    def test_empty_identifiers_and_no_macro_columns_returns_false(self):
+        handler = CaptureOutputHandler()
+
+        result = data_curator.main(
+            configuration=_build_configuration((), ('m_close',)),
+            market_data_provider=StubMarketDataProvider(),
+            fundamental_data_provider=None,
+            output_handlers=[handler],
+            # macro_data_providers omitted -> defaults to None
+        )
+
+        assert result is False
+        assert handler.tables == {}
+
+
+class TestMainMacroStandaloneExportToDisk:
+    """End-to-end: the real CsvOutput handler writes one {column}.csv file per macro series."""
+
+    def test_standalone_macro_export_writes_csv_file_per_series(self, tmp_path):
+        from kaxanuk.data_curator.output_handlers import CsvOutput
+
+        macro = FakeMacroProvider(
+            monthly_values={"SF61745": [("2024-01-03", "7.25"), ("2024-02-01", "7.50")]},
+            provider_name="banxico_sie",
+        )
+
+        result = data_curator.main(
+            configuration=_build_configuration((), ('e_mx_target_rate',)),
+            market_data_provider=StubMarketDataProvider(),
+            fundamental_data_provider=None,
+            output_handlers=[CsvOutput(output_base_dir=str(tmp_path))],
+            macro_data_providers=[macro],
+        )
+
+        assert result is True
+        out_file = tmp_path / "e_mx_target_rate.csv"
+        assert out_file.is_file()
+        content = out_file.read_text()
+        header = content.splitlines()[0]
+        assert "date" in header
+        assert "value" in header
+        assert "2024-01-03" in content
+        assert "7.25" in content

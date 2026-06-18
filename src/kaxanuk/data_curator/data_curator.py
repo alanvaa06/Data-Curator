@@ -201,6 +201,15 @@ def main(
 
                 return False
 
+        # No identifiers: this is a standalone macro export (macro series are non-ticker),
+        # handled directly and returned before any equity fetch/compute machinery is created.
+        if not configuration.identifiers:
+            return _export_macro_only(
+                configuration=configuration,
+                economic_data=economic_data,
+                output_handlers=output_handlers,
+            )
+
         executor = concurrent.futures.ThreadPoolExecutor(
             max_workers=max_concurrent_fetches,
             thread_name_prefix='data_curator_fetch',
@@ -508,6 +517,90 @@ def _fetch_macro_data(
                 )
 
     return economic_data
+
+
+def _export_macro_only(
+    *,
+    configuration: Configuration,
+    economic_data: dict[str, EconomicIndicatorData],
+    output_handlers: list[OutputHandlerInterface],
+) -> bool:
+    """
+    Output the selected macro series directly, for a run that has no equity identifiers.
+
+    Each selected ``e_*`` column is written as its own two-column (date, value) table at the
+    series' native cadence — no forward-fill, no ticker — reusing the configured output
+    handlers (the column name becomes the output's main_identifier, so csv/parquet write one
+    ``{column}.{ext}`` file per series). Macro series are non-ticker, so they stand alone.
+
+    Returns
+    -------
+    True when at least one macro series was written. False (with a critical log) when no
+    ``e_*`` columns were selected, or when none of the selected series returned data — so an
+    empty run surfaces as a clear failure instead of a silent success.
+    """
+    logger = logging.getLogger(__name__)
+    macro_columns = [
+        column
+        for column in configuration.columns
+            if column.startswith("e_")
+    ]
+    if not macro_columns:
+        logger.critical(
+            "No identifiers configured and no macro (e_*) columns selected; nothing to do."
+        )
+
+        return False
+
+    written = 0
+    for column in macro_columns:
+        series = economic_data.get(column)
+        if series is None:
+            logger.warning(
+                "No data fetched for macro column %r; skipping its output.",
+                column,
+            )
+
+            continue
+        _output_identifier_columns(
+            main_identifier=column,
+            output_columns=_build_macro_series_table(series),
+            output_handlers=output_handlers,
+        )
+        written += 1
+
+    if written == 0:
+        logger.critical(
+            "No identifiers configured and none of the selected macro columns returned data; "
+            "no output was written."
+        )
+
+        return False
+
+    logger.info("Wrote %d macro series to the configured output.", written)
+
+    return True
+
+
+def _build_macro_series_table(series: EconomicIndicatorData) -> pyarrow.Table:
+    """
+    Build a two-column (date, value) pyarrow.Table from one macro series.
+
+    The table preserves the series' native cadence and raw values (no forward-fill, no
+    ticker). Each column is built in a single pyarrow.array() call over ALL the series' rows,
+    so the inferred decimal128 precision is consistent across the whole series — building it
+    batch-wise can diverge the precision and break downstream concatenation.
+    """
+    rows = list(series.rows.values())
+    dates = [row.date for row in rows]
+    values = [row.value for row in rows]
+
+    return pyarrow.table(
+        {
+            "date": pyarrow.array(dates),
+            "value": pyarrow.array(values),
+        }
+    )
 
 
 def _output_identifier_columns(
