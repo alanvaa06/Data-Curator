@@ -45,6 +45,13 @@
   .boxCols { min-height: 0; }
   .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px 14px; }
   label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 3px; }
+  #apikeys { grid-template-columns: repeat(auto-fit, minmax(185px, 1fr)); align-items: start; }
+  .keyfield { display: flex; flex-direction: column; min-width: 0; }
+  .keyhead { display: flex; align-items: baseline; gap: 8px; margin-bottom: 3px; }
+  .keyname { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .keystate { margin-left: auto; flex: none; font-size: 9px; font-weight: 600; letter-spacing: 0.04em;
+              text-transform: uppercase; color: var(--muted); }
+  .keystate.set { color: var(--ok); }
   input, select { width: 100%; box-sizing: border-box; padding: 6px 8px; font-size: 13px;
                   border: 1px solid var(--border); border-radius: 6px;
                   background: var(--field); color: var(--text);
@@ -147,9 +154,9 @@ let state = null, catalog = null, envStatus = [], collapsedGroups = new Set();
 const KEY_LABELS = {
   KNDC_API_KEY_FMP: 'Financial Modeling Prep',
   KNDC_API_KEY_LSEG: 'LSEG Workspace',
-  KNDC_API_KEY_FRED: 'FRED (US — St. Louis Fed)',
-  KNDC_API_KEY_BANXICO: 'Banxico SIE (Mexico)',
-  KNDC_API_KEY_INEGI: 'INEGI (Mexico)',
+  KNDC_API_KEY_FRED: 'FRED',
+  KNDC_API_KEY_BANXICO: 'Banxico SIE',
+  KNDC_API_KEY_INEGI: 'INEGI',
 };
 
 async function boot() {
@@ -174,15 +181,26 @@ async function boot() {
 function renderKeys() {
   const root = document.getElementById('apikeys'); root.innerHTML = '';
   for (const entry of envStatus) {
+    const displayName = KEY_LABELS[entry.name] || entry.name;
     const wrap = document.createElement('div');
-    const label = document.createElement('label');
-    label.textContent = (KEY_LABELS[entry.name] || entry.name) + (entry.set ? ' — key saved' : ' — no key');
+    wrap.className = 'keyfield';
+    const head = document.createElement('div');
+    head.className = 'keyhead';
+    const name = document.createElement('span');
+    name.className = 'keyname';
+    name.textContent = displayName;
+    name.title = entry.name;
+    const stateTag = document.createElement('span');
+    stateTag.className = 'keystate' + (entry.set ? ' set' : '');
+    stateTag.textContent = entry.set ? 'Saved' : 'Not set';
+    head.appendChild(name); head.appendChild(stateTag);
     const input = document.createElement('input');
     input.type = 'password';
     input.autocomplete = 'off';
     input.dataset.env = entry.name;
-    input.placeholder = entry.set ? 'saved — type to replace' : 'paste API key…';
-    wrap.appendChild(label); wrap.appendChild(input); root.appendChild(wrap);
+    input.setAttribute('aria-label', displayName + ' API key');
+    input.placeholder = entry.set ? 'Type to replace' : 'Paste key';
+    wrap.appendChild(head); wrap.appendChild(input); root.appendChild(wrap);
   }
 }
 
