@@ -162,6 +162,15 @@
     "commercial_ok": "restricted"
   },
   {
+    "column": "e_au_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/Q.AU.PCPI_IX",
+    "name": "Australia CPI (all items, index)",
+    "region": "AU",
+    "frequency": "quarterly",
+    "commercial_ok": "restricted"
+  },
+  {
     "column": "e_au_fx_usd",
     "provider": "dbnomics",
     "series_id": "IMF/IFS/M.AU.ENDE_XDC_USD_RATE",
@@ -954,6 +963,15 @@
     "commercial_ok": "yes"
   },
   {
+    "column": "e_de_gdp_real_q",
+    "provider": "dbnomics",
+    "series_id": "Eurostat/namq_10_gdp/Q.CLV20_MEUR.SCA.B1GQ.DE",
+    "name": "Germany real GDP (q, CLV)",
+    "region": "DE",
+    "frequency": "quarterly",
+    "commercial_ok": "yes"
+  },
+  {
     "column": "e_de_ind_prod",
     "provider": "dbnomics",
     "series_id": "IMF/IFS/M.DE.AIP_IX",
@@ -1134,6 +1152,15 @@
     "commercial_ok": "yes"
   },
   {
+    "column": "e_es_gdp_real_q",
+    "provider": "dbnomics",
+    "series_id": "Eurostat/namq_10_gdp/Q.CLV20_MEUR.SCA.B1GQ.ES",
+    "name": "Spain real GDP (q, CLV)",
+    "region": "ES",
+    "frequency": "quarterly",
+    "commercial_ok": "yes"
+  },
+  {
     "column": "e_es_ind_prod",
     "provider": "dbnomics",
     "series_id": "IMF/IFS/M.ES.AIP_IX",
@@ -1221,6 +1248,15 @@
     "name": "Euro area real GDP (constant USD)",
     "region": "EZ",
     "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_ez_gdp_real_q",
+    "provider": "dbnomics",
+    "series_id": "Eurostat/namq_10_gdp/Q.CLV20_MEUR.SCA.B1GQ.EA20",
+    "name": "Euro area real GDP (q, CLV)",
+    "region": "EZ",
+    "frequency": "quarterly",
     "commercial_ok": "yes"
   },
   {
@@ -1383,6 +1419,15 @@
     "name": "France real GDP (constant USD)",
     "region": "FR",
     "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_fr_gdp_real_q",
+    "provider": "dbnomics",
+    "series_id": "Eurostat/namq_10_gdp/Q.CLV20_MEUR.SCA.B1GQ.FR",
+    "name": "France real GDP (q, CLV)",
+    "region": "FR",
+    "frequency": "quarterly",
     "commercial_ok": "yes"
   },
   {
@@ -2034,6 +2079,15 @@
     "commercial_ok": "yes"
   },
   {
+    "column": "e_it_gdp_real_q",
+    "provider": "dbnomics",
+    "series_id": "Eurostat/namq_10_gdp/Q.CLV20_MEUR.SCA.B1GQ.IT",
+    "name": "Italy real GDP (q, CLV)",
+    "region": "IT",
+    "frequency": "quarterly",
+    "commercial_ok": "yes"
+  },
+  {
     "column": "e_it_ind_prod",
     "provider": "dbnomics",
     "series_id": "IMF/IFS/M.IT.AIP_IX",
@@ -2439,6 +2493,15 @@
     "commercial_ok": "yes"
   },
   {
+    "column": "e_nl_gdp_real_q",
+    "provider": "dbnomics",
+    "series_id": "Eurostat/namq_10_gdp/Q.CLV20_MEUR.SCA.B1GQ.NL",
+    "name": "Netherlands real GDP (q, CLV)",
+    "region": "NL",
+    "frequency": "quarterly",
+    "commercial_ok": "yes"
+  },
+  {
     "column": "e_nl_ind_prod",
     "provider": "dbnomics",
     "series_id": "IMF/IFS/M.NL.AIP_IX",
@@ -2562,6 +2625,15 @@
     "name": "Norway unemployment rate (%)",
     "region": "NO",
     "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_nz_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/Q.NZ.PCPI_IX",
+    "name": "New Zealand CPI (all items, index)",
+    "region": "NZ",
+    "frequency": "quarterly",
     "commercial_ok": "restricted"
   },
   {

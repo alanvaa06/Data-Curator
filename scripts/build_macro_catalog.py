@@ -193,6 +193,25 @@ FRED_US: list[tuple[str, str, str, str]] = [
 ]
 
 
+# --------------------------------------------------------------------------------------
+# Quarterly DBnomics series (explicit) — concepts that only report quarterly, so they are
+# absent from the monthly matrix above. Requires the adapter's quarterly period parsing.
+#   (column_suffix_region, dbnomics_path, name, commercial_ok)
+# --------------------------------------------------------------------------------------
+QUARTERLY_DBNOMICS: list[tuple[str, str, str, str]] = [
+    # AU/NZ publish CPI quarterly, not monthly
+    ("e_au_cpi", "IMF/IFS/Q.AU.PCPI_IX", "Australia CPI (all items, index)", "restricted"),
+    ("e_nz_cpi", "IMF/IFS/Q.NZ.PCPI_IX", "New Zealand CPI (all items, index)", "restricted"),
+    # Quarterly real GDP, chain-linked volumes (2020 ref, EUR), seasonally+calendar adjusted
+    ("e_ez_gdp_real_q", "Eurostat/namq_10_gdp/Q.CLV20_MEUR.SCA.B1GQ.EA20", "Euro area real GDP (q, CLV)", "yes"),
+    ("e_de_gdp_real_q", "Eurostat/namq_10_gdp/Q.CLV20_MEUR.SCA.B1GQ.DE", "Germany real GDP (q, CLV)", "yes"),
+    ("e_fr_gdp_real_q", "Eurostat/namq_10_gdp/Q.CLV20_MEUR.SCA.B1GQ.FR", "France real GDP (q, CLV)", "yes"),
+    ("e_it_gdp_real_q", "Eurostat/namq_10_gdp/Q.CLV20_MEUR.SCA.B1GQ.IT", "Italy real GDP (q, CLV)", "yes"),
+    ("e_es_gdp_real_q", "Eurostat/namq_10_gdp/Q.CLV20_MEUR.SCA.B1GQ.ES", "Spain real GDP (q, CLV)", "yes"),
+    ("e_nl_gdp_real_q", "Eurostat/namq_10_gdp/Q.CLV20_MEUR.SCA.B1GQ.NL", "Netherlands real GDP (q, CLV)", "yes"),
+]
+
+
 def verify_dbnomics(client: httpx.Client, path: str) -> bool:
     try:
         r = client.get(f"{DBNOMICS}/{path}", params={"observations": "0"}, timeout=_TIMEOUT)
@@ -238,6 +257,18 @@ def build_candidates() -> list[dict]:
                 "frequency": concept.freq,
                 "commercial_ok": concept.commercial_ok,
             })
+    # Lane A2 — explicit quarterly DBnomics series
+    for column, path, label, commercial_ok in QUARTERLY_DBNOMICS:
+        rows.append({
+            "_kind": "dbnomics",
+            "_paths": [path],
+            "column": column,
+            "provider": "dbnomics",
+            "name": label,
+            "region": column.split("_")[1].upper(),
+            "frequency": "quarterly",
+            "commercial_ok": commercial_ok,
+        })
     # Lane B — FRED US
     for suffix, fred_id, label, freq in FRED_US:
         rows.append({

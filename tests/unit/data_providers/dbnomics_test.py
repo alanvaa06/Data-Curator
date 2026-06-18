@@ -68,11 +68,26 @@ def test_unsorted_periods_sorted_ascending():
     assert data["X"].rows["2020-03-01"].value == decimal.Decimal("3.0")
 
 
-def test_quarter_period_raises_api_endpoint_error(monkeypatch):
-    """A DBnomics quarter-notation period must surface as ApiEndpointError."""
+def test_quarter_periods_map_to_quarter_start_month():
+    """DBnomics quarter notation YYYY-Q[1-4] maps to the first month of the quarter."""
+    payload = {"series": {"docs": [
+        {"period": ["2020-Q1", "2020-Q2", "2020-Q3", "2020-Q4"],
+         "value":  [1.0,       2.0,       3.0,       4.0]}
+    ]}}
+    data = Dbnomics._parse_series_payload(
+        payload, requested_id="X",
+        start_date=datetime.date(2020, 1, 1), end_date=datetime.date(2020, 12, 31),
+    )
+    keys = list(data["X"].rows.keys())
+    assert keys == ["2020-01-01", "2020-04-01", "2020-07-01", "2020-10-01"]
+    assert data["X"].rows["2020-10-01"].value == decimal.Decimal("4.0")
+
+
+def test_unsupported_subannual_period_raises_api_endpoint_error(monkeypatch):
+    """Week/semester notation is still unsupported and must surface as ApiEndpointError."""
     class _FakeResponse:
         def raise_for_status(self): pass
-        def json(self): return {"series": {"docs": [{"period": ["2020-Q1"], "value": [1.0]}]}}
+        def json(self): return {"series": {"docs": [{"period": ["2020-W01"], "value": [1.0]}]}}
     monkeypatch.setattr(httpx, "get", lambda *a, **k: _FakeResponse())
     with pytest.raises(ApiEndpointError):
         Dbnomics(api_key=None).get_economic_data(

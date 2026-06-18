@@ -38,7 +38,7 @@ Status: pending | in_progress | done
 - [done] Live-API verify each series_id before write (DBnomics num_found; FRED fredgraph.csv via curl) — 402 kept, 51 non-existent dropped. Zero hallucinated IDs.
 - [done] Written to macro_catalog.json (419 rows, schema-clean, 0 dupes). Panel picker auto-includes via `_build_macro_group` (no column_catalog.json edit needed). Resolver routes; real end-to-end adapter fetch verified; 806 unit tests green; README/CHANGELOG updated.
 - [pending] commercial_ok licensing pass: current per-source defaults (Eurostat/WB=yes, IMF/BIS=restricted, FRED=no) are conservative reads, not adjudicated terms — confirm verbatim redistribution terms before any commercial ship.
-- [pending] Optional: quarterly-frequency macro series (AU/NZ CPI, GDP) need DBnomics quarterly period parsing (deferred; none added so no current breakage).
+- [done] Quarterly support: DBnomics adapter now parses `YYYY-Q[1-4]` (TDD); added 8 quarterly columns (AU/NZ CPI + EA20/DE/FR/IT/ES/NL real GDP via Eurostat namq_10_gdp). Catalog now 427. End-to-end quarterly fetch verified; 807 tests green.
 - [pending] Optional: MX catalog depth via Banxico/INEGI needs tokens to live-verify new IDs (existing 7 untouched).
 
 ## Follow-ups
