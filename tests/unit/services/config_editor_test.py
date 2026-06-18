@@ -109,6 +109,22 @@ def test_build_catalog_response_has_options_and_groups():
     assert 'info' in response['options']['logger_level']
 
 
+def test_build_catalog_response_includes_macro_group():
+    response = config_editor.build_catalog_response()
+    groups = {g['prefix']: g for g in response['groups']}
+    assert 'e_' in groups, "e_ macro group missing from catalog response"
+    macro = groups['e_']
+    assert macro['label'] == 'Economic (macro)'
+    assert 'e_mx_target_rate' in macro['columns']
+    assert 'e_us_cpi' in macro['columns']
+    # human labels present via column_labels map
+    assert macro['column_labels']['e_mx_target_rate'] == 'MX target rate'
+    assert macro['column_labels']['e_us_cpi'] == 'US CPI (all items)'
+    # every column in the group has a label entry
+    for col in macro['columns']:
+        assert col in macro['column_labels'], f"Missing label for {col}"
+
+
 def test_build_catalog_response_includes_identifier_presets():
     response = config_editor.build_catalog_response()
     presets = {p['key']: p for p in response['identifier_presets']}
@@ -122,7 +138,28 @@ class TestEnvKeys:
         assert status == [
             {'name': 'KNDC_API_KEY_FMP', 'set': False},
             {'name': 'KNDC_API_KEY_LSEG', 'set': False},
+            {'name': 'KNDC_API_KEY_FRED', 'set': False},
+            {'name': 'KNDC_API_KEY_BANXICO', 'set': False},
+            {'name': 'KNDC_API_KEY_INEGI', 'set': False},
         ]
+
+    def test_status_includes_macro_provider_keys(self, tmp_path):
+        env = tmp_path / '.env'
+        env.write_text(
+            'KNDC_API_KEY_FRED=fredkey\nKNDC_API_KEY_BANXICO=banxicokey\nKNDC_API_KEY_INEGI=inegikey\n',
+            encoding='utf-8',
+        )
+        status = {s['name']: s['set'] for s in config_editor.read_env_status(env)}
+        assert status['KNDC_API_KEY_FRED'] is True
+        assert status['KNDC_API_KEY_BANXICO'] is True
+        assert status['KNDC_API_KEY_INEGI'] is True
+
+    def test_save_fred_key_roundtrips_via_status(self, tmp_path):
+        env = tmp_path / '.env'
+        config_editor.save_env_values(env, {'KNDC_API_KEY_FRED': 'myfredkey'})
+        assert 'KNDC_API_KEY_FRED=myfredkey' in env.read_text(encoding='utf-8')
+        status = {s['name']: s['set'] for s in config_editor.read_env_status(env)}
+        assert status['KNDC_API_KEY_FRED'] is True
 
     def test_status_detects_set_and_empty_values(self, tmp_path):
         env = tmp_path / '.env'
@@ -267,6 +304,9 @@ def test_server_env_roundtrip_without_echoing_values(tmp_path):
         assert {s['name']: s['set'] for s in json.loads(body)} == {
             'KNDC_API_KEY_FMP': False,
             'KNDC_API_KEY_LSEG': False,
+            'KNDC_API_KEY_FRED': False,
+            'KNDC_API_KEY_BANXICO': False,
+            'KNDC_API_KEY_INEGI': False,
         }
         assert _post(base + '/api/env', {'KNDC_API_KEY_FMP': 'secretvalue'}) == 200
         status, body = _get(base + '/api/env')
@@ -274,6 +314,12 @@ def test_server_env_roundtrip_without_echoing_values(tmp_path):
         assert 'secretvalue' not in body
         assert 'secretvalue' in (tmp_path / '.env').read_text(encoding='utf-8')
         assert _post(base + '/api/env', {'EVIL': 'x'}) == 400
+        # macro providers also accepted
+        assert _post(base + '/api/env', {'KNDC_API_KEY_FRED': 'fredval'}) == 200
+        status, body = _get(base + '/api/env')
+        assert {s['name']: s['set'] for s in json.loads(body)}['KNDC_API_KEY_FRED'] is True
+        assert 'fredval' not in body
+        assert 'fredval' in (tmp_path / '.env').read_text(encoding='utf-8')
     finally:
         server.shutdown()
 

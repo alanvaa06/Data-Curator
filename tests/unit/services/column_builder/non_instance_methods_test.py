@@ -1123,6 +1123,7 @@ class TestPrivateProcessColumnsWithAvailableDependencies:
             calculation_modules=[calculations],
             expanded_dividend_data_rows={},
             expanded_split_data_rows={},
+            infilled_economic_data_rows={},
             infilled_fundamental_data_rows={},
             market_data_rows=example_entity_rows_market_data,
         )
@@ -1171,6 +1172,7 @@ class TestPrivateProcessColumnsWithAvailableDependencies:
             calculation_modules=[calculations],
             expanded_dividend_data_rows={},
             expanded_split_data_rows={},
+            infilled_economic_data_rows={},
             infilled_fundamental_data_rows={},
             market_data_rows=example_entity_rows_market_data,
         )
@@ -1230,6 +1232,7 @@ class TestPrivateProcessColumnsWithAvailableDependencies:
             calculation_modules=[calculations],
             expanded_dividend_data_rows={},
             expanded_split_data_rows={},
+            infilled_economic_data_rows={},
             infilled_fundamental_data_rows={},
             market_data_rows=example_entity_rows_market_data,
         )
@@ -1257,6 +1260,7 @@ class TestPrivateProcessColumnsWithAvailableDependencies:
             calculation_modules=[calculations],
             expanded_dividend_data_rows={},
             expanded_split_data_rows={},
+            infilled_economic_data_rows={},
             infilled_fundamental_data_rows={},
             market_data_rows=example_entity_rows_market_data,
         )
@@ -1298,6 +1302,7 @@ class TestPrivateProcessColumnsWithAvailableDependencies:
             calculation_modules=[calculations],
             expanded_dividend_data_rows={},
             expanded_split_data_rows={},
+            infilled_economic_data_rows={},
             infilled_fundamental_data_rows={},
             market_data_rows=example_entity_rows_market_data,
         )
@@ -1341,6 +1346,7 @@ class TestPrivateProcessColumnsWithAvailableDependencies:
             calculation_modules=[calculations],
             expanded_dividend_data_rows={},
             expanded_split_data_rows={},
+            infilled_economic_data_rows={},
             infilled_fundamental_data_rows={},
             market_data_rows=example_entity_rows_market_data,
         )
@@ -1379,6 +1385,7 @@ class TestPrivateProcessColumnsWithAvailableDependencies:
             calculation_modules=[calculations],
             expanded_dividend_data_rows=example_expanded_dividend_data,
             expanded_split_data_rows={},
+            infilled_economic_data_rows={},
             infilled_fundamental_data_rows={},
             market_data_rows=example_entity_rows_market_data,
         )
@@ -1409,6 +1416,7 @@ class TestPrivateProcessColumnsWithAvailableDependencies:
                 calculation_modules=[calculations],
                 expanded_dividend_data_rows=example_expand_dated_factors_dividend_data['expected_result_full'],
                 expanded_split_data_rows={},
+                infilled_economic_data_rows={},
                 infilled_fundamental_data_rows={},
                 market_data_rows=example_entity_rows_market_data,
             )
@@ -1427,6 +1435,7 @@ class TestPrivateProcessColumnsWithAvailableDependencies:
             calculation_modules=[calculations],
             expanded_dividend_data_rows={},
             expanded_split_data_rows={},
+            infilled_economic_data_rows={},
             infilled_fundamental_data_rows=example_entity_rows_fundamental_data,
             market_data_rows=example_entity_rows_market_data,
         )
@@ -1457,6 +1466,7 @@ class TestPrivateProcessColumnsWithAvailableDependencies:
                 calculation_modules=[calculations],
                 expanded_dividend_data_rows={},
                 expanded_split_data_rows={},
+                infilled_economic_data_rows={},
                 infilled_fundamental_data_rows=example_entity_rows_fundamental_data,
                 market_data_rows=example_entity_rows_market_data,
             )
@@ -1475,6 +1485,7 @@ class TestPrivateProcessColumnsWithAvailableDependencies:
             calculation_modules=[calculations],
             expanded_dividend_data_rows={},
             expanded_split_data_rows={},
+            infilled_economic_data_rows={},
             infilled_fundamental_data_rows=example_entity_rows_fundamental_data,
             market_data_rows=example_entity_rows_market_data,
         )
@@ -1505,6 +1516,7 @@ class TestPrivateProcessColumnsWithAvailableDependencies:
                 calculation_modules=[calculations],
                 expanded_dividend_data_rows={},
                 expanded_split_data_rows={},
+                infilled_economic_data_rows={},
                 infilled_fundamental_data_rows=example_entity_rows_fundamental_data,
                 market_data_rows=example_entity_rows_market_data,
             )
@@ -1523,6 +1535,7 @@ class TestPrivateProcessColumnsWithAvailableDependencies:
             calculation_modules=[calculations],
             expanded_dividend_data_rows={},
             expanded_split_data_rows={},
+            infilled_economic_data_rows={},
             infilled_fundamental_data_rows=example_entity_rows_fundamental_data,
             market_data_rows=example_entity_rows_market_data,
         )
@@ -1553,6 +1566,7 @@ class TestPrivateProcessColumnsWithAvailableDependencies:
                 calculation_modules=[calculations],
                 expanded_dividend_data_rows={},
                 expanded_split_data_rows={},
+                infilled_economic_data_rows={},
                 infilled_fundamental_data_rows=example_entity_rows_fundamental_data,
                 market_data_rows=example_entity_rows_market_data,
             )
@@ -1571,6 +1585,7 @@ class TestPrivateProcessColumnsWithAvailableDependencies:
             calculation_modules=[calculations],
             expanded_dividend_data_rows={},
             expanded_split_data_rows={},
+            infilled_economic_data_rows={},
             infilled_fundamental_data_rows=example_entity_rows_fundamental_data,
             market_data_rows=example_entity_rows_market_data,
         )
@@ -1601,6 +1616,7 @@ class TestPrivateProcessColumnsWithAvailableDependencies:
                 calculation_modules=[calculations],
                 expanded_dividend_data_rows={},
                 expanded_split_data_rows={},
+                infilled_economic_data_rows={},
                 infilled_fundamental_data_rows=example_entity_rows_fundamental_data,
                 market_data_rows=example_entity_rows_market_data,
             )
@@ -1618,6 +1634,7 @@ class TestPrivateProcessColumnsWithAvailableDependencies:
             calculation_modules=[calculations],
             expanded_dividend_data_rows={},
             expanded_split_data_rows={},
+            infilled_economic_data_rows={},
             infilled_fundamental_data_rows={},
             market_data_rows=example_entity_rows_market_data,
         )
@@ -1644,6 +1661,7 @@ class TestPrivateProcessColumnsWithAvailableDependencies:
                 calculation_modules=[calculations],
                 expanded_dividend_data_rows={},
                 expanded_split_data_rows={},
+                infilled_economic_data_rows={},
                 infilled_fundamental_data_rows={},
                 market_data_rows=example_entity_rows_market_data,
             )
@@ -1662,6 +1680,7 @@ class TestPrivateProcessColumnsWithAvailableDependencies:
             calculation_modules=[calculations],
             expanded_dividend_data_rows={},
             expanded_split_data_rows=example_expanded_split_data,
+            infilled_economic_data_rows={},
             infilled_fundamental_data_rows={},
             market_data_rows=example_entity_rows_market_data,
         )
@@ -1692,6 +1711,7 @@ class TestPrivateProcessColumnsWithAvailableDependencies:
                 calculation_modules=[calculations],
                 expanded_dividend_data_rows={},
                 expanded_split_data_rows=example_expanded_split_data,
+                infilled_economic_data_rows={},
                 infilled_fundamental_data_rows={},
                 market_data_rows=example_entity_rows_market_data,
             )
@@ -1707,6 +1727,7 @@ class TestPrivateProcessColumnsWithAvailableDependencies:
                 calculation_modules=[calculations],
                 expanded_dividend_data_rows={},
                 expanded_split_data_rows={},
+                infilled_economic_data_rows={},
                 infilled_fundamental_data_rows={},
                 market_data_rows=example_entity_rows_market_data,
             )

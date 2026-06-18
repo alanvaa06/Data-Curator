@@ -25,9 +25,41 @@ The system can run either on your local Python (versions `3.12`, `3.13`, or `3.1
 
 
 ## Supported Data Providers
+### Equity / ticker data
 * Financial Modeling Prep (free and discounted plans available through [our referral link](https://site.financialmodelingprep.com/pricing-plans?couponCode=xss2L2sI))
 * LSEG Workspace (API key required)
 * Yahoo Finance (requires installing a separate extension package, and doesn't support most data types)
+
+### Macro / economic data
+Alongside the per-ticker providers above, the Data Curator can also fetch macro-economic series
+(rates, inflation, GDP, employment, FX, monetary aggregates) from four sources:
+
+* **Banxico SIE** — Mexican central-bank series (target rate, TIIE, Cetes, USD/MXN FIX, international reserves). Free token from the [Banxico SIE API page](https://www.banxico.org.mx/SieAPIRest/service/v1/token).
+* **INEGI** — Mexican statistics-agency series (INPC / headline CPI, ENOE unemployment). Free token via [INEGI token registration](https://www.inegi.org.mx/app/api/indicadores/interna_v1_1/tokenVerify.aspx).
+* **FRED** — US Federal Reserve (St. Louis Fed) series (CPI, core CPI, fed funds, 2Y/10Y Treasuries, unemployment, real GDP, M2). Free [FRED API key](https://fredaccount.stlouisfed.org/apikey).
+* **DBnomics** — rest-of-world aggregator (Euro-area HICP, ECB main refi rate, and more). **Keyless** — no token required.
+
+Macro series are not per-ticker: you select them as regular output columns prefixed `e_*`
+(e.g. `e_mx_target_rate`, `e_us_cpi`, `e_ecb_rate`) in the parameter panel's column picker, and
+the system **forward-fills** each macro series onto every ticker's dates (macro cadence is
+monthly/quarterly/weekly; markets are daily), broadcasting the same macro value to all
+identifiers on each date.
+
+Each macro source brings its own free, bring-your-own API key, set the same way as any other
+provider key (panel's API keys section, or the `Config/.env` file):
+
+| Source | Env var | Key needed? |
+|--------|---------|-------------|
+| Banxico SIE | `KNDC_API_KEY_BANXICO` | Yes (free token) |
+| INEGI | `KNDC_API_KEY_INEGI` | Yes (free token) |
+| FRED | `KNDC_API_KEY_FRED` | Yes (free key) |
+| DBnomics | — | No (keyless) |
+
+> **FRED licensing note.** FRED's Terms of Use restrict redistribution of large datasets and
+> the use of FRED data for developing or training machine-learning / LLM models. The Data Curator
+> ships code, not FRED data — each user supplies their own key and the data flows to that user's
+> own disk — so it is appropriate here for **non-commercial / research** use. A commercial product
+> that ships FRED data or trains models on it needs a separate licensing review.
 
 
 ## Running on Local Python

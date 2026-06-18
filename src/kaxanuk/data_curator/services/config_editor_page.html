@@ -45,6 +45,15 @@
   .boxCols { min-height: 0; }
   .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px 14px; }
   label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 3px; }
+  #apikeys { grid-template-columns: repeat(auto-fit, minmax(185px, 1fr)); align-items: start; }
+  .keyfield { display: flex; flex-direction: column; min-width: 0; }
+  .keyhead { display: flex; align-items: baseline; gap: 8px; margin-bottom: 3px; }
+  .keyname { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .keystate { margin-left: auto; flex: none; font-size: 9px; font-weight: 600; letter-spacing: 0.04em;
+              text-transform: uppercase; color: var(--muted); }
+  .keystate.set { color: var(--ok); }
+  .keysub { font-size: 10px; color: var(--muted); margin-bottom: 4px; opacity: 0.85;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   input, select { width: 100%; box-sizing: border-box; padding: 6px 8px; font-size: 13px;
                   border: 1px solid var(--border); border-radius: 6px;
                   background: var(--field); color: var(--text);
@@ -147,6 +156,17 @@ let state = null, catalog = null, envStatus = [], collapsedGroups = new Set();
 const KEY_LABELS = {
   KNDC_API_KEY_FMP: 'Financial Modeling Prep',
   KNDC_API_KEY_LSEG: 'LSEG Workspace',
+  KNDC_API_KEY_FRED: 'FRED',
+  KNDC_API_KEY_BANXICO: 'Banxico SIE',
+  KNDC_API_KEY_INEGI: 'INEGI',
+};
+
+const KEY_SUBS = {
+  KNDC_API_KEY_FMP: 'Equities & fundamentals',
+  KNDC_API_KEY_LSEG: 'Equities & fundamentals',
+  KNDC_API_KEY_FRED: 'United States · macro',
+  KNDC_API_KEY_BANXICO: 'Mexico · rates & FX',
+  KNDC_API_KEY_INEGI: 'Mexico · CPI & jobs',
 };
 
 async function boot() {
@@ -171,15 +191,34 @@ async function boot() {
 function renderKeys() {
   const root = document.getElementById('apikeys'); root.innerHTML = '';
   for (const entry of envStatus) {
+    const displayName = KEY_LABELS[entry.name] || entry.name;
     const wrap = document.createElement('div');
-    const label = document.createElement('label');
-    label.textContent = (KEY_LABELS[entry.name] || entry.name) + (entry.set ? ' — key saved' : ' — no key');
+    wrap.className = 'keyfield';
+    const head = document.createElement('div');
+    head.className = 'keyhead';
+    const name = document.createElement('span');
+    name.className = 'keyname';
+    name.textContent = displayName;
+    name.title = entry.name;
+    const stateTag = document.createElement('span');
+    stateTag.className = 'keystate' + (entry.set ? ' set' : '');
+    stateTag.textContent = entry.set ? 'Saved' : 'Not set';
+    head.appendChild(name); head.appendChild(stateTag);
     const input = document.createElement('input');
     input.type = 'password';
     input.autocomplete = 'off';
     input.dataset.env = entry.name;
-    input.placeholder = entry.set ? 'saved — type to replace' : 'paste API key…';
-    wrap.appendChild(label); wrap.appendChild(input); root.appendChild(wrap);
+    input.setAttribute('aria-label', displayName + ' API key');
+    input.placeholder = entry.set ? 'Type to replace' : 'Paste key';
+    wrap.appendChild(head);
+    const subText = KEY_SUBS[entry.name];
+    if (subText) {
+      const sub = document.createElement('div');
+      sub.className = 'keysub';
+      sub.textContent = subText;
+      wrap.appendChild(sub);
+    }
+    wrap.appendChild(input); root.appendChild(wrap);
   }
 }
 
@@ -305,8 +344,9 @@ function renderColumns() {
     const expanded = filter ? true : !collapsedGroups.has(group.label);
     root.appendChild(groupHeader(group.label, matches, expanded));
     if (expanded) {
+      const labels = group.column_labels || {};
       for (const col of matches) {
-        root.appendChild(columnRow(col, selected.has(col)));
+        root.appendChild(columnRow(col, selected.has(col), labels[col]));
       }
     }
   }
@@ -321,7 +361,7 @@ function renderColumns() {
   refreshCounts();
 }
 
-function columnRow(col, checked) {
+function columnRow(col, checked, label) {
   const row = document.createElement('label'); row.className = 'col';
   const box = document.createElement('input'); box.type = 'checkbox'; box.checked = checked;
   box.onchange = () => {
@@ -329,7 +369,8 @@ function columnRow(col, checked) {
     else { state.columns = state.columns.filter(c => c !== col); }
     refreshCounts();
   };
-  row.appendChild(box); row.appendChild(document.createTextNode(col));
+  const displayText = label ? label + ' (' + col + ')' : col;
+  row.appendChild(box); row.appendChild(document.createTextNode(displayText));
   return row;
 }
 

@@ -10,6 +10,8 @@ __all__ = [
     'Configuration',
     'DividendData',
     'DividendDataRow',
+    'EconomicIndicatorData',
+    'EconomicIndicatorRow',
     'FundamentalData',
     'FundamentalDataRow',
     'FundamentalDataRowBalanceSheet',
@@ -29,6 +31,8 @@ from kaxanuk.data_curator.entities.base_data_entity import BaseDataEntity
 from kaxanuk.data_curator.entities.configuration import Configuration
 from kaxanuk.data_curator.entities.dividend_data import DividendData
 from kaxanuk.data_curator.entities.dividend_data_row import DividendDataRow
+from kaxanuk.data_curator.entities.economic_indicator_data import EconomicIndicatorData
+from kaxanuk.data_curator.entities.economic_indicator_row import EconomicIndicatorRow
 from kaxanuk.data_curator.entities.fundamental_data import FundamentalData
 from kaxanuk.data_curator.entities.fundamental_data_row import FundamentalDataRow
 from kaxanuk.data_curator.entities.fundamental_data_row_balance_sheet import FundamentalDataRowBalanceSheet

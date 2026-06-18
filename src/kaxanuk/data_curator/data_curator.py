@@ -18,11 +18,14 @@ import os
 import sys
 import types
 
+import httpx
 import pyarrow
 
+from kaxanuk.data_curator.config_handlers._resolver import resolve_macro_requests
 from kaxanuk.data_curator.entities import (
     Configuration,
     DividendData,
+    EconomicIndicatorData,
     FundamentalData,
     MarketData,
     SplitData,
@@ -34,13 +37,17 @@ from kaxanuk.data_curator.exceptions import (
     ColumnBuilderCustomFunctionNotFoundError,
     ColumnBuilderUnavailableEntityFieldError,
     DataBlockRowEntityErrorGroup,
+    DataCuratorError,
     DataProviderPaymentError,
     EntityProcessingError,
     InjectedDependencyError,
     PassedArgumentError,
     IdentifierNotFoundError,
 )
-from kaxanuk.data_curator.data_providers import DataProviderInterface
+from kaxanuk.data_curator.data_providers import (
+    DataProviderInterface,
+    MacroDataProviderInterface,
+)
 from kaxanuk.data_curator.features import calculations
 from kaxanuk.data_curator.output_handlers import OutputHandlerInterface
 from kaxanuk.data_curator.services.column_builder import ColumnBuilder
@@ -52,6 +59,7 @@ def main(
     market_data_provider: DataProviderInterface,
     fundamental_data_provider: DataProviderInterface | None,
     output_handlers: list[OutputHandlerInterface],
+    macro_data_providers: list[MacroDataProviderInterface] | None = None,
     custom_calculation_modules: list[types.ModuleType]|None = None,
     max_concurrent_fetches: int = 8,
     max_concurrent_computations: int = 1,
@@ -72,6 +80,11 @@ def main(
         The fundamental data provider object instance
     output_handlers
         Objects that will handle the columnar data output, will be run one by one per each main_identifier
+    macro_data_providers
+        Optional list of macro (non-ticker) data provider instances. When provided, the macro series
+        required by the selected e_* columns are fetched once for the whole run and broadcast to every
+        identifier's ColumnBuilder. None (the default) disables macro fetching, keeping behavior identical
+        to runs without any e_* columns.
     custom_calculation_modules
         List of modules containing custom column calculation functions. Modules will be searched in order,
         with the function taken from the first module that declares it. If not found, the function will be
@@ -173,6 +186,20 @@ def main(
 
         if fundamental_data_provider is not None:
             fundamental_data_provider.initialize(configuration=configuration)
+
+        # Macro series are non-ticker: fetch once for the whole run, then broadcast to every identifier.
+        economic_data: dict[str, EconomicIndicatorData] = {}
+        if macro_data_providers:
+            try:
+                economic_data = _fetch_macro_data(
+                    configuration=configuration,
+                    macro_data_providers=macro_data_providers,
+                )
+            except (httpx.HTTPError, DataCuratorError, ValueError, LookupError) as error:
+                # untrusted external-I/O boundary: any fetch/parse failure is fatal -> return False
+                logging.getLogger(__name__).critical(str(error))
+
+                return False
 
         executor = concurrent.futures.ThreadPoolExecutor(
             max_workers=max_concurrent_fetches,
@@ -280,6 +307,7 @@ def main(
                         fundamental_data=full_fundamental_data,
                         dividend_data=full_dividend_data,
                         split_data=full_split_data,
+                        economic_data=economic_data,
                     )
                     _output_identifier_columns(
                         main_identifier=main_identifier,
@@ -306,6 +334,7 @@ def main(
                             fundamental_data=full_fundamental_data,
                             dividend_data=full_dividend_data,
                             split_data=full_split_data,
+                            economic_data=economic_data,
                         )
                     ))
 
@@ -365,9 +394,12 @@ def _compute_identifier_columns(
     fundamental_data: FundamentalData,
     dividend_data: DividendData,
     split_data: SplitData,
+    economic_data: dict[str, EconomicIndicatorData],
 ) -> pyarrow.Table:
     """
     Calculate the output columns for one identifier's data.
+
+    economic_data is the run-wide macro series, fetched once and broadcast to every identifier.
     """
     column_builder = ColumnBuilder(
         calculation_modules=calculation_modules,
@@ -376,6 +408,7 @@ def _compute_identifier_columns(
         fundamental_data=fundamental_data,
         market_data=market_data,
         split_data=split_data,
+        economic_data=economic_data,
     )
 
     return column_builder.process_columns(configuration.columns)
@@ -389,12 +422,14 @@ def _compute_identifier_columns_in_worker(
     fundamental_data: FundamentalData,
     dividend_data: DividendData,
     split_data: SplitData,
+    economic_data: dict[str, EconomicIndicatorData],
 ) -> pyarrow.Table:
     """
     Worker-process wrapper: resolve calculation modules by name, then calculate columns.
 
     Modules can't cross the process boundary, so they're re-imported here;
-    sys.modules caches them after the first task in each worker.
+    sys.modules caches them after the first task in each worker. economic_data is a dict of
+    frozen-slots dataclasses, so it pickles cleanly across the ProcessPool boundary.
     """
     calculation_modules = [
         importlib.import_module(module_name)
@@ -408,7 +443,71 @@ def _compute_identifier_columns_in_worker(
         fundamental_data=fundamental_data,
         dividend_data=dividend_data,
         split_data=split_data,
+        economic_data=economic_data,
     )
+
+
+def _fetch_macro_data(
+    *,
+    configuration: Configuration,
+    macro_data_providers: list[MacroDataProviderInterface],
+) -> dict[str, EconomicIndicatorData]:
+    """
+    Fetch the macro series required by the selected e_* columns, once for the whole run.
+
+    Resolves each e_* column to its (provider, series_id) via the macro catalog, groups the
+    series ids per provider, fetches them in a single call per provider, and re-keys the result
+    by the full column name (e.g. 'e_mx_target_rate') so the ColumnBuilder can broadcast each
+    series onto every identifier's market dates.
+
+    Providers required by the columns but not present in macro_data_providers are skipped; the
+    ColumnBuilder will then raise on the missing e_* column, surfacing the misconfiguration.
+
+    Parameters
+    ----------
+    configuration
+        The assembled Configuration entity (supplies columns and the date window)
+    macro_data_providers
+        The macro data provider instances, looked up by their macro_provider_name
+
+    Returns
+    -------
+    Mapping of full e_* column name to its fetched EconomicIndicatorData series
+    """
+    by_provider = resolve_macro_requests(configuration.columns)
+    providers_by_name = {
+        provider.macro_provider_name: provider
+        for provider in macro_data_providers
+    }
+    economic_data: dict[str, EconomicIndicatorData] = {}
+    for provider_name, requests in by_provider.items():
+        provider = providers_by_name.get(provider_name)
+        if provider is None:
+            logging.getLogger(__name__).warning(
+                "Macro provider %r is required by the selected columns but is not registered in "
+                "macro_data_providers; those columns will fail during computation.",
+                provider_name,
+            )
+            continue
+        series_ids = [series_id for (_column, series_id) in requests]
+        fetched = provider.get_economic_data(
+            series_ids=series_ids,
+            start_date=configuration.start_date,
+            end_date=configuration.end_date,
+        )
+        for (column, series_id) in requests:
+            if series_id in fetched:
+                economic_data[column] = fetched[series_id]
+            else:
+                logging.getLogger(__name__).warning(
+                    "Provider %r returned no data for series %r (column %r); "
+                    "that column will fail during computation.",
+                    provider_name,
+                    series_id,
+                    column,
+                )
+
+    return economic_data
 
 
 def _output_identifier_columns(
