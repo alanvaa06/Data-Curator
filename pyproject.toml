@@ -230,6 +230,16 @@ ignore = [
 "unittest.mock".msg = "use pytest builtin monkeypatch fixture instead"
 
 [tool.ruff.lint.per-file-ignores]
+"scripts/**" = [
+    "ANN",      # local maintenance scripts don't need full annotations
+    "D",        # nor strict docstrings
+    "DTZ",      # naive dates are fine here
+    "EM",       # message style not critical
+    "INP001",   # not a package
+    "PLR2004",  # magic values fine
+    "S",        # bandit rules don't apply to a local build script (subprocess curl is intentional)
+    "T20",      # prints a build report to stdout/stderr
+]
 "benchmarks/**" = [
     "ANN",      # benchmark scripts don't need annotations
     "D",        # nor strict docstrings

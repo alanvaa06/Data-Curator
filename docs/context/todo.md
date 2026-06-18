@@ -32,6 +32,15 @@ Status: pending | in_progress | done
 - [pending] Live-API smoke test through the panel Save&run path with real Banxico/INEGI/FRED tokens — not yet run (no tokens available); unit suite (862) is the current proof.
 - [pending] Quarter-period ('quarterly') macro support for DBnomics/INEGI period parsing (DBnomics adapter currently handles annual/monthly/daily; quarterly series need period-format handling).
 
+## Macro catalog expansion (2026-06-17) — DONE: 17 -> 419 verified e_* columns / 44 economies
+- [done] Deep-research fan-out (wf_b7eae361-f5f) — FAILED the enumeration (rate-limited WebFetch, all DBnomics 0-0, 1 usable series / 3.3M tokens). Lesson recorded in lessons.md.
+- [done] Pivot: deterministic verifier `scripts/build_macro_catalog.py` — country×concept matrix over wide DBnomics datasets (BIS policy rates, IMF IFS cpi/fx/reserves/short/ind-prod/unemployment, Eurostat 10Y, World Bank GDP) + FRED US deepening.
+- [done] Live-API verify each series_id before write (DBnomics num_found; FRED fredgraph.csv via curl) — 402 kept, 51 non-existent dropped. Zero hallucinated IDs.
+- [done] Written to macro_catalog.json (419 rows, schema-clean, 0 dupes). Panel picker auto-includes via `_build_macro_group` (no column_catalog.json edit needed). Resolver routes; real end-to-end adapter fetch verified; 806 unit tests green; README/CHANGELOG updated.
+- [pending] commercial_ok licensing pass: current per-source defaults (Eurostat/WB=yes, IMF/BIS=restricted, FRED=no) are conservative reads, not adjudicated terms — confirm verbatim redistribution terms before any commercial ship.
+- [pending] Optional: quarterly-frequency macro series (AU/NZ CPI, GDP) need DBnomics quarterly period parsing (deferred; none added so no current breakage).
+- [pending] Optional: MX catalog depth via Banxico/INEGI needs tokens to live-verify new IDs (existing 7 untouched).
+
 ## Follow-ups
 - [pending] Burn down the mypy ignore_errors baseline (fmp/lseg providers, data_blocks, column_builder, helpers, data_column).
 - [done] Dev environment: stale non-editable install replaced with `pip install --user -e .`; CLI now reflects `src/`. Added package `__main__.py` so `python -m kaxanuk.data_curator` works regardless of PATH.

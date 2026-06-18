@@ -1,19 +1,3773 @@
 [
-  {"column": "e_us_cpi", "provider": "fred", "series_id": "CPIAUCSL", "name": "US CPI (all items)", "region": "US", "frequency": "monthly", "commercial_ok": "no"},
-  {"column": "e_us_core_cpi", "provider": "fred", "series_id": "CPILFESL", "name": "US core CPI", "region": "US", "frequency": "monthly", "commercial_ok": "no"},
-  {"column": "e_us_fed_funds", "provider": "fred", "series_id": "FEDFUNDS", "name": "US fed funds rate", "region": "US", "frequency": "monthly", "commercial_ok": "no"},
-  {"column": "e_us_2y", "provider": "fred", "series_id": "DGS2", "name": "US 2Y Treasury", "region": "US", "frequency": "daily", "commercial_ok": "no"},
-  {"column": "e_us_10y", "provider": "fred", "series_id": "DGS10", "name": "US 10Y Treasury", "region": "US", "frequency": "daily", "commercial_ok": "no"},
-  {"column": "e_us_unemployment", "provider": "fred", "series_id": "UNRATE", "name": "US unemployment", "region": "US", "frequency": "monthly", "commercial_ok": "no"},
-  {"column": "e_us_gdp", "provider": "fred", "series_id": "GDPC1", "name": "US real GDP", "region": "US", "frequency": "quarterly", "commercial_ok": "no"},
-  {"column": "e_us_m2", "provider": "fred", "series_id": "M2SL", "name": "US M2", "region": "US", "frequency": "monthly", "commercial_ok": "no"},
-  {"column": "e_mx_target_rate", "provider": "banxico_sie", "series_id": "SF61745", "name": "MX target rate", "region": "MX", "frequency": "daily", "commercial_ok": "unverified"},
-  {"column": "e_mx_tiie28", "provider": "banxico_sie", "series_id": "SF60648", "name": "MX TIIE 28d", "region": "MX", "frequency": "daily", "commercial_ok": "unverified"},
-  {"column": "e_mx_cetes28", "provider": "banxico_sie", "series_id": "SF60633", "name": "MX Cetes 28d", "region": "MX", "frequency": "daily", "commercial_ok": "unverified"},
-  {"column": "e_mx_usdmxn_fix", "provider": "banxico_sie", "series_id": "SF43718", "name": "USD/MXN FIX", "region": "MX", "frequency": "daily", "commercial_ok": "unverified"},
-  {"column": "e_mx_reserves", "provider": "banxico_sie", "series_id": "SF43707", "name": "MX intl reserves", "region": "MX", "frequency": "weekly", "commercial_ok": "unverified"},
-  {"column": "e_mx_inpc", "provider": "inegi", "series_id": "216064", "name": "MX INPC (headline CPI)", "region": "MX", "frequency": "monthly", "commercial_ok": "unverified"},
-  {"column": "e_mx_unemployment", "provider": "inegi", "series_id": "444612", "name": "MX unemployment (ENOE)", "region": "MX", "frequency": "monthly", "commercial_ok": "unverified"},
-  {"column": "e_ez_hicp", "provider": "dbnomics", "series_id": "Eurostat/prc_hicp_midx/M.I15.CP00.EA", "name": "Euro-area HICP", "region": "EZ", "frequency": "monthly", "commercial_ok": "unverified"},
-  {"column": "e_ecb_rate", "provider": "dbnomics", "series_id": "ECB/FM/B.U2.EUR.4F.KR.MRR_FR.LEV", "name": "ECB main refi rate", "region": "EZ", "frequency": "daily", "commercial_ok": "unverified"}
+  {
+    "column": "e_ar_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.AR.PCPI_IX",
+    "name": "Argentina CPI (all items, index)",
+    "region": "AR",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_ar_fx_usd",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.AR.ENDE_XDC_USD_RATE",
+    "name": "Argentina FX rate (LCU per USD)",
+    "region": "AR",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_ar_gdp_nominal",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.CD-ARG",
+    "name": "Argentina nominal GDP (current USD)",
+    "region": "AR",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_ar_gdp_real",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.KD-ARG",
+    "name": "Argentina real GDP (constant USD)",
+    "region": "AR",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_ar_policy_rate",
+    "provider": "dbnomics",
+    "series_id": "BIS/WS_CBPOL/M.AR",
+    "name": "Argentina central-bank policy rate",
+    "region": "AR",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_ar_reserves",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.AR.RAFA_USD",
+    "name": "Argentina FX reserves (USD)",
+    "region": "AR",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_ar_short_rate",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.AR.FIMM_PA",
+    "name": "Argentina short-term interest rate",
+    "region": "AR",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_ar_unemployment",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.AR.LUR_PT",
+    "name": "Argentina unemployment rate (%)",
+    "region": "AR",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_at_10y",
+    "provider": "dbnomics",
+    "series_id": "Eurostat/irt_lt_mcby_m/M.MCBY.AT",
+    "name": "Austria 10Y govt bond yield",
+    "region": "AT",
+    "frequency": "monthly",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_at_core_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.AT.PCPIHA_IX",
+    "name": "Austria core CPI (index)",
+    "region": "AT",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_at_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.AT.PCPI_IX",
+    "name": "Austria CPI (all items, index)",
+    "region": "AT",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_at_fx_usd",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.AT.ENDE_XDC_USD_RATE",
+    "name": "Austria FX rate (LCU per USD)",
+    "region": "AT",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_at_gdp_nominal",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.CD-AUT",
+    "name": "Austria nominal GDP (current USD)",
+    "region": "AT",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_at_gdp_real",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.KD-AUT",
+    "name": "Austria real GDP (constant USD)",
+    "region": "AT",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_at_ind_prod",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.AT.AIP_IX",
+    "name": "Austria industrial production (index)",
+    "region": "AT",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_at_policy_rate",
+    "provider": "dbnomics",
+    "series_id": "BIS/WS_CBPOL/M.AT",
+    "name": "Austria central-bank policy rate",
+    "region": "AT",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_at_reserves",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.AT.RAFA_USD",
+    "name": "Austria FX reserves (USD)",
+    "region": "AT",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_at_unemployment",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.AT.LUR_PT",
+    "name": "Austria unemployment rate (%)",
+    "region": "AT",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_au_fx_usd",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.AU.ENDE_XDC_USD_RATE",
+    "name": "Australia FX rate (LCU per USD)",
+    "region": "AU",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_au_gdp_nominal",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.CD-AUS",
+    "name": "Australia nominal GDP (current USD)",
+    "region": "AU",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_au_gdp_real",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.KD-AUS",
+    "name": "Australia real GDP (constant USD)",
+    "region": "AU",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_au_ind_prod",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.AU.AIP_IX",
+    "name": "Australia industrial production (index)",
+    "region": "AU",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_au_policy_rate",
+    "provider": "dbnomics",
+    "series_id": "BIS/WS_CBPOL/M.AU",
+    "name": "Australia central-bank policy rate",
+    "region": "AU",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_au_reserves",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.AU.RAFA_USD",
+    "name": "Australia FX reserves (USD)",
+    "region": "AU",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_au_short_rate",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.AU.FITB_PA",
+    "name": "Australia short-term interest rate",
+    "region": "AU",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_au_unemployment",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.AU.LUR_PT",
+    "name": "Australia unemployment rate (%)",
+    "region": "AU",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_be_10y",
+    "provider": "dbnomics",
+    "series_id": "Eurostat/irt_lt_mcby_m/M.MCBY.BE",
+    "name": "Belgium 10Y govt bond yield",
+    "region": "BE",
+    "frequency": "monthly",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_be_core_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.BE.PCPIHA_IX",
+    "name": "Belgium core CPI (index)",
+    "region": "BE",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_be_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.BE.PCPI_IX",
+    "name": "Belgium CPI (all items, index)",
+    "region": "BE",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_be_fx_usd",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.BE.ENDE_XDC_USD_RATE",
+    "name": "Belgium FX rate (LCU per USD)",
+    "region": "BE",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_be_gdp_nominal",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.CD-BEL",
+    "name": "Belgium nominal GDP (current USD)",
+    "region": "BE",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_be_gdp_real",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.KD-BEL",
+    "name": "Belgium real GDP (constant USD)",
+    "region": "BE",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_be_ind_prod",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.BE.AIP_IX",
+    "name": "Belgium industrial production (index)",
+    "region": "BE",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_be_policy_rate",
+    "provider": "dbnomics",
+    "series_id": "BIS/WS_CBPOL/M.BE",
+    "name": "Belgium central-bank policy rate",
+    "region": "BE",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_be_reserves",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.BE.RAFA_USD",
+    "name": "Belgium FX reserves (USD)",
+    "region": "BE",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_be_unemployment",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.BE.LUR_PT",
+    "name": "Belgium unemployment rate (%)",
+    "region": "BE",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_br_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.BR.PCPI_IX",
+    "name": "Brazil CPI (all items, index)",
+    "region": "BR",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_br_fx_usd",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.BR.ENDE_XDC_USD_RATE",
+    "name": "Brazil FX rate (LCU per USD)",
+    "region": "BR",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_br_gdp_nominal",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.CD-BRA",
+    "name": "Brazil nominal GDP (current USD)",
+    "region": "BR",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_br_gdp_real",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.KD-BRA",
+    "name": "Brazil real GDP (constant USD)",
+    "region": "BR",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_br_ind_prod",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.BR.AIP_IX",
+    "name": "Brazil industrial production (index)",
+    "region": "BR",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_br_policy_rate",
+    "provider": "dbnomics",
+    "series_id": "BIS/WS_CBPOL/M.BR",
+    "name": "Brazil central-bank policy rate",
+    "region": "BR",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_br_reserves",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.BR.RAFA_USD",
+    "name": "Brazil FX reserves (USD)",
+    "region": "BR",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_br_short_rate",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.BR.FITB_PA",
+    "name": "Brazil short-term interest rate",
+    "region": "BR",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_br_unemployment",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.BR.LUR_PT",
+    "name": "Brazil unemployment rate (%)",
+    "region": "BR",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_ca_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.CA.PCPI_IX",
+    "name": "Canada CPI (all items, index)",
+    "region": "CA",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_ca_fx_usd",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.CA.ENDE_XDC_USD_RATE",
+    "name": "Canada FX rate (LCU per USD)",
+    "region": "CA",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_ca_gdp_nominal",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.CD-CAN",
+    "name": "Canada nominal GDP (current USD)",
+    "region": "CA",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_ca_gdp_real",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.KD-CAN",
+    "name": "Canada real GDP (constant USD)",
+    "region": "CA",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_ca_ind_prod",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.CA.AIP_IX",
+    "name": "Canada industrial production (index)",
+    "region": "CA",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_ca_policy_rate",
+    "provider": "dbnomics",
+    "series_id": "BIS/WS_CBPOL/M.CA",
+    "name": "Canada central-bank policy rate",
+    "region": "CA",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_ca_reserves",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.CA.RAFA_USD",
+    "name": "Canada FX reserves (USD)",
+    "region": "CA",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_ca_short_rate",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.CA.FITB_PA",
+    "name": "Canada short-term interest rate",
+    "region": "CA",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_ca_unemployment",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.CA.LUR_PT",
+    "name": "Canada unemployment rate (%)",
+    "region": "CA",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_ch_core_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.CH.PCPIHA_IX",
+    "name": "Switzerland core CPI (index)",
+    "region": "CH",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_ch_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.CH.PCPI_IX",
+    "name": "Switzerland CPI (all items, index)",
+    "region": "CH",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_ch_fx_usd",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.CH.ENDE_XDC_USD_RATE",
+    "name": "Switzerland FX rate (LCU per USD)",
+    "region": "CH",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_ch_gdp_nominal",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.CD-CHE",
+    "name": "Switzerland nominal GDP (current USD)",
+    "region": "CH",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_ch_gdp_real",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.KD-CHE",
+    "name": "Switzerland real GDP (constant USD)",
+    "region": "CH",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_ch_policy_rate",
+    "provider": "dbnomics",
+    "series_id": "BIS/WS_CBPOL/M.CH",
+    "name": "Switzerland central-bank policy rate",
+    "region": "CH",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_ch_reserves",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.CH.RAFA_USD",
+    "name": "Switzerland FX reserves (USD)",
+    "region": "CH",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_ch_short_rate",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.CH.FIDR_PA",
+    "name": "Switzerland short-term interest rate",
+    "region": "CH",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_ch_unemployment",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.CH.LUR_PT",
+    "name": "Switzerland unemployment rate (%)",
+    "region": "CH",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_cl_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.CL.PCPI_IX",
+    "name": "Chile CPI (all items, index)",
+    "region": "CL",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_cl_fx_usd",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.CL.ENDE_XDC_USD_RATE",
+    "name": "Chile FX rate (LCU per USD)",
+    "region": "CL",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_cl_gdp_nominal",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.CD-CHL",
+    "name": "Chile nominal GDP (current USD)",
+    "region": "CL",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_cl_gdp_real",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.KD-CHL",
+    "name": "Chile real GDP (constant USD)",
+    "region": "CL",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_cl_ind_prod",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.CL.AIP_IX",
+    "name": "Chile industrial production (index)",
+    "region": "CL",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_cl_policy_rate",
+    "provider": "dbnomics",
+    "series_id": "BIS/WS_CBPOL/M.CL",
+    "name": "Chile central-bank policy rate",
+    "region": "CL",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_cl_reserves",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.CL.RAFA_USD",
+    "name": "Chile FX reserves (USD)",
+    "region": "CL",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_cl_short_rate",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.CL.FIMM_PA",
+    "name": "Chile short-term interest rate",
+    "region": "CL",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_cl_unemployment",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.CL.LUR_PT",
+    "name": "Chile unemployment rate (%)",
+    "region": "CL",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_cn_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.CN.PCPI_IX",
+    "name": "China CPI (all items, index)",
+    "region": "CN",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_cn_fx_usd",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.CN.ENDE_XDC_USD_RATE",
+    "name": "China FX rate (LCU per USD)",
+    "region": "CN",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_cn_gdp_nominal",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.CD-CHN",
+    "name": "China nominal GDP (current USD)",
+    "region": "CN",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_cn_gdp_real",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.KD-CHN",
+    "name": "China real GDP (constant USD)",
+    "region": "CN",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_cn_ind_prod",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.CN.AIP_IX",
+    "name": "China industrial production (index)",
+    "region": "CN",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_cn_policy_rate",
+    "provider": "dbnomics",
+    "series_id": "BIS/WS_CBPOL/M.CN",
+    "name": "China central-bank policy rate",
+    "region": "CN",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_cn_reserves",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.CN.RAFA_USD",
+    "name": "China FX reserves (USD)",
+    "region": "CN",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_cn_short_rate",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.CN.FIDR_PA",
+    "name": "China short-term interest rate",
+    "region": "CN",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_cn_unemployment",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.CN.LUR_PT",
+    "name": "China unemployment rate (%)",
+    "region": "CN",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_co_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.CO.PCPI_IX",
+    "name": "Colombia CPI (all items, index)",
+    "region": "CO",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_co_fx_usd",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.CO.ENDE_XDC_USD_RATE",
+    "name": "Colombia FX rate (LCU per USD)",
+    "region": "CO",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_co_gdp_nominal",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.CD-COL",
+    "name": "Colombia nominal GDP (current USD)",
+    "region": "CO",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_co_gdp_real",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.KD-COL",
+    "name": "Colombia real GDP (constant USD)",
+    "region": "CO",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_co_ind_prod",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.CO.AIPMA_IX",
+    "name": "Colombia industrial production (index)",
+    "region": "CO",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_co_policy_rate",
+    "provider": "dbnomics",
+    "series_id": "BIS/WS_CBPOL/M.CO",
+    "name": "Colombia central-bank policy rate",
+    "region": "CO",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_co_reserves",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.CO.RAFA_USD",
+    "name": "Colombia FX reserves (USD)",
+    "region": "CO",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_co_short_rate",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.CO.FIMM_PA",
+    "name": "Colombia short-term interest rate",
+    "region": "CO",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_co_unemployment",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.CO.LUR_PT",
+    "name": "Colombia unemployment rate (%)",
+    "region": "CO",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_cz_10y",
+    "provider": "dbnomics",
+    "series_id": "Eurostat/irt_lt_mcby_m/M.MCBY.CZ",
+    "name": "Czechia 10Y govt bond yield",
+    "region": "CZ",
+    "frequency": "monthly",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_cz_core_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.CZ.PCPIHA_IX",
+    "name": "Czechia core CPI (index)",
+    "region": "CZ",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_cz_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.CZ.PCPI_IX",
+    "name": "Czechia CPI (all items, index)",
+    "region": "CZ",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_cz_fx_usd",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.CZ.ENDE_XDC_USD_RATE",
+    "name": "Czechia FX rate (LCU per USD)",
+    "region": "CZ",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_cz_gdp_nominal",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.CD-CZE",
+    "name": "Czechia nominal GDP (current USD)",
+    "region": "CZ",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_cz_gdp_real",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.KD-CZE",
+    "name": "Czechia real GDP (constant USD)",
+    "region": "CZ",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_cz_ind_prod",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.CZ.AIP_IX",
+    "name": "Czechia industrial production (index)",
+    "region": "CZ",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_cz_policy_rate",
+    "provider": "dbnomics",
+    "series_id": "BIS/WS_CBPOL/M.CZ",
+    "name": "Czechia central-bank policy rate",
+    "region": "CZ",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_cz_reserves",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.CZ.RAFA_USD",
+    "name": "Czechia FX reserves (USD)",
+    "region": "CZ",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_cz_unemployment",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.CZ.LUR_PT",
+    "name": "Czechia unemployment rate (%)",
+    "region": "CZ",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_de_10y",
+    "provider": "dbnomics",
+    "series_id": "Eurostat/irt_lt_mcby_m/M.MCBY.DE",
+    "name": "Germany 10Y govt bond yield",
+    "region": "DE",
+    "frequency": "monthly",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_de_core_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.DE.PCPIHA_IX",
+    "name": "Germany core CPI (index)",
+    "region": "DE",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_de_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.DE.PCPI_IX",
+    "name": "Germany CPI (all items, index)",
+    "region": "DE",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_de_fx_usd",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.DE.ENDE_XDC_USD_RATE",
+    "name": "Germany FX rate (LCU per USD)",
+    "region": "DE",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_de_gdp_nominal",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.CD-DEU",
+    "name": "Germany nominal GDP (current USD)",
+    "region": "DE",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_de_gdp_real",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.KD-DEU",
+    "name": "Germany real GDP (constant USD)",
+    "region": "DE",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_de_ind_prod",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.DE.AIP_IX",
+    "name": "Germany industrial production (index)",
+    "region": "DE",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_de_policy_rate",
+    "provider": "dbnomics",
+    "series_id": "BIS/WS_CBPOL/M.DE",
+    "name": "Germany central-bank policy rate",
+    "region": "DE",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_de_reserves",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.DE.RAFA_USD",
+    "name": "Germany FX reserves (USD)",
+    "region": "DE",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_de_unemployment",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.DE.LUR_PT",
+    "name": "Germany unemployment rate (%)",
+    "region": "DE",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_dk_10y",
+    "provider": "dbnomics",
+    "series_id": "Eurostat/irt_lt_mcby_m/M.MCBY.DK",
+    "name": "Denmark 10Y govt bond yield",
+    "region": "DK",
+    "frequency": "monthly",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_dk_core_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.DK.PCPIHA_IX",
+    "name": "Denmark core CPI (index)",
+    "region": "DK",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_dk_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.DK.PCPI_IX",
+    "name": "Denmark CPI (all items, index)",
+    "region": "DK",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_dk_fx_usd",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.DK.ENDE_XDC_USD_RATE",
+    "name": "Denmark FX rate (LCU per USD)",
+    "region": "DK",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_dk_gdp_nominal",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.CD-DNK",
+    "name": "Denmark nominal GDP (current USD)",
+    "region": "DK",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_dk_gdp_real",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.KD-DNK",
+    "name": "Denmark real GDP (constant USD)",
+    "region": "DK",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_dk_ind_prod",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.DK.AIP_IX",
+    "name": "Denmark industrial production (index)",
+    "region": "DK",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_dk_policy_rate",
+    "provider": "dbnomics",
+    "series_id": "BIS/WS_CBPOL/M.DK",
+    "name": "Denmark central-bank policy rate",
+    "region": "DK",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_dk_reserves",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.DK.RAFA_USD",
+    "name": "Denmark FX reserves (USD)",
+    "region": "DK",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_dk_unemployment",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.DK.LUR_PT",
+    "name": "Denmark unemployment rate (%)",
+    "region": "DK",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_es_10y",
+    "provider": "dbnomics",
+    "series_id": "Eurostat/irt_lt_mcby_m/M.MCBY.ES",
+    "name": "Spain 10Y govt bond yield",
+    "region": "ES",
+    "frequency": "monthly",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_es_core_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.ES.PCPIHA_IX",
+    "name": "Spain core CPI (index)",
+    "region": "ES",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_es_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.ES.PCPI_IX",
+    "name": "Spain CPI (all items, index)",
+    "region": "ES",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_es_fx_usd",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.ES.ENDE_XDC_USD_RATE",
+    "name": "Spain FX rate (LCU per USD)",
+    "region": "ES",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_es_gdp_nominal",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.CD-ESP",
+    "name": "Spain nominal GDP (current USD)",
+    "region": "ES",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_es_gdp_real",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.KD-ESP",
+    "name": "Spain real GDP (constant USD)",
+    "region": "ES",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_es_ind_prod",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.ES.AIP_IX",
+    "name": "Spain industrial production (index)",
+    "region": "ES",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_es_policy_rate",
+    "provider": "dbnomics",
+    "series_id": "BIS/WS_CBPOL/M.ES",
+    "name": "Spain central-bank policy rate",
+    "region": "ES",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_es_reserves",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.ES.RAFA_USD",
+    "name": "Spain FX reserves (USD)",
+    "region": "ES",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_es_unemployment",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.ES.LUR_PT",
+    "name": "Spain unemployment rate (%)",
+    "region": "ES",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_ecb_rate",
+    "provider": "dbnomics",
+    "series_id": "ECB/FM/B.U2.EUR.4F.KR.MRR_FR.LEV",
+    "name": "ECB main refi rate",
+    "region": "EZ",
+    "frequency": "daily",
+    "commercial_ok": "unverified"
+  },
+  {
+    "column": "e_ez_10y",
+    "provider": "dbnomics",
+    "series_id": "Eurostat/irt_lt_mcby_m/M.MCBY.EA",
+    "name": "Euro area 10Y govt bond yield",
+    "region": "EZ",
+    "frequency": "monthly",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_ez_core_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.U2.PCPIHA_IX",
+    "name": "Euro area core CPI (index)",
+    "region": "EZ",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_ez_fx_usd",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.U2.ENDE_XDC_USD_RATE",
+    "name": "Euro area FX rate (LCU per USD)",
+    "region": "EZ",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_ez_gdp_nominal",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.CD-EMU",
+    "name": "Euro area nominal GDP (current USD)",
+    "region": "EZ",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_ez_gdp_real",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.KD-EMU",
+    "name": "Euro area real GDP (constant USD)",
+    "region": "EZ",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_ez_hicp",
+    "provider": "dbnomics",
+    "series_id": "Eurostat/prc_hicp_midx/M.I15.CP00.EA",
+    "name": "Euro-area HICP",
+    "region": "EZ",
+    "frequency": "monthly",
+    "commercial_ok": "unverified"
+  },
+  {
+    "column": "e_ez_ind_prod",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.U2.AIP_IX",
+    "name": "Euro area industrial production (index)",
+    "region": "EZ",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_ez_reserves",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.U2.RAFA_USD",
+    "name": "Euro area FX reserves (USD)",
+    "region": "EZ",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_fi_10y",
+    "provider": "dbnomics",
+    "series_id": "Eurostat/irt_lt_mcby_m/M.MCBY.FI",
+    "name": "Finland 10Y govt bond yield",
+    "region": "FI",
+    "frequency": "monthly",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_fi_core_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.FI.PCPIHA_IX",
+    "name": "Finland core CPI (index)",
+    "region": "FI",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_fi_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.FI.PCPI_IX",
+    "name": "Finland CPI (all items, index)",
+    "region": "FI",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_fi_fx_usd",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.FI.ENDE_XDC_USD_RATE",
+    "name": "Finland FX rate (LCU per USD)",
+    "region": "FI",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_fi_gdp_nominal",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.CD-FIN",
+    "name": "Finland nominal GDP (current USD)",
+    "region": "FI",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_fi_gdp_real",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.KD-FIN",
+    "name": "Finland real GDP (constant USD)",
+    "region": "FI",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_fi_ind_prod",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.FI.AIP_IX",
+    "name": "Finland industrial production (index)",
+    "region": "FI",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_fi_reserves",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.FI.RAFA_USD",
+    "name": "Finland FX reserves (USD)",
+    "region": "FI",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_fi_unemployment",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.FI.LUR_PT",
+    "name": "Finland unemployment rate (%)",
+    "region": "FI",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_fr_10y",
+    "provider": "dbnomics",
+    "series_id": "Eurostat/irt_lt_mcby_m/M.MCBY.FR",
+    "name": "France 10Y govt bond yield",
+    "region": "FR",
+    "frequency": "monthly",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_fr_core_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.FR.PCPIHA_IX",
+    "name": "France core CPI (index)",
+    "region": "FR",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_fr_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.FR.PCPI_IX",
+    "name": "France CPI (all items, index)",
+    "region": "FR",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_fr_fx_usd",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.FR.ENDE_XDC_USD_RATE",
+    "name": "France FX rate (LCU per USD)",
+    "region": "FR",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_fr_gdp_nominal",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.CD-FRA",
+    "name": "France nominal GDP (current USD)",
+    "region": "FR",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_fr_gdp_real",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.KD-FRA",
+    "name": "France real GDP (constant USD)",
+    "region": "FR",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_fr_ind_prod",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.FR.AIP_IX",
+    "name": "France industrial production (index)",
+    "region": "FR",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_fr_policy_rate",
+    "provider": "dbnomics",
+    "series_id": "BIS/WS_CBPOL/M.FR",
+    "name": "France central-bank policy rate",
+    "region": "FR",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_fr_reserves",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.FR.RAFA_USD",
+    "name": "France FX reserves (USD)",
+    "region": "FR",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_fr_unemployment",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.FR.LUR_PT",
+    "name": "France unemployment rate (%)",
+    "region": "FR",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_gr_10y",
+    "provider": "dbnomics",
+    "series_id": "Eurostat/irt_lt_mcby_m/M.MCBY.EL",
+    "name": "Greece 10Y govt bond yield",
+    "region": "GR",
+    "frequency": "monthly",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_gr_core_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.GR.PCPIHA_IX",
+    "name": "Greece core CPI (index)",
+    "region": "GR",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_gr_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.GR.PCPI_IX",
+    "name": "Greece CPI (all items, index)",
+    "region": "GR",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_gr_fx_usd",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.GR.ENDE_XDC_USD_RATE",
+    "name": "Greece FX rate (LCU per USD)",
+    "region": "GR",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_gr_gdp_nominal",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.CD-GRC",
+    "name": "Greece nominal GDP (current USD)",
+    "region": "GR",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_gr_gdp_real",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.KD-GRC",
+    "name": "Greece real GDP (constant USD)",
+    "region": "GR",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_gr_ind_prod",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.GR.AIP_IX",
+    "name": "Greece industrial production (index)",
+    "region": "GR",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_gr_policy_rate",
+    "provider": "dbnomics",
+    "series_id": "BIS/WS_CBPOL/M.GR",
+    "name": "Greece central-bank policy rate",
+    "region": "GR",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_gr_reserves",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.GR.RAFA_USD",
+    "name": "Greece FX reserves (USD)",
+    "region": "GR",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_gr_unemployment",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.GR.LUR_PT",
+    "name": "Greece unemployment rate (%)",
+    "region": "GR",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_hk_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.HK.PCPI_IX",
+    "name": "Hong Kong CPI (all items, index)",
+    "region": "HK",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_hk_fx_usd",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.HK.ENDE_XDC_USD_RATE",
+    "name": "Hong Kong FX rate (LCU per USD)",
+    "region": "HK",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_hk_gdp_nominal",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.CD-HKG",
+    "name": "Hong Kong nominal GDP (current USD)",
+    "region": "HK",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_hk_gdp_real",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.KD-HKG",
+    "name": "Hong Kong real GDP (constant USD)",
+    "region": "HK",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_hk_policy_rate",
+    "provider": "dbnomics",
+    "series_id": "BIS/WS_CBPOL/M.HK",
+    "name": "Hong Kong central-bank policy rate",
+    "region": "HK",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_hk_reserves",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.HK.RAFA_USD",
+    "name": "Hong Kong FX reserves (USD)",
+    "region": "HK",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_hk_short_rate",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.HK.FITB_PA",
+    "name": "Hong Kong short-term interest rate",
+    "region": "HK",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_hk_unemployment",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.HK.LUR_PT",
+    "name": "Hong Kong unemployment rate (%)",
+    "region": "HK",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_hu_10y",
+    "provider": "dbnomics",
+    "series_id": "Eurostat/irt_lt_mcby_m/M.MCBY.HU",
+    "name": "Hungary 10Y govt bond yield",
+    "region": "HU",
+    "frequency": "monthly",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_hu_core_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.HU.PCPIHA_IX",
+    "name": "Hungary core CPI (index)",
+    "region": "HU",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_hu_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.HU.PCPI_IX",
+    "name": "Hungary CPI (all items, index)",
+    "region": "HU",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_hu_fx_usd",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.HU.ENDE_XDC_USD_RATE",
+    "name": "Hungary FX rate (LCU per USD)",
+    "region": "HU",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_hu_gdp_nominal",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.CD-HUN",
+    "name": "Hungary nominal GDP (current USD)",
+    "region": "HU",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_hu_gdp_real",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.KD-HUN",
+    "name": "Hungary real GDP (constant USD)",
+    "region": "HU",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_hu_ind_prod",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.HU.AIP_IX",
+    "name": "Hungary industrial production (index)",
+    "region": "HU",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_hu_policy_rate",
+    "provider": "dbnomics",
+    "series_id": "BIS/WS_CBPOL/M.HU",
+    "name": "Hungary central-bank policy rate",
+    "region": "HU",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_hu_reserves",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.HU.RAFA_USD",
+    "name": "Hungary FX reserves (USD)",
+    "region": "HU",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_hu_unemployment",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.HU.LUR_PT",
+    "name": "Hungary unemployment rate (%)",
+    "region": "HU",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_id_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.ID.PCPI_IX",
+    "name": "Indonesia CPI (all items, index)",
+    "region": "ID",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_id_fx_usd",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.ID.ENDE_XDC_USD_RATE",
+    "name": "Indonesia FX rate (LCU per USD)",
+    "region": "ID",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_id_gdp_nominal",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.CD-IDN",
+    "name": "Indonesia nominal GDP (current USD)",
+    "region": "ID",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_id_gdp_real",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.KD-IDN",
+    "name": "Indonesia real GDP (constant USD)",
+    "region": "ID",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_id_ind_prod",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.ID.AIPMA_IX",
+    "name": "Indonesia industrial production (index)",
+    "region": "ID",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_id_policy_rate",
+    "provider": "dbnomics",
+    "series_id": "BIS/WS_CBPOL/M.ID",
+    "name": "Indonesia central-bank policy rate",
+    "region": "ID",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_id_reserves",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.ID.RAFA_USD",
+    "name": "Indonesia FX reserves (USD)",
+    "region": "ID",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_id_short_rate",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.ID.FIMM_PA",
+    "name": "Indonesia short-term interest rate",
+    "region": "ID",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_ie_10y",
+    "provider": "dbnomics",
+    "series_id": "Eurostat/irt_lt_mcby_m/M.MCBY.IE",
+    "name": "Ireland 10Y govt bond yield",
+    "region": "IE",
+    "frequency": "monthly",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_ie_core_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.IE.PCPIHA_IX",
+    "name": "Ireland core CPI (index)",
+    "region": "IE",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_ie_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.IE.PCPI_IX",
+    "name": "Ireland CPI (all items, index)",
+    "region": "IE",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_ie_fx_usd",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.IE.ENDE_XDC_USD_RATE",
+    "name": "Ireland FX rate (LCU per USD)",
+    "region": "IE",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_ie_gdp_nominal",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.CD-IRL",
+    "name": "Ireland nominal GDP (current USD)",
+    "region": "IE",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_ie_gdp_real",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.KD-IRL",
+    "name": "Ireland real GDP (constant USD)",
+    "region": "IE",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_ie_ind_prod",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.IE.AIP_IX",
+    "name": "Ireland industrial production (index)",
+    "region": "IE",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_ie_reserves",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.IE.RAFA_USD",
+    "name": "Ireland FX reserves (USD)",
+    "region": "IE",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_ie_unemployment",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.IE.LUR_PT",
+    "name": "Ireland unemployment rate (%)",
+    "region": "IE",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_il_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.IL.PCPI_IX",
+    "name": "Israel CPI (all items, index)",
+    "region": "IL",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_il_fx_usd",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.IL.ENDE_XDC_USD_RATE",
+    "name": "Israel FX rate (LCU per USD)",
+    "region": "IL",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_il_gdp_nominal",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.CD-ISR",
+    "name": "Israel nominal GDP (current USD)",
+    "region": "IL",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_il_gdp_real",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.KD-ISR",
+    "name": "Israel real GDP (constant USD)",
+    "region": "IL",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_il_ind_prod",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.IL.AIP_IX",
+    "name": "Israel industrial production (index)",
+    "region": "IL",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_il_policy_rate",
+    "provider": "dbnomics",
+    "series_id": "BIS/WS_CBPOL/M.IL",
+    "name": "Israel central-bank policy rate",
+    "region": "IL",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_il_reserves",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.IL.RAFA_USD",
+    "name": "Israel FX reserves (USD)",
+    "region": "IL",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_il_short_rate",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.IL.FITB_PA",
+    "name": "Israel short-term interest rate",
+    "region": "IL",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_il_unemployment",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.IL.LUR_PT",
+    "name": "Israel unemployment rate (%)",
+    "region": "IL",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_in_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.IN.PCPI_IX",
+    "name": "India CPI (all items, index)",
+    "region": "IN",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_in_fx_usd",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.IN.ENDE_XDC_USD_RATE",
+    "name": "India FX rate (LCU per USD)",
+    "region": "IN",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_in_gdp_nominal",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.CD-IND",
+    "name": "India nominal GDP (current USD)",
+    "region": "IN",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_in_gdp_real",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.KD-IND",
+    "name": "India real GDP (constant USD)",
+    "region": "IN",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_in_ind_prod",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.IN.AIP_IX",
+    "name": "India industrial production (index)",
+    "region": "IN",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_in_policy_rate",
+    "provider": "dbnomics",
+    "series_id": "BIS/WS_CBPOL/M.IN",
+    "name": "India central-bank policy rate",
+    "region": "IN",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_in_reserves",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.IN.RAFA_USD",
+    "name": "India FX reserves (USD)",
+    "region": "IN",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_in_short_rate",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.IN.FIMM_PA",
+    "name": "India short-term interest rate",
+    "region": "IN",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_it_10y",
+    "provider": "dbnomics",
+    "series_id": "Eurostat/irt_lt_mcby_m/M.MCBY.IT",
+    "name": "Italy 10Y govt bond yield",
+    "region": "IT",
+    "frequency": "monthly",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_it_core_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.IT.PCPIHA_IX",
+    "name": "Italy core CPI (index)",
+    "region": "IT",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_it_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.IT.PCPI_IX",
+    "name": "Italy CPI (all items, index)",
+    "region": "IT",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_it_fx_usd",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.IT.ENDE_XDC_USD_RATE",
+    "name": "Italy FX rate (LCU per USD)",
+    "region": "IT",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_it_gdp_nominal",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.CD-ITA",
+    "name": "Italy nominal GDP (current USD)",
+    "region": "IT",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_it_gdp_real",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.KD-ITA",
+    "name": "Italy real GDP (constant USD)",
+    "region": "IT",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_it_ind_prod",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.IT.AIP_IX",
+    "name": "Italy industrial production (index)",
+    "region": "IT",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_it_policy_rate",
+    "provider": "dbnomics",
+    "series_id": "BIS/WS_CBPOL/M.IT",
+    "name": "Italy central-bank policy rate",
+    "region": "IT",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_it_reserves",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.IT.RAFA_USD",
+    "name": "Italy FX reserves (USD)",
+    "region": "IT",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_it_short_rate",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.IT.FITB_PA",
+    "name": "Italy short-term interest rate",
+    "region": "IT",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_it_unemployment",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.IT.LUR_PT",
+    "name": "Italy unemployment rate (%)",
+    "region": "IT",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_jp_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.JP.PCPI_IX",
+    "name": "Japan CPI (all items, index)",
+    "region": "JP",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_jp_fx_usd",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.JP.ENDE_XDC_USD_RATE",
+    "name": "Japan FX rate (LCU per USD)",
+    "region": "JP",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_jp_gdp_nominal",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.CD-JPN",
+    "name": "Japan nominal GDP (current USD)",
+    "region": "JP",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_jp_gdp_real",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.KD-JPN",
+    "name": "Japan real GDP (constant USD)",
+    "region": "JP",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_jp_ind_prod",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.JP.AIP_IX",
+    "name": "Japan industrial production (index)",
+    "region": "JP",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_jp_policy_rate",
+    "provider": "dbnomics",
+    "series_id": "BIS/WS_CBPOL/M.JP",
+    "name": "Japan central-bank policy rate",
+    "region": "JP",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_jp_reserves",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.JP.RAFA_USD",
+    "name": "Japan FX reserves (USD)",
+    "region": "JP",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_jp_short_rate",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.JP.FITB_PA",
+    "name": "Japan short-term interest rate",
+    "region": "JP",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_jp_unemployment",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.JP.LUR_PT",
+    "name": "Japan unemployment rate (%)",
+    "region": "JP",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_kr_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.KR.PCPI_IX",
+    "name": "South Korea CPI (all items, index)",
+    "region": "KR",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_kr_fx_usd",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.KR.ENDE_XDC_USD_RATE",
+    "name": "South Korea FX rate (LCU per USD)",
+    "region": "KR",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_kr_gdp_nominal",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.CD-KOR",
+    "name": "South Korea nominal GDP (current USD)",
+    "region": "KR",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_kr_gdp_real",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.KD-KOR",
+    "name": "South Korea real GDP (constant USD)",
+    "region": "KR",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_kr_ind_prod",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.KR.AIP_IX",
+    "name": "South Korea industrial production (index)",
+    "region": "KR",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_kr_policy_rate",
+    "provider": "dbnomics",
+    "series_id": "BIS/WS_CBPOL/M.KR",
+    "name": "South Korea central-bank policy rate",
+    "region": "KR",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_kr_reserves",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.KR.RAFA_USD",
+    "name": "South Korea FX reserves (USD)",
+    "region": "KR",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_kr_short_rate",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.KR.FIMM_PA",
+    "name": "South Korea short-term interest rate",
+    "region": "KR",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_kr_unemployment",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.KR.LUR_PT",
+    "name": "South Korea unemployment rate (%)",
+    "region": "KR",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_mx_cetes28",
+    "provider": "banxico_sie",
+    "series_id": "SF60633",
+    "name": "MX Cetes 28d",
+    "region": "MX",
+    "frequency": "daily",
+    "commercial_ok": "unverified"
+  },
+  {
+    "column": "e_mx_inpc",
+    "provider": "inegi",
+    "series_id": "216064",
+    "name": "MX INPC (headline CPI)",
+    "region": "MX",
+    "frequency": "monthly",
+    "commercial_ok": "unverified"
+  },
+  {
+    "column": "e_mx_reserves",
+    "provider": "banxico_sie",
+    "series_id": "SF43707",
+    "name": "MX intl reserves",
+    "region": "MX",
+    "frequency": "weekly",
+    "commercial_ok": "unverified"
+  },
+  {
+    "column": "e_mx_target_rate",
+    "provider": "banxico_sie",
+    "series_id": "SF61745",
+    "name": "MX target rate",
+    "region": "MX",
+    "frequency": "daily",
+    "commercial_ok": "unverified"
+  },
+  {
+    "column": "e_mx_tiie28",
+    "provider": "banxico_sie",
+    "series_id": "SF60648",
+    "name": "MX TIIE 28d",
+    "region": "MX",
+    "frequency": "daily",
+    "commercial_ok": "unverified"
+  },
+  {
+    "column": "e_mx_unemployment",
+    "provider": "inegi",
+    "series_id": "444612",
+    "name": "MX unemployment (ENOE)",
+    "region": "MX",
+    "frequency": "monthly",
+    "commercial_ok": "unverified"
+  },
+  {
+    "column": "e_mx_usdmxn_fix",
+    "provider": "banxico_sie",
+    "series_id": "SF43718",
+    "name": "USD/MXN FIX",
+    "region": "MX",
+    "frequency": "daily",
+    "commercial_ok": "unverified"
+  },
+  {
+    "column": "e_my_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.MY.PCPI_IX",
+    "name": "Malaysia CPI (all items, index)",
+    "region": "MY",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_my_fx_usd",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.MY.ENDE_XDC_USD_RATE",
+    "name": "Malaysia FX rate (LCU per USD)",
+    "region": "MY",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_my_gdp_nominal",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.CD-MYS",
+    "name": "Malaysia nominal GDP (current USD)",
+    "region": "MY",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_my_gdp_real",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.KD-MYS",
+    "name": "Malaysia real GDP (constant USD)",
+    "region": "MY",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_my_ind_prod",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.MY.AIP_IX",
+    "name": "Malaysia industrial production (index)",
+    "region": "MY",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_my_policy_rate",
+    "provider": "dbnomics",
+    "series_id": "BIS/WS_CBPOL/M.MY",
+    "name": "Malaysia central-bank policy rate",
+    "region": "MY",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_my_reserves",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.MY.RAFA_USD",
+    "name": "Malaysia FX reserves (USD)",
+    "region": "MY",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_my_short_rate",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.MY.FITB_PA",
+    "name": "Malaysia short-term interest rate",
+    "region": "MY",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_my_unemployment",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.MY.LUR_PT",
+    "name": "Malaysia unemployment rate (%)",
+    "region": "MY",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_nl_10y",
+    "provider": "dbnomics",
+    "series_id": "Eurostat/irt_lt_mcby_m/M.MCBY.NL",
+    "name": "Netherlands 10Y govt bond yield",
+    "region": "NL",
+    "frequency": "monthly",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_nl_core_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.NL.PCPIHA_IX",
+    "name": "Netherlands core CPI (index)",
+    "region": "NL",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_nl_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.NL.PCPI_IX",
+    "name": "Netherlands CPI (all items, index)",
+    "region": "NL",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_nl_fx_usd",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.NL.ENDE_XDC_USD_RATE",
+    "name": "Netherlands FX rate (LCU per USD)",
+    "region": "NL",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_nl_gdp_nominal",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.CD-NLD",
+    "name": "Netherlands nominal GDP (current USD)",
+    "region": "NL",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_nl_gdp_real",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.KD-NLD",
+    "name": "Netherlands real GDP (constant USD)",
+    "region": "NL",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_nl_ind_prod",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.NL.AIP_IX",
+    "name": "Netherlands industrial production (index)",
+    "region": "NL",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_nl_policy_rate",
+    "provider": "dbnomics",
+    "series_id": "BIS/WS_CBPOL/M.NL",
+    "name": "Netherlands central-bank policy rate",
+    "region": "NL",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_nl_reserves",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.NL.RAFA_USD",
+    "name": "Netherlands FX reserves (USD)",
+    "region": "NL",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_nl_unemployment",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.NL.LUR_PT",
+    "name": "Netherlands unemployment rate (%)",
+    "region": "NL",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_no_core_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.NO.PCPIHA_IX",
+    "name": "Norway core CPI (index)",
+    "region": "NO",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_no_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.NO.PCPI_IX",
+    "name": "Norway CPI (all items, index)",
+    "region": "NO",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_no_fx_usd",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.NO.ENDE_XDC_USD_RATE",
+    "name": "Norway FX rate (LCU per USD)",
+    "region": "NO",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_no_gdp_nominal",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.CD-NOR",
+    "name": "Norway nominal GDP (current USD)",
+    "region": "NO",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_no_gdp_real",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.KD-NOR",
+    "name": "Norway real GDP (constant USD)",
+    "region": "NO",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_no_ind_prod",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.NO.AIP_IX",
+    "name": "Norway industrial production (index)",
+    "region": "NO",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_no_policy_rate",
+    "provider": "dbnomics",
+    "series_id": "BIS/WS_CBPOL/M.NO",
+    "name": "Norway central-bank policy rate",
+    "region": "NO",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_no_reserves",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.NO.RAFA_USD",
+    "name": "Norway FX reserves (USD)",
+    "region": "NO",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_no_short_rate",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.NO.FIMM_PA",
+    "name": "Norway short-term interest rate",
+    "region": "NO",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_no_unemployment",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.NO.LUR_PT",
+    "name": "Norway unemployment rate (%)",
+    "region": "NO",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_nz_fx_usd",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.NZ.ENDE_XDC_USD_RATE",
+    "name": "New Zealand FX rate (LCU per USD)",
+    "region": "NZ",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_nz_gdp_nominal",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.CD-NZL",
+    "name": "New Zealand nominal GDP (current USD)",
+    "region": "NZ",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_nz_gdp_real",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.KD-NZL",
+    "name": "New Zealand real GDP (constant USD)",
+    "region": "NZ",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_nz_policy_rate",
+    "provider": "dbnomics",
+    "series_id": "BIS/WS_CBPOL/M.NZ",
+    "name": "New Zealand central-bank policy rate",
+    "region": "NZ",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_nz_reserves",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.NZ.RAFA_USD",
+    "name": "New Zealand FX reserves (USD)",
+    "region": "NZ",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_nz_short_rate",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.NZ.FITB_PA",
+    "name": "New Zealand short-term interest rate",
+    "region": "NZ",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_nz_unemployment",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.NZ.LUR_PT",
+    "name": "New Zealand unemployment rate (%)",
+    "region": "NZ",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_pe_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.PE.PCPI_IX",
+    "name": "Peru CPI (all items, index)",
+    "region": "PE",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_pe_fx_usd",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.PE.ENDE_XDC_USD_RATE",
+    "name": "Peru FX rate (LCU per USD)",
+    "region": "PE",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_pe_gdp_nominal",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.CD-PER",
+    "name": "Peru nominal GDP (current USD)",
+    "region": "PE",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_pe_gdp_real",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.KD-PER",
+    "name": "Peru real GDP (constant USD)",
+    "region": "PE",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_pe_ind_prod",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.PE.AIPMA_IX",
+    "name": "Peru industrial production (index)",
+    "region": "PE",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_pe_policy_rate",
+    "provider": "dbnomics",
+    "series_id": "BIS/WS_CBPOL/M.PE",
+    "name": "Peru central-bank policy rate",
+    "region": "PE",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_pe_reserves",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.PE.RAFA_USD",
+    "name": "Peru FX reserves (USD)",
+    "region": "PE",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_pe_short_rate",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.PE.FIMM_PA",
+    "name": "Peru short-term interest rate",
+    "region": "PE",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_pe_unemployment",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.PE.LUR_PT",
+    "name": "Peru unemployment rate (%)",
+    "region": "PE",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_ph_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.PH.PCPI_IX",
+    "name": "Philippines CPI (all items, index)",
+    "region": "PH",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_ph_fx_usd",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.PH.ENDE_XDC_USD_RATE",
+    "name": "Philippines FX rate (LCU per USD)",
+    "region": "PH",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_ph_gdp_nominal",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.CD-PHL",
+    "name": "Philippines nominal GDP (current USD)",
+    "region": "PH",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_ph_gdp_real",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.KD-PHL",
+    "name": "Philippines real GDP (constant USD)",
+    "region": "PH",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_ph_ind_prod",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.PH.AIP_IX",
+    "name": "Philippines industrial production (index)",
+    "region": "PH",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_ph_policy_rate",
+    "provider": "dbnomics",
+    "series_id": "BIS/WS_CBPOL/M.PH",
+    "name": "Philippines central-bank policy rate",
+    "region": "PH",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_ph_reserves",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.PH.RAFA_USD",
+    "name": "Philippines FX reserves (USD)",
+    "region": "PH",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_ph_short_rate",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.PH.FITB_PA",
+    "name": "Philippines short-term interest rate",
+    "region": "PH",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_ph_unemployment",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.PH.LUR_PT",
+    "name": "Philippines unemployment rate (%)",
+    "region": "PH",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_pl_10y",
+    "provider": "dbnomics",
+    "series_id": "Eurostat/irt_lt_mcby_m/M.MCBY.PL",
+    "name": "Poland 10Y govt bond yield",
+    "region": "PL",
+    "frequency": "monthly",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_pl_core_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.PL.PCPIHA_IX",
+    "name": "Poland core CPI (index)",
+    "region": "PL",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_pl_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.PL.PCPI_IX",
+    "name": "Poland CPI (all items, index)",
+    "region": "PL",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_pl_fx_usd",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.PL.ENDE_XDC_USD_RATE",
+    "name": "Poland FX rate (LCU per USD)",
+    "region": "PL",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_pl_gdp_nominal",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.CD-POL",
+    "name": "Poland nominal GDP (current USD)",
+    "region": "PL",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_pl_gdp_real",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.KD-POL",
+    "name": "Poland real GDP (constant USD)",
+    "region": "PL",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_pl_ind_prod",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.PL.AIP_IX",
+    "name": "Poland industrial production (index)",
+    "region": "PL",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_pl_policy_rate",
+    "provider": "dbnomics",
+    "series_id": "BIS/WS_CBPOL/M.PL",
+    "name": "Poland central-bank policy rate",
+    "region": "PL",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_pl_reserves",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.PL.RAFA_USD",
+    "name": "Poland FX reserves (USD)",
+    "region": "PL",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_pl_short_rate",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.PL.FITB_PA",
+    "name": "Poland short-term interest rate",
+    "region": "PL",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_pl_unemployment",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.PL.LUR_PT",
+    "name": "Poland unemployment rate (%)",
+    "region": "PL",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_pt_10y",
+    "provider": "dbnomics",
+    "series_id": "Eurostat/irt_lt_mcby_m/M.MCBY.PT",
+    "name": "Portugal 10Y govt bond yield",
+    "region": "PT",
+    "frequency": "monthly",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_pt_core_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.PT.PCPIHA_IX",
+    "name": "Portugal core CPI (index)",
+    "region": "PT",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_pt_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.PT.PCPI_IX",
+    "name": "Portugal CPI (all items, index)",
+    "region": "PT",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_pt_fx_usd",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.PT.ENDE_XDC_USD_RATE",
+    "name": "Portugal FX rate (LCU per USD)",
+    "region": "PT",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_pt_gdp_nominal",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.CD-PRT",
+    "name": "Portugal nominal GDP (current USD)",
+    "region": "PT",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_pt_gdp_real",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.KD-PRT",
+    "name": "Portugal real GDP (constant USD)",
+    "region": "PT",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_pt_ind_prod",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.PT.AIP_IX",
+    "name": "Portugal industrial production (index)",
+    "region": "PT",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_pt_policy_rate",
+    "provider": "dbnomics",
+    "series_id": "BIS/WS_CBPOL/M.PT",
+    "name": "Portugal central-bank policy rate",
+    "region": "PT",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_pt_reserves",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.PT.RAFA_USD",
+    "name": "Portugal FX reserves (USD)",
+    "region": "PT",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_pt_unemployment",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.PT.LUR_PT",
+    "name": "Portugal unemployment rate (%)",
+    "region": "PT",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_ru_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.RU.PCPI_IX",
+    "name": "Russia CPI (all items, index)",
+    "region": "RU",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_ru_fx_usd",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.RU.ENDE_XDC_USD_RATE",
+    "name": "Russia FX rate (LCU per USD)",
+    "region": "RU",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_ru_gdp_nominal",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.CD-RUS",
+    "name": "Russia nominal GDP (current USD)",
+    "region": "RU",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_ru_gdp_real",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.KD-RUS",
+    "name": "Russia real GDP (constant USD)",
+    "region": "RU",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_ru_ind_prod",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.RU.AIP_IX",
+    "name": "Russia industrial production (index)",
+    "region": "RU",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_ru_policy_rate",
+    "provider": "dbnomics",
+    "series_id": "BIS/WS_CBPOL/M.RU",
+    "name": "Russia central-bank policy rate",
+    "region": "RU",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_ru_reserves",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.RU.RAFA_USD",
+    "name": "Russia FX reserves (USD)",
+    "region": "RU",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_ru_short_rate",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.RU.FIMM_PA",
+    "name": "Russia short-term interest rate",
+    "region": "RU",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_ru_unemployment",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.RU.LUR_PT",
+    "name": "Russia unemployment rate (%)",
+    "region": "RU",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_sa_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.SA.PCPI_IX",
+    "name": "Saudi Arabia CPI (all items, index)",
+    "region": "SA",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_sa_fx_usd",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.SA.ENDE_XDC_USD_RATE",
+    "name": "Saudi Arabia FX rate (LCU per USD)",
+    "region": "SA",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_sa_gdp_nominal",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.CD-SAU",
+    "name": "Saudi Arabia nominal GDP (current USD)",
+    "region": "SA",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_sa_gdp_real",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.KD-SAU",
+    "name": "Saudi Arabia real GDP (constant USD)",
+    "region": "SA",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_sa_policy_rate",
+    "provider": "dbnomics",
+    "series_id": "BIS/WS_CBPOL/M.SA",
+    "name": "Saudi Arabia central-bank policy rate",
+    "region": "SA",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_sa_reserves",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.SA.RAFA_USD",
+    "name": "Saudi Arabia FX reserves (USD)",
+    "region": "SA",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_sa_short_rate",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.SA.FITB_PA",
+    "name": "Saudi Arabia short-term interest rate",
+    "region": "SA",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_sa_unemployment",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.SA.LUR_PT",
+    "name": "Saudi Arabia unemployment rate (%)",
+    "region": "SA",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_se_10y",
+    "provider": "dbnomics",
+    "series_id": "Eurostat/irt_lt_mcby_m/M.MCBY.SE",
+    "name": "Sweden 10Y govt bond yield",
+    "region": "SE",
+    "frequency": "monthly",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_se_core_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.SE.PCPIHA_IX",
+    "name": "Sweden core CPI (index)",
+    "region": "SE",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_se_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.SE.PCPI_IX",
+    "name": "Sweden CPI (all items, index)",
+    "region": "SE",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_se_fx_usd",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.SE.ENDE_XDC_USD_RATE",
+    "name": "Sweden FX rate (LCU per USD)",
+    "region": "SE",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_se_gdp_nominal",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.CD-SWE",
+    "name": "Sweden nominal GDP (current USD)",
+    "region": "SE",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_se_gdp_real",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.KD-SWE",
+    "name": "Sweden real GDP (constant USD)",
+    "region": "SE",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_se_ind_prod",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.SE.AIP_IX",
+    "name": "Sweden industrial production (index)",
+    "region": "SE",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_se_policy_rate",
+    "provider": "dbnomics",
+    "series_id": "BIS/WS_CBPOL/M.SE",
+    "name": "Sweden central-bank policy rate",
+    "region": "SE",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_se_reserves",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.SE.RAFA_USD",
+    "name": "Sweden FX reserves (USD)",
+    "region": "SE",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_se_unemployment",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.SE.LUR_PT",
+    "name": "Sweden unemployment rate (%)",
+    "region": "SE",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_th_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.TH.PCPI_IX",
+    "name": "Thailand CPI (all items, index)",
+    "region": "TH",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_th_fx_usd",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.TH.ENDE_XDC_USD_RATE",
+    "name": "Thailand FX rate (LCU per USD)",
+    "region": "TH",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_th_gdp_nominal",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.CD-THA",
+    "name": "Thailand nominal GDP (current USD)",
+    "region": "TH",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_th_gdp_real",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.KD-THA",
+    "name": "Thailand real GDP (constant USD)",
+    "region": "TH",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_th_policy_rate",
+    "provider": "dbnomics",
+    "series_id": "BIS/WS_CBPOL/M.TH",
+    "name": "Thailand central-bank policy rate",
+    "region": "TH",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_th_reserves",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.TH.RAFA_USD",
+    "name": "Thailand FX reserves (USD)",
+    "region": "TH",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_th_short_rate",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.TH.FITB_PA",
+    "name": "Thailand short-term interest rate",
+    "region": "TH",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_th_unemployment",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.TH.LUR_PT",
+    "name": "Thailand unemployment rate (%)",
+    "region": "TH",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_tr_core_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.TR.PCPIHA_IX",
+    "name": "Turkey core CPI (index)",
+    "region": "TR",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_tr_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.TR.PCPI_IX",
+    "name": "Turkey CPI (all items, index)",
+    "region": "TR",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_tr_fx_usd",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.TR.ENDE_XDC_USD_RATE",
+    "name": "Turkey FX rate (LCU per USD)",
+    "region": "TR",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_tr_gdp_nominal",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.CD-TUR",
+    "name": "Turkey nominal GDP (current USD)",
+    "region": "TR",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_tr_gdp_real",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.KD-TUR",
+    "name": "Turkey real GDP (constant USD)",
+    "region": "TR",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_tr_ind_prod",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.TR.AIP_IX",
+    "name": "Turkey industrial production (index)",
+    "region": "TR",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_tr_policy_rate",
+    "provider": "dbnomics",
+    "series_id": "BIS/WS_CBPOL/M.TR",
+    "name": "Turkey central-bank policy rate",
+    "region": "TR",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_tr_reserves",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.TR.RAFA_USD",
+    "name": "Turkey FX reserves (USD)",
+    "region": "TR",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_tr_short_rate",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.TR.FITB_PA",
+    "name": "Turkey short-term interest rate",
+    "region": "TR",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_tr_unemployment",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.TR.LUR_PT",
+    "name": "Turkey unemployment rate (%)",
+    "region": "TR",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_uk_10y",
+    "provider": "dbnomics",
+    "series_id": "Eurostat/irt_lt_mcby_m/M.MCBY.UK",
+    "name": "United Kingdom 10Y govt bond yield",
+    "region": "UK",
+    "frequency": "monthly",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_uk_core_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.GB.PCPIHA_IX",
+    "name": "United Kingdom core CPI (index)",
+    "region": "UK",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_uk_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.GB.PCPI_IX",
+    "name": "United Kingdom CPI (all items, index)",
+    "region": "UK",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_uk_fx_usd",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.GB.ENDE_XDC_USD_RATE",
+    "name": "United Kingdom FX rate (LCU per USD)",
+    "region": "UK",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_uk_gdp_nominal",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.CD-GBR",
+    "name": "United Kingdom nominal GDP (current USD)",
+    "region": "UK",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_uk_gdp_real",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.KD-GBR",
+    "name": "United Kingdom real GDP (constant USD)",
+    "region": "UK",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_uk_ind_prod",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.GB.AIP_IX",
+    "name": "United Kingdom industrial production (index)",
+    "region": "UK",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_uk_policy_rate",
+    "provider": "dbnomics",
+    "series_id": "BIS/WS_CBPOL/M.GB",
+    "name": "United Kingdom central-bank policy rate",
+    "region": "UK",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_uk_reserves",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.GB.RAFA_USD",
+    "name": "United Kingdom FX reserves (USD)",
+    "region": "UK",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_uk_short_rate",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.GB.FITB_PA",
+    "name": "United Kingdom short-term interest rate",
+    "region": "UK",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_uk_unemployment",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.GB.LUR_PT",
+    "name": "United Kingdom unemployment rate (%)",
+    "region": "UK",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_us_10y",
+    "provider": "fred",
+    "series_id": "DGS10",
+    "name": "US 10Y Treasury",
+    "region": "US",
+    "frequency": "daily",
+    "commercial_ok": "no"
+  },
+  {
+    "column": "e_us_2y",
+    "provider": "fred",
+    "series_id": "DGS2",
+    "name": "US 2Y Treasury",
+    "region": "US",
+    "frequency": "daily",
+    "commercial_ok": "no"
+  },
+  {
+    "column": "e_us_2y10y_spread",
+    "provider": "fred",
+    "series_id": "T10Y2Y",
+    "name": "US 10Y-2Y term spread",
+    "region": "US",
+    "frequency": "daily",
+    "commercial_ok": "no"
+  },
+  {
+    "column": "e_us_30y",
+    "provider": "fred",
+    "series_id": "DGS30",
+    "name": "US 30Y Treasury",
+    "region": "US",
+    "frequency": "daily",
+    "commercial_ok": "no"
+  },
+  {
+    "column": "e_us_3m",
+    "provider": "fred",
+    "series_id": "DGS3MO",
+    "name": "US 3M Treasury",
+    "region": "US",
+    "frequency": "daily",
+    "commercial_ok": "no"
+  },
+  {
+    "column": "e_us_5y",
+    "provider": "fred",
+    "series_id": "DGS5",
+    "name": "US 5Y Treasury",
+    "region": "US",
+    "frequency": "daily",
+    "commercial_ok": "no"
+  },
+  {
+    "column": "e_us_core_cpi",
+    "provider": "fred",
+    "series_id": "CPILFESL",
+    "name": "US core CPI",
+    "region": "US",
+    "frequency": "monthly",
+    "commercial_ok": "no"
+  },
+  {
+    "column": "e_us_core_pce",
+    "provider": "fred",
+    "series_id": "PCEPILFE",
+    "name": "US core PCE price index",
+    "region": "US",
+    "frequency": "monthly",
+    "commercial_ok": "no"
+  },
+  {
+    "column": "e_us_cpi",
+    "provider": "fred",
+    "series_id": "CPIAUCSL",
+    "name": "US CPI (all items)",
+    "region": "US",
+    "frequency": "monthly",
+    "commercial_ok": "no"
+  },
+  {
+    "column": "e_us_fed_funds",
+    "provider": "fred",
+    "series_id": "FEDFUNDS",
+    "name": "US fed funds rate",
+    "region": "US",
+    "frequency": "monthly",
+    "commercial_ok": "no"
+  },
+  {
+    "column": "e_us_gdp",
+    "provider": "fred",
+    "series_id": "GDPC1",
+    "name": "US real GDP",
+    "region": "US",
+    "frequency": "quarterly",
+    "commercial_ok": "no"
+  },
+  {
+    "column": "e_us_gdp_nominal",
+    "provider": "fred",
+    "series_id": "GDP",
+    "name": "US nominal GDP",
+    "region": "US",
+    "frequency": "quarterly",
+    "commercial_ok": "no"
+  },
+  {
+    "column": "e_us_housing_starts",
+    "provider": "fred",
+    "series_id": "HOUST",
+    "name": "US housing starts",
+    "region": "US",
+    "frequency": "monthly",
+    "commercial_ok": "no"
+  },
+  {
+    "column": "e_us_ind_prod",
+    "provider": "fred",
+    "series_id": "INDPRO",
+    "name": "US industrial production",
+    "region": "US",
+    "frequency": "monthly",
+    "commercial_ok": "no"
+  },
+  {
+    "column": "e_us_initial_claims",
+    "provider": "fred",
+    "series_id": "ICSA",
+    "name": "US initial jobless claims",
+    "region": "US",
+    "frequency": "weekly",
+    "commercial_ok": "no"
+  },
+  {
+    "column": "e_us_m2",
+    "provider": "fred",
+    "series_id": "M2SL",
+    "name": "US M2",
+    "region": "US",
+    "frequency": "monthly",
+    "commercial_ok": "no"
+  },
+  {
+    "column": "e_us_payrolls",
+    "provider": "fred",
+    "series_id": "PAYEMS",
+    "name": "US nonfarm payrolls",
+    "region": "US",
+    "frequency": "monthly",
+    "commercial_ok": "no"
+  },
+  {
+    "column": "e_us_pce",
+    "provider": "fred",
+    "series_id": "PCEPI",
+    "name": "US PCE price index",
+    "region": "US",
+    "frequency": "monthly",
+    "commercial_ok": "no"
+  },
+  {
+    "column": "e_us_ppi",
+    "provider": "fred",
+    "series_id": "PPIACO",
+    "name": "US PPI (all commodities)",
+    "region": "US",
+    "frequency": "monthly",
+    "commercial_ok": "no"
+  },
+  {
+    "column": "e_us_retail",
+    "provider": "fred",
+    "series_id": "RSAFS",
+    "name": "US retail sales",
+    "region": "US",
+    "frequency": "monthly",
+    "commercial_ok": "no"
+  },
+  {
+    "column": "e_us_sofr",
+    "provider": "fred",
+    "series_id": "SOFR",
+    "name": "US SOFR overnight rate",
+    "region": "US",
+    "frequency": "daily",
+    "commercial_ok": "no"
+  },
+  {
+    "column": "e_us_trade_balance",
+    "provider": "fred",
+    "series_id": "BOPGSTB",
+    "name": "US trade balance (goods & svcs)",
+    "region": "US",
+    "frequency": "monthly",
+    "commercial_ok": "no"
+  },
+  {
+    "column": "e_us_unemployment",
+    "provider": "fred",
+    "series_id": "UNRATE",
+    "name": "US unemployment",
+    "region": "US",
+    "frequency": "monthly",
+    "commercial_ok": "no"
+  },
+  {
+    "column": "e_za_cpi",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.ZA.PCPI_IX",
+    "name": "South Africa CPI (all items, index)",
+    "region": "ZA",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_za_fx_usd",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.ZA.ENDE_XDC_USD_RATE",
+    "name": "South Africa FX rate (LCU per USD)",
+    "region": "ZA",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_za_gdp_nominal",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.CD-ZAF",
+    "name": "South Africa nominal GDP (current USD)",
+    "region": "ZA",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_za_gdp_real",
+    "provider": "dbnomics",
+    "series_id": "WB/WDI/A-NY.GDP.MKTP.KD-ZAF",
+    "name": "South Africa real GDP (constant USD)",
+    "region": "ZA",
+    "frequency": "annual",
+    "commercial_ok": "yes"
+  },
+  {
+    "column": "e_za_ind_prod",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.ZA.AIPMA_IX",
+    "name": "South Africa industrial production (index)",
+    "region": "ZA",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_za_policy_rate",
+    "provider": "dbnomics",
+    "series_id": "BIS/WS_CBPOL/M.ZA",
+    "name": "South Africa central-bank policy rate",
+    "region": "ZA",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_za_reserves",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.ZA.RAFA_USD",
+    "name": "South Africa FX reserves (USD)",
+    "region": "ZA",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_za_short_rate",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.ZA.FITB_PA",
+    "name": "South Africa short-term interest rate",
+    "region": "ZA",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_za_unemployment",
+    "provider": "dbnomics",
+    "series_id": "IMF/IFS/M.ZA.LUR_PT",
+    "name": "South Africa unemployment rate (%)",
+    "region": "ZA",
+    "frequency": "monthly",
+    "commercial_ok": "restricted"
+  }
 ]
