@@ -52,6 +52,8 @@
   .keystate { margin-left: auto; flex: none; font-size: 9px; font-weight: 600; letter-spacing: 0.04em;
               text-transform: uppercase; color: var(--muted); }
   .keystate.set { color: var(--ok); }
+  .keysub { font-size: 10px; color: var(--muted); margin-bottom: 4px; opacity: 0.85;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   input, select { width: 100%; box-sizing: border-box; padding: 6px 8px; font-size: 13px;
                   border: 1px solid var(--border); border-radius: 6px;
                   background: var(--field); color: var(--text);
@@ -159,6 +161,14 @@ const KEY_LABELS = {
   KNDC_API_KEY_INEGI: 'INEGI',
 };
 
+const KEY_SUBS = {
+  KNDC_API_KEY_FMP: 'Equities & fundamentals',
+  KNDC_API_KEY_LSEG: 'Equities & fundamentals',
+  KNDC_API_KEY_FRED: 'United States · macro',
+  KNDC_API_KEY_BANXICO: 'Mexico · rates & FX',
+  KNDC_API_KEY_INEGI: 'Mexico · CPI & jobs',
+};
+
 async function boot() {
   try {
     catalog = await (await fetch('/api/catalog')).json();
@@ -200,7 +210,15 @@ function renderKeys() {
     input.dataset.env = entry.name;
     input.setAttribute('aria-label', displayName + ' API key');
     input.placeholder = entry.set ? 'Type to replace' : 'Paste key';
-    wrap.appendChild(head); wrap.appendChild(input); root.appendChild(wrap);
+    wrap.appendChild(head);
+    const subText = KEY_SUBS[entry.name];
+    if (subText) {
+      const sub = document.createElement('div');
+      sub.className = 'keysub';
+      sub.textContent = subText;
+      wrap.appendChild(sub);
+    }
+    wrap.appendChild(input); root.appendChild(wrap);
   }
 }
 
