@@ -41,6 +41,11 @@ Status: pending | in_progress | done
 - [done] Quarterly support: DBnomics adapter now parses `YYYY-Q[1-4]` (TDD); added 8 quarterly columns (AU/NZ CPI + EA20/DE/FR/IT/ES/NL real GDP via Eurostat namq_10_gdp). Catalog now 427. End-to-end quarterly fetch verified; 807 tests green.
 - [pending] Optional: MX catalog depth via Banxico/INEGI needs tokens to live-verify new IDs (existing 7 untouched).
 
+## Macro catalog round 2 — max-depth variables + country grouping (2026-06-17)
+- [done] Panel: group e_ macro columns BY COUNTRY — `_build_macro_groups()` returns one collapsible group per region (`Economic · <Country> (<REGION>)`), REGION_NAMES map added. Test updated (42 pass), ruff clean. (Running panel needs restart to reflect.)
+- [done] Discover more variables via direct-API workflow (wf_1df47bd5-302, 24/24 found, 1.1M tokens, zero rate-limit failures). Integrated as WIDE_CONCEPTS; 865 new rows live-verified, 145 dropped. Catalog 427 → 1292 (~59 indicators). New formats (OECD @, WB, BIS, IMF DOT, WEO :) proven end-to-end through the adapter. 807 tests + ruff green. Panel /api/catalog shows 44 country groups / 1292 cols. Panel restarted.
+- [pending] commercial_ok licensing pass now also covers OECD (restricted default) — see task_723041dd.
+
 ## Follow-ups
 - [pending] Burn down the mypy ignore_errors baseline (fmp/lseg providers, data_blocks, column_builder, helpers, data_column).
 - [done] Dev environment: stale non-editable install replaced with `pip install --user -e .`; CLI now reflects `src/`. Added package `__main__.py` so `python -m kaxanuk.data_curator` works regardless of PATH.

@@ -123,6 +123,65 @@ COUNTRIES: list[Country] = [
 # EZ already has e_ecb_rate + e_ez_hicp, so its policy_rate/cpi concepts are skipped below.
 EZ_SKIP_CONCEPTS = {"policy_rate", "cpi"}
 
+# US and MX still get the WIDE_CONCEPTS below (PMI, current account, trade, confidence, ...),
+# since FRED/Banxico/INEGI don't carry most of them. Column collisions with existing rows
+# (e.g. e_us_ppi, e_us_trade_balance) are skipped at merge time, so the native source wins.
+_US_WIDE = Country("us", "United States", "US", "USA")
+_MX_WIDE = Country("mx", "Mexico", "MX", "MEX")
+WIDE_COUNTRIES: list[Country] = [*COUNTRIES, _US_WIDE, _MX_WIDE]
+
+
+# --------------------------------------------------------------------------------------
+# WIDE_CONCEPTS — extra cross-country indicators discovered by direct DBnomics API probing
+# (scripts discover-macro-concepts workflow). Each is a FULL provider/dataset/series path
+# with a country placeholder: {CC2}=ISO alpha-2 (IMF uses imf code, BIS uses bis code),
+# {CC3}=ISO alpha-3 (World Bank / OECD), {GEO}=Eurostat geo. Verified live before inclusion.
+#   (key, label, frequency, commercial_ok, path_pattern)
+# --------------------------------------------------------------------------------------
+WIDE_CONCEPTS: list[tuple[str, str, str, str, str]] = [
+    ("pmi_mfg",                 "manufacturing business confidence (PMI proxy)", "monthly",   "restricted", "OECD/DSD_STES@DF_BTS/{CC3}.M.BCICP.PB.C.Y._Z._Z.N"),
+    ("business_confidence",     "business confidence (OECD BCI)",                "monthly",   "restricted", "OECD/DSD_STES@DF_CLI/{CC3}.M.BCICP.IX._Z.AA.IX._Z.H"),
+    ("consumer_confidence",     "consumer confidence (OECD CCI)",                "monthly",   "restricted", "OECD/MEI/{CC3}.CSCICP03.IXNSA.M"),
+    ("econ_sentiment",          "economic sentiment indicator (ESI)",            "monthly",   "yes",        "Eurostat/ei_bssi_m_r2/M.BS-ESI-I.SA.{GEO}"),
+    ("current_account",         "current account balance (USD)",                 "annual",    "yes",        "WB/WDI/A-BN.CAB.XOKA.CD-{CC3}"),
+    ("exports_goods",           "goods exports, FOB (USD)",                       "annual",    "restricted", "IMF/DOT/A.{CC2}.TXG_FOB_USD.W00"),
+    ("imports_goods",           "goods imports, CIF (USD)",                       "annual",    "restricted", "IMF/DOT/A.{CC2}.TMG_CIF_USD.W00"),
+    ("trade_balance_goods",     "goods trade balance (USD)",                      "monthly",   "restricted", "IMF/DOT/M.{CC2}.TBG_USD.W00"),
+    ("exports_gs",              "exports of goods & services (USD)",              "annual",    "yes",        "WB/WDI/A-NE.EXP.GNFS.CD-{CC3}"),
+    ("imports_gs",              "imports of goods & services (USD)",              "annual",    "yes",        "WB/WDI/A-NE.IMP.GNFS.CD-{CC3}"),
+    ("unemployment_youth",      "youth unemployment rate (15-24, %)",            "annual",    "yes",        "WB/WDI/A-SL.UEM.1524.ZS-{CC3}"),
+    ("unemployment_lt",         "long-term unemployment (% of active)",          "annual",    "yes",        "Eurostat/une_ltu_a/A.LTU.Y15-74.T.PC_ACT.{GEO}"),
+    ("unemployment_harmonised", "unemployment rate, harmonised SA (%)",          "monthly",   "yes",        "Eurostat/une_rt_m/M.SA.TOTAL.PC_ACT.T.{GEO}"),
+    ("retail_sales",            "retail trade volume (index)",                   "monthly",   "yes",        "Eurostat/sts_trtu_m/M.VOL_SLS.G47.SCA.I21.{GEO}"),
+    ("m1",                      "narrow money M1 (index, SA)",                   "monthly",   "restricted", "OECD/MEI/{CC3}.MANMM101.IXOBSA.M"),
+    ("broad_money",             "broad money M3 (index, SA)",                    "monthly",   "restricted", "OECD/MEI/{CC3}.MABMM301.IXOBSA.M"),
+    ("credit_private",          "credit to private non-fin sector (% GDP)",      "quarterly", "restricted", "BIS/WS_TC/Q.{CC2}.P.A.M.770.A"),
+    ("govt_debt_gdp",           "general govt gross debt (% GDP)",               "annual",    "restricted", "IMF/WEO:2025-04/{CC3}.GGXWDG_NGDP.pcent_gdp"),
+    ("budget_balance_gdp",      "general govt budget balance (% GDP)",           "annual",    "restricted", "IMF/WEO:2025-04/{CC3}.GGXCNL_NGDP.pcent_gdp"),
+    ("reer",                    "real effective exchange rate (index)",          "monthly",   "restricted", "BIS/WS_EER/M.R.B.{CC2}"),
+    ("neer",                    "nominal effective exchange rate (index)",       "monthly",   "restricted", "BIS/WS_EER/M.N.B.{CC2}"),
+    ("house_prices",            "residential property prices (index)",           "quarterly", "restricted", "BIS/WS_SPP/Q.{CC2}.N.628"),
+    ("ppi",                     "producer price index",                          "monthly",   "restricted", "IMF/IFS/M.{CC2}.PPPI_IX"),
+    ("gdp_growth",              "real GDP growth (YoY %)",                        "annual",    "yes",        "WB/WDI/A-NY.GDP.MKTP.KD.ZG-{CC3}"),
+]
+
+
+def _wide_path(pattern: str, country: Country) -> str | None:
+    """Resolve a WIDE_CONCEPTS path pattern for a country, or None if it has no code."""
+    if "{CC2}" in pattern:
+        if pattern.startswith("IMF/"):
+            code = country.imf_code
+        elif pattern.startswith("BIS/"):
+            code = country.bis_code
+        else:
+            code = country.iso2
+        return pattern.replace("{CC2}", code)
+    if "{CC3}" in pattern:
+        return pattern.replace("{CC3}", country.wb3) if country.wb3 else None
+    if "{GEO}" in pattern:
+        return pattern.replace("{GEO}", country.euro_geo) if country.euro_geo else None
+    return None
+
 
 # --------------------------------------------------------------------------------------
 # Concepts.  Each yields candidate DBnomics paths; first that verifies wins.
@@ -213,8 +272,10 @@ QUARTERLY_DBNOMICS: list[tuple[str, str, str, str]] = [
 
 
 def verify_dbnomics(client: httpx.Client, path: str) -> bool:
+    # Use the series_ids query-param form (same as the adapter), so paths
+    # containing ':' (WEO vintages) or '@' (OECD SDMX datasets) verify correctly.
     try:
-        r = client.get(f"{DBNOMICS}/{path}", params={"observations": "0"}, timeout=_TIMEOUT)
+        r = client.get(DBNOMICS, params={"series_ids": path, "observations": "0"}, timeout=_TIMEOUT)
         if r.status_code != 200:
             return False
         return r.json().get("series", {}).get("num_found", 0) >= 1
@@ -257,6 +318,23 @@ def build_candidates() -> list[dict]:
                 "frequency": concept.freq,
                 "commercial_ok": concept.commercial_ok,
             })
+    # Lane A3 — WIDE_CONCEPTS across all countries (incl. US/MX); collisions skipped at merge
+    for c in WIDE_COUNTRIES:
+        for key, label, freq, commercial_ok, pattern in WIDE_CONCEPTS:
+            path = _wide_path(pattern, c)
+            if path is None:
+                continue
+            rows.append({
+                "_kind": "dbnomics",
+                "_paths": [path],
+                "column": f"e_{c.canon}_{key}",
+                "provider": "dbnomics",
+                "name": f"{c.name} {label}",
+                "region": c.canon.upper(),
+                "frequency": freq,
+                "commercial_ok": commercial_ok,
+            })
+
     # Lane A2 — explicit quarterly DBnomics series
     for column, path, label, commercial_ok in QUARTERLY_DBNOMICS:
         rows.append({

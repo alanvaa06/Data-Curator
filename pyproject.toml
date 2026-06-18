@@ -234,6 +234,7 @@ ignore = [
     "ANN",      # local maintenance scripts don't need full annotations
     "D",        # nor strict docstrings
     "DTZ",      # naive dates are fine here
+    "E501",     # aligned data tables (concept/series patterns) read better unwrapped
     "EM",       # message style not critical
     "INP001",   # not a package
     "PLR2004",  # magic values fine

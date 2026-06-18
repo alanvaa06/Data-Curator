@@ -109,20 +109,24 @@ def test_build_catalog_response_has_options_and_groups():
     assert 'info' in response['options']['logger_level']
 
 
-def test_build_catalog_response_includes_macro_group():
+def test_build_catalog_response_groups_macro_by_country():
     response = config_editor.build_catalog_response()
-    groups = {g['prefix']: g for g in response['groups']}
-    assert 'e_' in groups, "e_ macro group missing from catalog response"
-    macro = groups['e_']
-    assert macro['label'] == 'Economic (macro)'
-    assert 'e_mx_target_rate' in macro['columns']
-    assert 'e_us_cpi' in macro['columns']
+    macro_groups = [g for g in response['groups'] if g['prefix'] == 'e_']
+    # one collapsible group per country/area, not a single flat list
+    assert len(macro_groups) > 1, "macro columns should be grouped by country"
+    by_label = {g['label']: g for g in macro_groups}
+    assert 'Economic · Mexico (MX)' in by_label
+    assert 'Economic · United States (US)' in by_label
+    # each column routes into its region's group
+    assert 'e_mx_target_rate' in by_label['Economic · Mexico (MX)']['columns']
+    assert 'e_us_cpi' in by_label['Economic · United States (US)']['columns']
     # human labels present via column_labels map
-    assert macro['column_labels']['e_mx_target_rate'] == 'MX target rate'
-    assert macro['column_labels']['e_us_cpi'] == 'US CPI (all items)'
-    # every column in the group has a label entry
-    for col in macro['columns']:
-        assert col in macro['column_labels'], f"Missing label for {col}"
+    assert by_label['Economic · Mexico (MX)']['column_labels']['e_mx_target_rate'] == 'MX target rate'
+    assert by_label['Economic · United States (US)']['column_labels']['e_us_cpi'] == 'US CPI (all items)'
+    # every column in every macro group has a label entry
+    for group in macro_groups:
+        for col in group['columns']:
+            assert col in group['column_labels'], f"Missing label for {col}"
 
 
 def test_build_catalog_response_includes_identifier_presets():

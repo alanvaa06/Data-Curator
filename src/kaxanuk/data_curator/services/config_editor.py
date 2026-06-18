@@ -112,24 +112,55 @@ def load_config(config_path: pathlib.Path | str) -> dict[str, typing.Any]:
     )
 
 
-def _build_macro_group() -> dict[str, typing.Any]:
-    """Build a catalog group entry for the e_ macro columns."""
+# Display names for the macro catalog's region codes, so the column picker can
+# group the e_ columns into one collapsible section per country/area.
+REGION_NAMES: dict[str, str] = {
+    'US': 'United States', 'MX': 'Mexico', 'EZ': 'Euro area',
+    'DE': 'Germany', 'FR': 'France', 'IT': 'Italy', 'ES': 'Spain',
+    'NL': 'Netherlands', 'BE': 'Belgium', 'AT': 'Austria', 'IE': 'Ireland',
+    'GR': 'Greece', 'PT': 'Portugal', 'FI': 'Finland', 'UK': 'United Kingdom',
+    'CA': 'Canada', 'JP': 'Japan', 'CN': 'China', 'IN': 'India', 'BR': 'Brazil',
+    'KR': 'South Korea', 'AU': 'Australia', 'CH': 'Switzerland', 'SE': 'Sweden',
+    'NO': 'Norway', 'DK': 'Denmark', 'PL': 'Poland', 'CZ': 'Czechia',
+    'HU': 'Hungary', 'RU': 'Russia', 'ZA': 'South Africa', 'ID': 'Indonesia',
+    'TR': 'Turkey', 'SA': 'Saudi Arabia', 'CL': 'Chile', 'CO': 'Colombia',
+    'PE': 'Peru', 'HK': 'Hong Kong', 'NZ': 'New Zealand', 'IL': 'Israel',
+    'TH': 'Thailand', 'MY': 'Malaysia', 'PH': 'Philippines', 'AR': 'Argentina',
+}
+
+
+def _build_macro_groups() -> list[dict[str, typing.Any]]:
+    """
+    Build one catalog group per country/area for the e_ macro columns.
+
+    Grouping by region keeps the picker navigable now that the catalog spans
+    dozens of economies. Each group keeps the ``e_`` prefix (routing is by
+    column name, not group) and is labelled ``Economic · <Country> (<REGION>)``;
+    groups are ordered by region code.
+    """
     macro_rows = load_macro_catalog()
-    return {
-        'prefix': 'e_',
-        'label': 'Economic (macro)',
-        'columns': [row['column'] for row in macro_rows],
-        'column_labels': {
-            row['column']: row['name']
-            for row in macro_rows
-        },
-    }
+    by_region: dict[str, list[dict[str, typing.Any]]] = {}
+    for row in macro_rows:
+        by_region.setdefault(row['region'], []).append(row)
+
+    groups: list[dict[str, typing.Any]] = []
+    for region in sorted(by_region):
+        rows = by_region[region]
+        name = REGION_NAMES.get(region, region)
+        groups.append({
+            'prefix': 'e_',
+            'label': f'Economic · {name} ({region})',
+            'columns': [row['column'] for row in rows],
+            'column_labels': {row['column']: row['name'] for row in rows},
+        })
+
+    return groups
 
 
 def build_catalog_response() -> dict[str, typing.Any]:
     """Return the column catalog plus the valid option lists for the editor."""
     catalog = load_catalog()
-    groups = [*catalog['groups'], _build_macro_group()]
+    groups = [*catalog['groups'], *_build_macro_groups()]
 
     return {
         'groups': groups,
