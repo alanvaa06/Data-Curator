@@ -46,6 +46,11 @@ Status: pending | in_progress | done
 - [done] Discover more variables via direct-API workflow (wf_1df47bd5-302, 24/24 found, 1.1M tokens, zero rate-limit failures). Integrated as WIDE_CONCEPTS; 865 new rows live-verified, 145 dropped. Catalog 427 → 1292 (~59 indicators). New formats (OECD @, WB, BIS, IMF DOT, WEO :) proven end-to-end through the adapter. 807 tests + ruff green. Panel /api/catalog shows 44 country groups / 1292 cols. Panel restarted.
 - [pending] commercial_ok licensing pass now also covers OECD (restricted default) — see task_723041dd.
 
+## Standalone macro export (2026-06-18)
+- [done] Ticker-free macro download: `identifiers=[]` + ≥1 `e_*` col → one `date,value` file per series (native cadence, no fill) via a `main()` branch (`_export_macro_only`/`_build_macro_series_table`) reusing existing handlers; fully library-side, no entry-script change. Silent 0-identifier success fixed (CRITICAL + return False). TDD, 6 new tests incl. on-disk CsvOutput; 873 tests + ruff + mypy green.
+- [pending] DuckDB/in-memory macro-only output: DuckDB degraded (no `m_date` → wholesale replace, no upsert), in-memory `export_dataframe()` raises. Revisit if a macro-only DuckDB table is wanted (needs a `date`→`m_date` mapping or a macro-specific handler).
+- [pending] Panel hint: an empty-identifiers run with macro columns now produces per-series macro files — surface this in the UI (currently only discoverable by running).
+
 ## Follow-ups
 - [pending] Burn down the mypy ignore_errors baseline (fmp/lseg providers, data_blocks, column_builder, helpers, data_column).
 - [done] Dev environment: stale non-editable install replaced with `pip install --user -e .`; CLI now reflects `src/`. Added package `__main__.py` so `python -m kaxanuk.data_curator` works regardless of PATH.
