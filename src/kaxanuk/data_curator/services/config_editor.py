@@ -112,17 +112,52 @@ def load_config(config_path: pathlib.Path | str) -> dict[str, typing.Any]:
     )
 
 
+# Display names for the macro catalog's region codes, so the column picker can
+# group the e_ columns into one collapsible section per country/area.
+REGION_NAMES: dict[str, str] = {
+    'US': 'United States', 'MX': 'Mexico', 'EZ': 'Euro area',
+    'DE': 'Germany', 'FR': 'France', 'IT': 'Italy', 'ES': 'Spain',
+    'NL': 'Netherlands', 'BE': 'Belgium', 'AT': 'Austria', 'IE': 'Ireland',
+    'GR': 'Greece', 'PT': 'Portugal', 'FI': 'Finland', 'UK': 'United Kingdom',
+    'CA': 'Canada', 'JP': 'Japan', 'CN': 'China', 'IN': 'India', 'BR': 'Brazil',
+    'KR': 'South Korea', 'AU': 'Australia', 'CH': 'Switzerland', 'SE': 'Sweden',
+    'NO': 'Norway', 'DK': 'Denmark', 'PL': 'Poland', 'CZ': 'Czechia',
+    'HU': 'Hungary', 'RU': 'Russia', 'ZA': 'South Africa', 'ID': 'Indonesia',
+    'TR': 'Turkey', 'SA': 'Saudi Arabia', 'CL': 'Chile', 'CO': 'Colombia',
+    'PE': 'Peru', 'HK': 'Hong Kong', 'NZ': 'New Zealand', 'IL': 'Israel',
+    'TH': 'Thailand', 'MY': 'Malaysia', 'PH': 'Philippines', 'AR': 'Argentina',
+}
+
+
 def _build_macro_group() -> dict[str, typing.Any]:
-    """Build a catalog group entry for the e_ macro columns."""
+    """
+    Build a single ``Economic (macro)`` catalog group whose columns are nested
+    into one collapsible subgroup per country/area.
+
+    The two-level shape (one Economic set → country subsets → columns) keeps the
+    picker navigable now that the catalog spans dozens of economies and ~59
+    indicators each. Routing is unchanged (by column name, not group); subgroups
+    are ordered by region code.
+    """
     macro_rows = load_macro_catalog()
+    by_region: dict[str, list[dict[str, typing.Any]]] = {}
+    for row in macro_rows:
+        by_region.setdefault(row['region'], []).append(row)
+
+    subgroups: list[dict[str, typing.Any]] = []
+    for region in sorted(by_region):
+        rows = by_region[region]
+        name = REGION_NAMES.get(region, region)
+        subgroups.append({
+            'label': f'{name} ({region})',
+            'columns': [row['column'] for row in rows],
+            'column_labels': {row['column']: row['name'] for row in rows},
+        })
+
     return {
         'prefix': 'e_',
         'label': 'Economic (macro)',
-        'columns': [row['column'] for row in macro_rows],
-        'column_labels': {
-            row['column']: row['name']
-            for row in macro_rows
-        },
+        'subgroups': subgroups,
     }
 
 

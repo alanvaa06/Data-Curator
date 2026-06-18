@@ -37,10 +37,12 @@ Alongside the per-ticker providers above, the Data Curator can also fetch macro-
 * **Banxico SIE** — Mexican central-bank series (target rate, TIIE, Cetes, USD/MXN FIX, international reserves). Free token from the [Banxico SIE API page](https://www.banxico.org.mx/SieAPIRest/service/v1/token).
 * **INEGI** — Mexican statistics-agency series (INPC / headline CPI, ENOE unemployment). Free token via [INEGI token registration](https://www.inegi.org.mx/app/api/indicadores/interna_v1_1/tokenVerify.aspx).
 * **FRED** — US Federal Reserve (St. Louis Fed) series (CPI, core CPI, fed funds, 2Y/10Y Treasuries, unemployment, real GDP, M2). Free [FRED API key](https://fredaccount.stlouisfed.org/apikey).
-* **DBnomics** — rest-of-world aggregator (Euro-area HICP, ECB main refi rate, and more). **Keyless** — no token required.
+* **DBnomics** — keyless rest-of-world aggregator. Routes the cross-country catalog through wide datasets so the same concept is comparable across economies: policy rates (BIS), CPI / core CPI / PPI / FX-vs-USD / reserves / short rates (IMF IFS), 10Y government yields & retail sales & harmonised unemployment & economic sentiment (Eurostat), real/nominal GDP & GDP growth & current account & trade & youth unemployment (World Bank), business/consumer confidence & M1/M3 money (OECD), credit / REER / NEER / house prices (BIS), and government debt & budget balance (IMF WEO). **Keyless** — no token required.
+
+The bundled catalog ships **1292 curated `e_*` columns across 44 economies** (US, Mexico, euro area, and ~40 other developed and emerging markets) spanning ~59 indicators — rates, money & credit, prices, activity, sentiment, labour, and the external sector. Every series id is machine-verified against its live provider API before inclusion via `scripts/build_macro_catalog.py`; re-run that script to extend or re-validate the catalog. Each row carries a `commercial_ok` flag for the underlying source's redistribution terms (Eurostat / World Bank = `yes`; IMF / BIS / OECD = `restricted`; FRED = `no`). In the parameter panel the macro columns are nested under a single **Economic** set with one collapsible subgroup per country/area (a two-level Economic → country → columns tree) for easy navigation.
 
 Macro series are not per-ticker: you select them as regular output columns prefixed `e_*`
-(e.g. `e_mx_target_rate`, `e_us_cpi`, `e_ecb_rate`) in the parameter panel's column picker, and
+(e.g. `e_mx_target_rate`, `e_us_cpi`, `e_jp_policy_rate`, `e_de_10y`) in the parameter panel's column picker, and
 the system **forward-fills** each macro series onto every ticker's dates (macro cadence is
 monthly/quarterly/weekly; markets are daily), broadcasting the same macro value to all
 identifiers on each date.
@@ -84,6 +86,13 @@ provider key (panel's API keys section, or the `Config/.env` file):
     ```
     This creates two subdirectories, `Config` and `Output`, plus the entry script `__main__.py` in the current
     directory (never overwriting existing files), and opens the parameter panel in your browser.
+
+    > The panel is served by this command, so **keep the terminal open** — the panel stays up only while
+    > `start` is running; press `Ctrl+C` to stop it. If the `kaxanuk.data_curator` command is not on your
+    > `PATH`, use the equivalent module form instead:
+    > ```
+    > python -m kaxanuk.data_curator start
+    > ```
 2. In the panel, pick the data providers, dates, period, output format, identifiers, and output columns, then click
    **Save & run** — the run output appears on the page and the data is saved to the `Output` folder.
 3. If your data provider requires an API key, set it in the panel's API keys section, or open the `Config/.env` file

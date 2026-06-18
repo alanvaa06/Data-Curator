@@ -27,6 +27,8 @@ _MISSING = {"NA", "", None}
 _PERIOD_PARTS_ANNUAL = 1
 _PERIOD_PARTS_MONTHLY = 2
 _PERIOD_PARTS_DAILY = 3
+_QUARTER_TOKEN_LEN = 2
+_MONTHS_PER_QUARTER = 3
 
 
 class Dbnomics(MacroDataProviderInterface):
@@ -85,17 +87,25 @@ class Dbnomics(MacroDataProviderInterface):
             # Annual — must be a 4-digit year
             return f"{parts[0]}-01-01"
         if len(parts) == _PERIOD_PARTS_MONTHLY:
+            token = parts[1]
             # Monthly — YYYY-MM.
-            # TODO: add quarter/week/semester support once a live payload is available
-            #       (e.g. "2020-Q1", "2020-W01", "2020-S1"); deferred for v1 — mirrors
-            #       the INEGI adapter's quarterly TODO in inegi.py.
-            if not parts[1].isdigit():
-                msg = (
-                    f"Unsupported DBnomics sub-annual period"
-                    f" (quarter/week/semester not yet handled): {period!r}"
-                )
-                raise ValueError(msg)
-            return f"{parts[0]}-{parts[1]}-01"
+            if token.isdigit():
+                return f"{parts[0]}-{token}-01"
+            # Quarterly — YYYY-Q[1-4] maps to the first month of the quarter
+            # (Q1→01, Q2→04, Q3→07, Q4→10).
+            if (
+                len(token) == _QUARTER_TOKEN_LEN
+                and token[0] in ("Q", "q")
+                and token[1] in "1234"
+            ):
+                month = (int(token[1]) - 1) * _MONTHS_PER_QUARTER + 1
+                return f"{parts[0]}-{month:02d}-01"
+            # Week ("YYYY-W01") and semester ("YYYY-S1") are not yet supported.
+            msg = (
+                f"Unsupported DBnomics sub-annual period"
+                f" (week/semester not yet handled): {period!r}"
+            )
+            raise ValueError(msg)
         if len(parts) == _PERIOD_PARTS_DAILY:
             # Daily — YYYY-MM-DD (validate via fromisoformat)
             return datetime.date.fromisoformat(period).isoformat()

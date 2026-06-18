@@ -184,6 +184,9 @@ async function boot() {
     return;
   }
   collapsedGroups = new Set(catalog.groups.map(g => g.label));
+  for (const g of catalog.groups) {
+    if (g.subgroups) for (const sg of g.subgroups) collapsedGroups.add(g.label + ' ▸ ' + sg.label);
+  }
   collapsedGroups.add('Custom / other');
   renderGeneral(); renderKeys(); renderPresets(); renderIdentifiers(); renderColumns(); setStatus('');
 }
@@ -309,14 +312,16 @@ function refreshCounts() {
   document.getElementById('colCount').textContent = state.columns.length;
 }
 
-function groupHeader(label, columns, expanded) {
+function groupHeader(label, columns, expanded, key, depth) {
+  key = key || label; depth = depth || 0;
   const hdr = document.createElement('div'); hdr.className = 'grouphdr';
+  if (depth) { hdr.style.paddingLeft = (12 + depth * 18) + 'px'; hdr.style.fontWeight = '500'; }
   const chev = document.createElement('span'); chev.className = 'chev'; chev.textContent = expanded ? '▾' : '▸';
   const title = document.createElement('span'); title.textContent = label;
   const count = document.createElement('span'); count.className = 'gcount';
   hdr.appendChild(chev); hdr.appendChild(title); hdr.appendChild(count);
   hdr.onclick = () => {
-    if (collapsedGroups.has(label)) collapsedGroups.delete(label); else collapsedGroups.add(label);
+    if (collapsedGroups.has(key)) collapsedGroups.delete(key); else collapsedGroups.add(key);
     renderColumns();
   };
   if (columns.length) {
@@ -338,6 +343,31 @@ function renderColumns() {
   const filter = document.getElementById('colSearch').value.trim().toLowerCase();
   const known = new Set();
   for (const group of catalog.groups) {
+    if (group.subgroups) {
+      // Nested group (e.g. Economic): one parent set -> country subsets -> columns.
+      group.subgroups.forEach(sg => sg.columns.forEach(c => known.add(c)));
+      const subMatches = group.subgroups
+        .map(sg => ({ sg, matches: [...sg.columns].sort().filter(c => !filter || c.toLowerCase().includes(filter)) }))
+        .filter(x => x.matches.length);
+      if (!subMatches.length) continue;
+      const allCols = subMatches.flatMap(x => x.matches);
+      const pExpanded = filter ? true : !collapsedGroups.has(group.label);
+      root.appendChild(groupHeader(group.label, allCols, pExpanded));
+      if (pExpanded) {
+        for (const { sg, matches } of subMatches) {
+          const subKey = group.label + ' ▸ ' + sg.label;
+          const sExpanded = filter ? true : !collapsedGroups.has(subKey);
+          root.appendChild(groupHeader(sg.label, matches, sExpanded, subKey, 1));
+          if (sExpanded) {
+            const labels = sg.column_labels || {};
+            for (const col of matches) {
+              root.appendChild(columnRow(col, selected.has(col), labels[col], 1));
+            }
+          }
+        }
+      }
+      continue;
+    }
     group.columns.forEach(c => known.add(c));
     const matches = [...group.columns].sort().filter(c => !filter || c.toLowerCase().includes(filter));
     if (!matches.length) continue;
@@ -361,8 +391,9 @@ function renderColumns() {
   refreshCounts();
 }
 
-function columnRow(col, checked, label) {
+function columnRow(col, checked, label, depth) {
   const row = document.createElement('label'); row.className = 'col';
+  if (depth) row.style.paddingLeft = (depth * 18) + 'px';
   const box = document.createElement('input'); box.type = 'checkbox'; box.checked = checked;
   box.onchange = () => {
     if (box.checked) { if (!state.columns.includes(col)) state.columns.push(col); }
