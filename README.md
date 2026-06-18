@@ -86,6 +86,13 @@ provider key (panel's API keys section, or the `Config/.env` file):
     ```
     This creates two subdirectories, `Config` and `Output`, plus the entry script `__main__.py` in the current
     directory (never overwriting existing files), and opens the parameter panel in your browser.
+
+    > The panel is served by this command, so **keep the terminal open** — the panel stays up only while
+    > `start` is running; press `Ctrl+C` to stop it. If the `kaxanuk.data_curator` command is not on your
+    > `PATH`, use the equivalent module form instead:
+    > ```
+    > python -m kaxanuk.data_curator start
+    > ```
 2. In the panel, pick the data providers, dates, period, output format, identifiers, and output columns, then click
    **Save & run** — the run output appears on the page and the data is saved to the `Output` folder.
 3. If your data provider requires an API key, set it in the panel's API keys section, or open the `Config/.env` file
