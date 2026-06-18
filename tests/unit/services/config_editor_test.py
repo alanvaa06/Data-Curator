@@ -138,7 +138,28 @@ class TestEnvKeys:
         assert status == [
             {'name': 'KNDC_API_KEY_FMP', 'set': False},
             {'name': 'KNDC_API_KEY_LSEG', 'set': False},
+            {'name': 'KNDC_API_KEY_FRED', 'set': False},
+            {'name': 'KNDC_API_KEY_BANXICO', 'set': False},
+            {'name': 'KNDC_API_KEY_INEGI', 'set': False},
         ]
+
+    def test_status_includes_macro_provider_keys(self, tmp_path):
+        env = tmp_path / '.env'
+        env.write_text(
+            'KNDC_API_KEY_FRED=fredkey\nKNDC_API_KEY_BANXICO=banxicokey\nKNDC_API_KEY_INEGI=inegikey\n',
+            encoding='utf-8',
+        )
+        status = {s['name']: s['set'] for s in config_editor.read_env_status(env)}
+        assert status['KNDC_API_KEY_FRED'] is True
+        assert status['KNDC_API_KEY_BANXICO'] is True
+        assert status['KNDC_API_KEY_INEGI'] is True
+
+    def test_save_fred_key_roundtrips_via_status(self, tmp_path):
+        env = tmp_path / '.env'
+        config_editor.save_env_values(env, {'KNDC_API_KEY_FRED': 'myfredkey'})
+        assert 'KNDC_API_KEY_FRED=myfredkey' in env.read_text(encoding='utf-8')
+        status = {s['name']: s['set'] for s in config_editor.read_env_status(env)}
+        assert status['KNDC_API_KEY_FRED'] is True
 
     def test_status_detects_set_and_empty_values(self, tmp_path):
         env = tmp_path / '.env'
@@ -283,6 +304,9 @@ def test_server_env_roundtrip_without_echoing_values(tmp_path):
         assert {s['name']: s['set'] for s in json.loads(body)} == {
             'KNDC_API_KEY_FMP': False,
             'KNDC_API_KEY_LSEG': False,
+            'KNDC_API_KEY_FRED': False,
+            'KNDC_API_KEY_BANXICO': False,
+            'KNDC_API_KEY_INEGI': False,
         }
         assert _post(base + '/api/env', {'KNDC_API_KEY_FMP': 'secretvalue'}) == 200
         status, body = _get(base + '/api/env')
@@ -290,6 +314,12 @@ def test_server_env_roundtrip_without_echoing_values(tmp_path):
         assert 'secretvalue' not in body
         assert 'secretvalue' in (tmp_path / '.env').read_text(encoding='utf-8')
         assert _post(base + '/api/env', {'EVIL': 'x'}) == 400
+        # macro providers also accepted
+        assert _post(base + '/api/env', {'KNDC_API_KEY_FRED': 'fredval'}) == 200
+        status, body = _get(base + '/api/env')
+        assert {s['name']: s['set'] for s in json.loads(body)}['KNDC_API_KEY_FRED'] is True
+        assert 'fredval' not in body
+        assert 'fredval' in (tmp_path / '.env').read_text(encoding='utf-8')
     finally:
         server.shutdown()
 

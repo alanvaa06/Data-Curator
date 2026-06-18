@@ -59,6 +59,9 @@ _run_state: dict[str, typing.Any] = dict(_RUN_STATE_IDLE)
 API_KEY_ENV_VARS = (
     'KNDC_API_KEY_FMP',
     'KNDC_API_KEY_LSEG',
+    'KNDC_API_KEY_FRED',
+    'KNDC_API_KEY_BANXICO',
+    'KNDC_API_KEY_INEGI',
 )
 
 REQUIRED_GENERAL_KEYS = (
