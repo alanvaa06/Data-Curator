@@ -129,38 +129,42 @@ REGION_NAMES: dict[str, str] = {
 }
 
 
-def _build_macro_groups() -> list[dict[str, typing.Any]]:
+def _build_macro_group() -> dict[str, typing.Any]:
     """
-    Build one catalog group per country/area for the e_ macro columns.
+    Build a single ``Economic (macro)`` catalog group whose columns are nested
+    into one collapsible subgroup per country/area.
 
-    Grouping by region keeps the picker navigable now that the catalog spans
-    dozens of economies. Each group keeps the ``e_`` prefix (routing is by
-    column name, not group) and is labelled ``Economic · <Country> (<REGION>)``;
-    groups are ordered by region code.
+    The two-level shape (one Economic set → country subsets → columns) keeps the
+    picker navigable now that the catalog spans dozens of economies and ~59
+    indicators each. Routing is unchanged (by column name, not group); subgroups
+    are ordered by region code.
     """
     macro_rows = load_macro_catalog()
     by_region: dict[str, list[dict[str, typing.Any]]] = {}
     for row in macro_rows:
         by_region.setdefault(row['region'], []).append(row)
 
-    groups: list[dict[str, typing.Any]] = []
+    subgroups: list[dict[str, typing.Any]] = []
     for region in sorted(by_region):
         rows = by_region[region]
         name = REGION_NAMES.get(region, region)
-        groups.append({
-            'prefix': 'e_',
-            'label': f'Economic · {name} ({region})',
+        subgroups.append({
+            'label': f'{name} ({region})',
             'columns': [row['column'] for row in rows],
             'column_labels': {row['column']: row['name'] for row in rows},
         })
 
-    return groups
+    return {
+        'prefix': 'e_',
+        'label': 'Economic (macro)',
+        'subgroups': subgroups,
+    }
 
 
 def build_catalog_response() -> dict[str, typing.Any]:
     """Return the column catalog plus the valid option lists for the editor."""
     catalog = load_catalog()
-    groups = [*catalog['groups'], *_build_macro_groups()]
+    groups = [*catalog['groups'], _build_macro_group()]
 
     return {
         'groups': groups,

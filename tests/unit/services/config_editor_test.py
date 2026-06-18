@@ -109,24 +109,27 @@ def test_build_catalog_response_has_options_and_groups():
     assert 'info' in response['options']['logger_level']
 
 
-def test_build_catalog_response_groups_macro_by_country():
+def test_build_catalog_response_nests_macro_by_country():
     response = config_editor.build_catalog_response()
-    macro_groups = [g for g in response['groups'] if g['prefix'] == 'e_']
-    # one collapsible group per country/area, not a single flat list
-    assert len(macro_groups) > 1, "macro columns should be grouped by country"
-    by_label = {g['label']: g for g in macro_groups}
-    assert 'Economic · Mexico (MX)' in by_label
-    assert 'Economic · United States (US)' in by_label
-    # each column routes into its region's group
-    assert 'e_mx_target_rate' in by_label['Economic · Mexico (MX)']['columns']
-    assert 'e_us_cpi' in by_label['Economic · United States (US)']['columns']
+    macro = [g for g in response['groups'] if g['prefix'] == 'e_']
+    # one top-level Economic set holding per-country subgroups
+    assert len(macro) == 1, "macro columns belong to a single Economic group"
+    macro = macro[0]
+    assert macro['label'] == 'Economic (macro)'
+    assert macro.get('subgroups'), "Economic group should nest country subgroups"
+    by_label = {sg['label']: sg for sg in macro['subgroups']}
+    assert 'Mexico (MX)' in by_label
+    assert 'United States (US)' in by_label
+    # each column routes into its country's subgroup
+    assert 'e_mx_target_rate' in by_label['Mexico (MX)']['columns']
+    assert 'e_us_cpi' in by_label['United States (US)']['columns']
     # human labels present via column_labels map
-    assert by_label['Economic · Mexico (MX)']['column_labels']['e_mx_target_rate'] == 'MX target rate'
-    assert by_label['Economic · United States (US)']['column_labels']['e_us_cpi'] == 'US CPI (all items)'
-    # every column in every macro group has a label entry
-    for group in macro_groups:
-        for col in group['columns']:
-            assert col in group['column_labels'], f"Missing label for {col}"
+    assert by_label['Mexico (MX)']['column_labels']['e_mx_target_rate'] == 'MX target rate'
+    assert by_label['United States (US)']['column_labels']['e_us_cpi'] == 'US CPI (all items)'
+    # every column in every subgroup has a label entry
+    for sg in macro['subgroups']:
+        for col in sg['columns']:
+            assert col in sg['column_labels'], f"Missing label for {col}"
 
 
 def test_build_catalog_response_includes_identifier_presets():
