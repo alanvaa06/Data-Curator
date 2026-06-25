@@ -47,8 +47,8 @@ Status: pending | in_progress | done
 - [pending] commercial_ok licensing pass now also covers OECD (restricted default) — see task_723041dd.
 
 ## Standalone macro export (2026-06-18)
-- [done] Ticker-free macro download: `identifiers=[]` + ≥1 `e_*` col → one `date,value` file per series (native cadence, no fill) via a `main()` branch (`_export_macro_only`/`_build_macro_series_table`) reusing existing handlers; fully library-side, no entry-script change. Silent 0-identifier success fixed (CRITICAL + return False). TDD, 6 new tests incl. on-disk CsvOutput; 873 tests + ruff + mypy green.
-- [pending] DuckDB/in-memory macro-only output: DuckDB degraded (no `m_date` → wholesale replace, no upsert), in-memory `export_dataframe()` raises. Revisit if a macro-only DuckDB table is wanted (needs a `date`→`m_date` mapping or a macro-specific handler).
+- [done] Ticker-free macro download: `identifiers=[]` + ≥1 `e_*` col → one `m_date,value` file per series (native cadence, no fill) via a `main()` branch (`_export_macro_only`/`_build_macro_series_table`) reusing existing handlers; fully library-side, no entry-script change. Silent 0-identifier success fixed (CRITICAL + return False). TDD, 6 new tests incl. on-disk CsvOutput; 873 tests + ruff + mypy green.
+- [done] DuckDB/in-memory macro-only output (2026-06-24): macro table now emits `m_date` (was `date`), so the DuckDB handler upserts each series into shared `curated_data` on `(main_identifier, m_date)` — fixes the reported `Binder Error: Referenced column "m_date" not found` crash on a DB that already had a ticker table — and the in-memory `export_dataframe()` indexes a macro-only run by date. TDD: exact-crash repro + fresh-DB + rerun-dedup + in-memory tests; updated the 4 `date`→`m_date` assertions. 877 tests + ruff + mypy green.
 - [pending] Panel hint: an empty-identifiers run with macro columns now produces per-series macro files — surface this in the UI (currently only discoverable by running).
 
 ## Follow-ups
