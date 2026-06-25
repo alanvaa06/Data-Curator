@@ -528,7 +528,7 @@ def _export_macro_only(
     """
     Output the selected macro series directly, for a run that has no equity identifiers.
 
-    Each selected ``e_*`` column is written as its own two-column (date, value) table at the
+    Each selected ``e_*`` column is written as its own two-column (m_date, value) table at the
     series' native cadence — no forward-fill, no ticker — reusing the configured output
     handlers (the column name becomes the output's main_identifier, so csv/parquet write one
     ``{column}.{ext}`` file per series). Macro series are non-ticker, so they stand alone.
@@ -584,7 +584,11 @@ def _export_macro_only(
 
 def _build_macro_series_table(series: EconomicIndicatorData) -> pyarrow.Table:
     """
-    Build a two-column (date, value) pyarrow.Table from one macro series.
+    Build a two-column (m_date, value) pyarrow.Table from one macro series.
+
+    The date column is named ``m_date`` — the canonical date-column name across every output
+    (tickers emit it too), so the DuckDB handler can key its (main_identifier, m_date) upsert
+    on it; a bare ``date`` makes that BY NAME upsert raise a Binder Error.
 
     The table preserves the series' native cadence and raw values (no forward-fill, no
     ticker). Each column is built in a single pyarrow.array() call over ALL the series' rows,
@@ -597,7 +601,7 @@ def _build_macro_series_table(series: EconomicIndicatorData) -> pyarrow.Table:
 
     return pyarrow.table(
         {
-            "date": pyarrow.array(dates),
+            "m_date": pyarrow.array(dates),
             "value": pyarrow.array(values),
         }
     )

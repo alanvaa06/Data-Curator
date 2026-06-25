@@ -297,7 +297,7 @@ class TestMainMacroFatalErrorContract:
 class TestMainMacroStandaloneExport:
     """
     Standalone macro export: a run with NO identifiers but >=1 e_* column writes one
-    date,value table per e_* column, at the series' native cadence (no ticker, no forward-fill).
+    m_date,value table per e_* column, at the series' native cadence (no ticker, no forward-fill).
     """
 
     def test_standalone_macro_export_writes_one_table_per_e_column(self):
@@ -320,9 +320,9 @@ class TestMainMacroStandaloneExport:
         assert 'e_mx_target_rate' in handler.tables
         table = handler.tables['e_mx_target_rate']
         # exactly two columns, in order
-        assert table.column_names == ['date', 'value']
+        assert table.column_names == ['m_date', 'value']
         # native cadence preserved: the raw series dates, ascending, NOT broadcast to market dates
-        assert table.column('date').to_pylist() == [
+        assert table.column('m_date').to_pylist() == [
             datetime.date(2024, 1, 3),
             datetime.date(2024, 2, 1),
         ]
@@ -354,7 +354,7 @@ class TestMainMacroStandaloneExport:
         # one separate table per selected e_* column
         assert set(handler.tables) == {'e_mx_target_rate', 'e_mx_cetes28'}
         for column in ('e_mx_target_rate', 'e_mx_cetes28'):
-            assert handler.tables[column].column_names == ['date', 'value']
+            assert handler.tables[column].column_names == ['m_date', 'value']
 
     def test_standalone_macro_export_passes_nulls_through(self):
         macro = FakeMacroProvider(
@@ -441,7 +441,146 @@ class TestMainMacroStandaloneExportToDisk:
         assert out_file.is_file()
         content = out_file.read_text()
         header = content.splitlines()[0]
-        assert "date" in header
+        assert "m_date" in header
         assert "value" in header
         assert "2024-01-03" in content
         assert "7.25" in content
+
+
+class TestMainMacroStandaloneExportToDuckdb:
+    """
+    End-to-end: standalone macro export upserts into the shared DuckDB curated_data table.
+
+    The DuckDB handler keys upserts on (main_identifier, m_date), so the macro export must
+    emit an m_date column; a bare `date` column makes the BY NAME upsert raise a Binder Error
+    (Referenced column "m_date" not found). Regression for that crash.
+    """
+
+    def test_standalone_macro_export_writes_rows_to_duckdb(self, tmp_path):
+        import duckdb
+        from kaxanuk.data_curator.output_handlers import DuckdbOutput
+
+        macro = FakeMacroProvider(
+            monthly_values={"SF61745": [("2024-01-03", "7.25"), ("2024-02-01", "7.50")]},
+            provider_name="banxico_sie",
+        )
+
+        result = data_curator.main(
+            configuration=_build_configuration((), ('e_mx_target_rate',)),
+            market_data_provider=StubMarketDataProvider(),
+            fundamental_data_provider=None,
+            output_handlers=[DuckdbOutput(output_base_dir=str(tmp_path))],
+            macro_data_providers=[macro],
+        )
+
+        assert result is True
+        database_path = tmp_path / "data_curator.duckdb"
+        assert database_path.is_file()
+        connection = duckdb.connect(str(database_path), read_only=True)
+        try:
+            rows = connection.execute(
+                "SELECT main_identifier, m_date, value FROM curated_data ORDER BY m_date"
+            ).fetchall()
+        finally:
+            connection.close()
+        # series id is the main_identifier; native cadence preserved, no forward-fill
+        assert rows == [
+            ('e_mx_target_rate', datetime.date(2024, 1, 3), decimal.Decimal('7.25')),
+            ('e_mx_target_rate', datetime.date(2024, 2, 1), decimal.Decimal('7.50')),
+        ]
+
+    def test_standalone_macro_export_into_existing_ticker_table(self, tmp_path):
+        # the reported crash: curated_data already keyed on (main_identifier, m_date) from
+        # prior ticker runs; the macro export must upsert into it, not raise a Binder Error.
+        import duckdb
+        import pyarrow
+        from kaxanuk.data_curator.output_handlers import DuckdbOutput
+
+        # seed a ticker row -> creates curated_data with PRIMARY KEY (main_identifier, m_date)
+        DuckdbOutput(output_base_dir=str(tmp_path)).output_data(
+            main_identifier='AAPL',
+            columns=pyarrow.table({
+                'm_date': [datetime.date(2024, 1, 2)],
+                'm_close': [185.64],
+            }),
+        )
+
+        macro = FakeMacroProvider(
+            monthly_values={"SF61745": [("2024-01-03", "7.25")]},
+            provider_name="banxico_sie",
+        )
+        result = data_curator.main(
+            configuration=_build_configuration((), ('e_mx_target_rate',)),
+            market_data_provider=StubMarketDataProvider(),
+            fundamental_data_provider=None,
+            output_handlers=[DuckdbOutput(output_base_dir=str(tmp_path))],
+            macro_data_providers=[macro],
+        )
+
+        assert result is True
+        connection = duckdb.connect(str(tmp_path / "data_curator.duckdb"), read_only=True)
+        try:
+            identifiers = {
+                row[0]
+                for row in connection.execute(
+                    'SELECT DISTINCT main_identifier FROM curated_data'
+                ).fetchall()
+            }
+        finally:
+            connection.close()
+        # ticker and macro series coexist in the shared table
+        assert identifiers == {'AAPL', 'e_mx_target_rate'}
+
+    def test_standalone_macro_rerun_upserts_without_duplicates(self, tmp_path):
+        import duckdb
+        from kaxanuk.data_curator.output_handlers import DuckdbOutput
+
+        macro = FakeMacroProvider(
+            monthly_values={"SF61745": [("2024-01-03", "7.25")]},
+            provider_name="banxico_sie",
+        )
+        for _ in range(2):
+            result = data_curator.main(
+                configuration=_build_configuration((), ('e_mx_target_rate',)),
+                market_data_provider=StubMarketDataProvider(),
+                fundamental_data_provider=None,
+                output_handlers=[DuckdbOutput(output_base_dir=str(tmp_path))],
+                macro_data_providers=[macro],
+            )
+            assert result is True
+
+        connection = duckdb.connect(str(tmp_path / "data_curator.duckdb"), read_only=True)
+        try:
+            count = connection.execute('SELECT count(*) FROM curated_data').fetchone()[0]
+        finally:
+            connection.close()
+        # re-run upserts on (main_identifier, m_date): same key replaces, no duplicate row
+        assert count == 1
+
+
+class TestMainMacroStandaloneExportToInMemory:
+    """The m_date column also lets the in-memory handler index a macro-only run by date."""
+
+    def test_standalone_macro_export_exports_dataframe_indexed_by_date(self):
+        from kaxanuk.data_curator.output_handlers import InMemoryOutput
+
+        macro = FakeMacroProvider(
+            monthly_values={"SF61745": [("2024-01-03", "7.25"), ("2024-02-01", "7.50")]},
+            provider_name="banxico_sie",
+        )
+        handler = InMemoryOutput()
+
+        result = data_curator.main(
+            configuration=_build_configuration((), ('e_mx_target_rate',)),
+            market_data_provider=StubMarketDataProvider(),
+            fundamental_data_provider=None,
+            output_handlers=[handler],
+            macro_data_providers=[macro],
+        )
+
+        assert result is True
+        # before the m_date rename this raised OutputHandlerError ("'m_date' column is missing")
+        frame = handler.export_dataframe()
+        assert frame.index.names == ['main_identifier', 'm_date']
+        assert set(frame.index.get_level_values('main_identifier')) == {'e_mx_target_rate'}
+        assert frame['value'].tolist() == [decimal.Decimal('7.25'), decimal.Decimal('7.50')]
