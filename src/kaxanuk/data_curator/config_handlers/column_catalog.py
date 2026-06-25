@@ -53,6 +53,19 @@ def load_etf_catalog() -> dict[str, typing.Any]:
     return _load_bundled_json('etf_catalog.json')
 
 
+def load_mx_fund_catalog() -> dict[str, typing.Any]:
+    """
+    Load the bundled Mexican mutual-fund browser catalog (Yahoo-verified .MX claves).
+
+    Returns
+    -------
+    A mapping with an 'as_of' date and a 'groups' list. Each group is one operadora
+    holding a 'subgroups' list (by theme), each subgroup holding a 'funds' list whose
+    entries carry a 'ticker' (a representative Yahoo .MX series) and a 'name'.
+    """
+    return _load_bundled_json('mx_fund_catalog.json')
+
+
 def load_macro_catalog() -> list[dict[str, typing.Any]]:
     """
     Load the bundled macro column catalog.

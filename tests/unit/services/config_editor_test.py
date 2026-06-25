@@ -153,6 +153,20 @@ def test_build_catalog_response_includes_etf_groups():
     assert 'XLK' in tickers
 
 
+def test_build_catalog_response_includes_mx_fund_groups():
+    response = config_editor.build_catalog_response()
+    labels = {g['label'] for g in response['mx_fund_groups']}
+    assert 'GBM' in labels
+    tickers = [
+        fund['ticker']
+        for group in response['mx_fund_groups']
+        for subgroup in group['subgroups']
+        for fund in subgroup['funds']
+    ]
+    assert tickers
+    assert all(t.endswith('.MX') for t in tickers)
+
+
 class TestCustomLists:
     def test_read_returns_empty_when_file_absent(self, tmp_path):
         assert config_editor.read_custom_lists(tmp_path / 'identifier_lists.json') == []

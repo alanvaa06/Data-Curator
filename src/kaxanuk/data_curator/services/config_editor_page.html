@@ -163,6 +163,7 @@
       <div id="customLists"></div>
       <div class="row"><input id="idInput" placeholder="Add ticker…" /><button id="idAdd">Add</button></div>
       <div class="etfbox" id="etfBox"></div>
+      <div class="etfbox" id="fundBox"></div>
       <div class="chips" id="idChips"></div>
     </fieldset>
 
@@ -185,8 +186,9 @@ const GENERAL_FIELDS = [
   ['output_directory', 'text'],
 ];
 let state = null, catalog = null, envStatus = [], collapsedGroups = new Set();
-let customLists = [], etfExpanded = false;
-const etfOpen = new Set();
+let customLists = [];
+const etfState = { expanded: false, open: new Set() };
+const fundState = { expanded: false, open: new Set() };
 
 const KEY_LABELS = {
   KNDC_API_KEY_FMP: 'Financial Modeling Prep',
@@ -224,7 +226,8 @@ async function boot() {
     if (g.subgroups) for (const sg of g.subgroups) collapsedGroups.add(g.label + ' ▸ ' + sg.label);
   }
   collapsedGroups.add('Custom / other');
-  renderGeneral(); renderKeys(); renderPresets(); renderCustomLists(); renderEtfBrowser();
+  renderGeneral(); renderKeys(); renderPresets(); renderCustomLists();
+  renderEtfBrowser(); renderFundBrowser();
   renderIdentifiers(); renderColumns(); setStatus('');
 }
 
@@ -331,7 +334,8 @@ function renderIdentifiers() {
     chip.appendChild(x); chips.appendChild(chip);
   });
   document.getElementById('idCount').textContent = state.identifiers.length;
-  if (etfExpanded) renderEtfBrowser();
+  if (etfState.expanded) renderEtfBrowser();
+  if (fundState.expanded) renderFundBrowser();
 }
 
 function addIdentifier() {
@@ -398,45 +402,48 @@ async function deleteCustomList(name) {
   renderCustomLists();
 }
 
-function renderEtfBrowser() {
-  const box = document.getElementById('etfBox'); box.innerHTML = '';
-  const groups = catalog.etf_groups || [];
-  if (!groups.length) return;
-  const total = groups.reduce((a, g) => a + g.subgroups.reduce((b, s) => b + s.etfs.length, 0), 0);
+// Generic collapsible ticker browser (group → subgroup → pills). Drives both the
+// ETF catalog and the Mexican-fund catalog; itemsKey selects the per-subgroup list.
+function renderTickerBrowser(boxId, groups, itemsKey, st, label) {
+  const box = document.getElementById(boxId); box.innerHTML = '';
+  if (!groups || !groups.length) return;
+  const render = () => renderTickerBrowser(boxId, groups, itemsKey, st, label);
+  const total = groups.reduce((a, g) => a + g.subgroups.reduce((b, s) => b + (s[itemsKey] || []).length, 0), 0);
 
   const top = document.createElement('button'); top.className = 'etftoggle';
-  const chev = document.createElement('span'); chev.className = 'chev'; chev.textContent = etfExpanded ? '▾' : '▸';
-  top.appendChild(chev); top.appendChild(document.createTextNode(' ETFs by topic '));
+  const chev = document.createElement('span'); chev.className = 'chev'; chev.textContent = st.expanded ? '▾' : '▸';
+  top.appendChild(chev); top.appendChild(document.createTextNode(' ' + label + ' '));
   const tc = document.createElement('span'); tc.className = 'gcount'; tc.textContent = total; top.appendChild(tc);
-  top.onclick = () => { etfExpanded = !etfExpanded; renderEtfBrowser(); };
+  top.onclick = () => { st.expanded = !st.expanded; render(); };
   box.appendChild(top);
-  if (!etfExpanded) return;
+  if (!st.expanded) return;
 
   const selected = new Set(state.identifiers);
   const body = document.createElement('div'); body.className = 'etfbody';
   for (const g of groups) {
     const gh = document.createElement('div'); gh.className = 'etfgrp'; gh.textContent = g.label; body.appendChild(gh);
     for (const sg of g.subgroups) {
+      const items = sg[itemsKey] || [];
       const key = g.label + ' ▸ ' + sg.label;
-      const open = etfOpen.has(key);
+      const open = st.open.has(key);
       const sub = document.createElement('button'); sub.className = 'etfsub';
       const sc = document.createElement('span'); sc.className = 'chev'; sc.textContent = open ? '▾' : '▸';
       sub.appendChild(sc); sub.appendChild(document.createTextNode(' ' + sg.label + ' '));
-      const cnt = document.createElement('span'); cnt.className = 'gcount'; cnt.textContent = sg.etfs.length;
+      const cnt = document.createElement('span'); cnt.className = 'gcount'; cnt.textContent = items.length;
       sub.appendChild(cnt);
       const all = document.createElement('span'); all.className = 'etfall'; all.textContent = 'all';
-      all.title = 'Add all ' + sg.label + ' ETFs';
-      all.onclick = (e) => { e.stopPropagation(); addTickers(sg.etfs.map(x => x.ticker)); };
+      all.title = 'Add all in ' + sg.label;
+      all.onclick = (e) => { e.stopPropagation(); addTickers(items.map(x => x.ticker)); };
       sub.appendChild(all);
-      sub.onclick = () => { if (etfOpen.has(key)) etfOpen.delete(key); else etfOpen.add(key); renderEtfBrowser(); };
+      sub.onclick = () => { if (st.open.has(key)) st.open.delete(key); else st.open.add(key); render(); };
       body.appendChild(sub);
       if (open) {
         const pills = document.createElement('div'); pills.className = 'etfpills';
-        for (const etf of sg.etfs) {
-          const b = document.createElement('button'); b.className = 'etfpill'; b.textContent = etf.ticker;
-          b.title = etf.name; b.setAttribute('aria-label', etf.ticker + ' — ' + etf.name);
-          if (selected.has(etf.ticker)) b.classList.add('on');
-          b.onclick = () => addTickers([etf.ticker]);
+        for (const it of items) {
+          const b = document.createElement('button'); b.className = 'etfpill'; b.textContent = it.ticker;
+          b.title = it.name; b.setAttribute('aria-label', it.ticker + ' — ' + it.name);
+          if (selected.has(it.ticker)) b.classList.add('on');
+          b.onclick = () => addTickers([it.ticker]);
           pills.appendChild(b);
         }
         body.appendChild(pills);
@@ -444,6 +451,14 @@ function renderEtfBrowser() {
     }
   }
   box.appendChild(body);
+}
+
+function renderEtfBrowser() {
+  renderTickerBrowser('etfBox', catalog.etf_groups || [], 'etfs', etfState, 'ETFs by topic');
+}
+
+function renderFundBrowser() {
+  renderTickerBrowser('fundBox', catalog.mx_fund_groups || [], 'funds', fundState, 'Fondos de inversión MX (Yahoo)');
 }
 
 let groupCounters = [];
