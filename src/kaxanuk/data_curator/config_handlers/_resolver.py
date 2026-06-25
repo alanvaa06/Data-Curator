@@ -153,7 +153,7 @@ def select_market_data_provider(
         msg = " ".join([
             f"Market data provider {provider_name} was not found on your system.",
             "If it's one of our officially supported providers you should be able to install it by running:\n",
-            f"pip install kaxanuk.data_provider_extensions.{provider_name}",
+            f"pip install kaxanuk.data_curator_extensions.{provider_name}",
         ])
 
         raise ConfigurationError(msg)
