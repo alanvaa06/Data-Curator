@@ -420,10 +420,10 @@ async function deleteCustomList(name) {
 
 // Generic collapsible ticker browser (group → subgroup → pills). Drives both the
 // ETF catalog and the Mexican-fund catalog; itemsKey selects the per-subgroup list.
-function renderTickerBrowser(boxId, groups, itemsKey, st, label) {
+function renderTickerBrowser(boxId, groups, itemsKey, st, label, flat) {
   const box = document.getElementById(boxId); box.innerHTML = '';
   if (!groups || !groups.length) return;
-  const render = () => renderTickerBrowser(boxId, groups, itemsKey, st, label);
+  const render = () => renderTickerBrowser(boxId, groups, itemsKey, st, label, flat);
   const total = groups.reduce((a, g) => a + g.subgroups.reduce((b, s) => b + (s[itemsKey] || []).length, 0), 0);
 
   const top = document.createElement('button'); top.className = 'etftoggle';
@@ -436,34 +436,42 @@ function renderTickerBrowser(boxId, groups, itemsKey, st, label) {
 
   const selected = new Set(state.identifiers);
   const body = document.createElement('div'); body.className = 'etfbody';
+  // One collapsible row plus its pill list. Drives both the theme rows (2-level
+  // mode) and, when flat, the operadora rows (provider → its funds directly).
+  const addRow = (rowLabel, items, key) => {
+    const open = st.open.has(key);
+    const sub = document.createElement('button'); sub.className = 'etfsub';
+    const sc = document.createElement('span'); sc.className = 'chev'; sc.textContent = open ? '▾' : '▸';
+    sub.appendChild(sc); sub.appendChild(document.createTextNode(' ' + rowLabel + ' '));
+    const cnt = document.createElement('span'); cnt.className = 'gcount'; cnt.textContent = items.length;
+    sub.appendChild(cnt);
+    const all = document.createElement('span'); all.className = 'etfall'; all.textContent = 'all';
+    all.title = 'Add all in ' + rowLabel;
+    all.onclick = (e) => { e.stopPropagation(); addTickers(items.map(x => x.ticker)); };
+    sub.appendChild(all);
+    sub.onclick = () => { if (st.open.has(key)) st.open.delete(key); else st.open.add(key); render(); };
+    body.appendChild(sub);
+    if (!open) return;
+    const pills = document.createElement('div'); pills.className = 'etfpills';
+    for (const it of items) {
+      const b = document.createElement('button'); b.className = 'etfpill'; b.textContent = it.ticker;
+      b.title = it.name; b.setAttribute('aria-label', it.ticker + ' — ' + it.name);
+      if (selected.has(it.ticker)) b.classList.add('on');
+      b.onclick = () => addTickers([it.ticker]);
+      pills.appendChild(b);
+    }
+    body.appendChild(pills);
+  };
+
   for (const g of groups) {
+    if (flat) {
+      // Provider is the collapsible row; all its theme funds list directly under it.
+      addRow(g.label, g.subgroups.flatMap(s => s[itemsKey] || []), g.label);
+      continue;
+    }
     const gh = document.createElement('div'); gh.className = 'etfgrp'; gh.textContent = g.label; body.appendChild(gh);
     for (const sg of g.subgroups) {
-      const items = sg[itemsKey] || [];
-      const key = g.label + ' ▸ ' + sg.label;
-      const open = st.open.has(key);
-      const sub = document.createElement('button'); sub.className = 'etfsub';
-      const sc = document.createElement('span'); sc.className = 'chev'; sc.textContent = open ? '▾' : '▸';
-      sub.appendChild(sc); sub.appendChild(document.createTextNode(' ' + sg.label + ' '));
-      const cnt = document.createElement('span'); cnt.className = 'gcount'; cnt.textContent = items.length;
-      sub.appendChild(cnt);
-      const all = document.createElement('span'); all.className = 'etfall'; all.textContent = 'all';
-      all.title = 'Add all in ' + sg.label;
-      all.onclick = (e) => { e.stopPropagation(); addTickers(items.map(x => x.ticker)); };
-      sub.appendChild(all);
-      sub.onclick = () => { if (st.open.has(key)) st.open.delete(key); else st.open.add(key); render(); };
-      body.appendChild(sub);
-      if (open) {
-        const pills = document.createElement('div'); pills.className = 'etfpills';
-        for (const it of items) {
-          const b = document.createElement('button'); b.className = 'etfpill'; b.textContent = it.ticker;
-          b.title = it.name; b.setAttribute('aria-label', it.ticker + ' — ' + it.name);
-          if (selected.has(it.ticker)) b.classList.add('on');
-          b.onclick = () => addTickers([it.ticker]);
-          pills.appendChild(b);
-        }
-        body.appendChild(pills);
-      }
+      addRow(sg.label, sg[itemsKey] || [], g.label + ' ▸ ' + sg.label);
     }
   }
   box.appendChild(body);
@@ -474,7 +482,7 @@ function renderEtfBrowser() {
 }
 
 function renderFundBrowser() {
-  renderTickerBrowser('fundBox', catalog.mx_fund_groups || [], 'funds', fundState, 'Fondos de inversión MX (Yahoo)');
+  renderTickerBrowser('fundBox', catalog.mx_fund_groups || [], 'funds', fundState, 'Fondos de inversión MX (Yahoo)', true);
 }
 
 let groupCounters = [];
