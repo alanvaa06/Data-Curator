@@ -25,6 +25,7 @@ from kaxanuk.data_curator.config_handlers.column_catalog import (
     load_etf_catalog,
     load_identifier_presets,
     load_macro_catalog,
+    load_mx_fund_catalog,
 )
 from kaxanuk.data_curator.config_handlers.configurator_interface import ConfiguratorInterface
 from kaxanuk.data_curator.entities.configuration import (
@@ -172,6 +173,7 @@ def build_catalog_response() -> dict[str, typing.Any]:
         'groups': groups,
         'identifier_presets': load_identifier_presets()['presets'],
         'etf_groups': load_etf_catalog()['groups'],
+        'mx_fund_groups': load_mx_fund_catalog()['groups'],
         'options': {
             'market_data_provider': list(ConfiguratorInterface.CONFIGURATION_PROVIDERS_MARKET),
             'fundamental_data_provider': list(ConfiguratorInterface.CONFIGURATION_PROVIDERS_FUNDAMENTAL),

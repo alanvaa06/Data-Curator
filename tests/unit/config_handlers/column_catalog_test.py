@@ -3,6 +3,7 @@ from kaxanuk.data_curator.config_handlers.column_catalog import (
     load_etf_catalog,
     load_identifier_presets,
     load_macro_catalog,
+    load_mx_fund_catalog,
 )
 
 
@@ -100,6 +101,38 @@ class TestEtfCatalog:
             for etf in sg['etfs']
         }
         assert {'SMH', 'IBIT', 'TQQQ'} <= thematic_tickers
+
+
+class TestMxFundCatalog:
+    def test_loads_operadora_groups(self):
+        catalog = load_mx_fund_catalog()
+        assert catalog['groups']
+        labels = [g['label'] for g in catalog['groups']]
+        assert 'GBM' in labels
+        assert 'BBVA' in labels
+
+    def test_nested_shape_and_mx_tickers(self):
+        seen_ticker = False
+        for group in load_mx_fund_catalog()['groups']:
+            assert group['label']
+            assert group['subgroups']
+            for subgroup in group['subgroups']:
+                assert subgroup['label']
+                for fund in subgroup['funds']:
+                    assert fund['ticker'].endswith('.MX')
+                    assert fund['name']
+                    seen_ticker = True
+        assert seen_ticker
+
+    def test_tickers_unique_across_catalog(self):
+        tickers = [
+            fund['ticker']
+            for group in load_mx_fund_catalog()['groups']
+            for subgroup in group['subgroups']
+            for fund in subgroup['funds']
+        ]
+        duplicates = sorted({t for t in tickers if tickers.count(t) > 1})
+        assert not duplicates, f"Duplicate fund tickers: {duplicates[:10]}"
 
 
 class TestMacroCatalog:
