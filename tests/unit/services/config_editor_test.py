@@ -139,6 +139,71 @@ def test_build_catalog_response_includes_identifier_presets():
     assert len(presets['russell2000']['identifiers']) > 1000
 
 
+def test_build_catalog_response_includes_etf_groups():
+    response = config_editor.build_catalog_response()
+    groups = {g['label']: g for g in response['etf_groups']}
+    assert 'US Sectors' in groups
+    assert 'Thematic' in groups
+    tickers = {
+        etf['ticker']
+        for group in response['etf_groups']
+        for subgroup in group['subgroups']
+        for etf in subgroup['etfs']
+    }
+    assert 'XLK' in tickers
+
+
+class TestCustomLists:
+    def test_read_returns_empty_when_file_absent(self, tmp_path):
+        assert config_editor.read_custom_lists(tmp_path / 'identifier_lists.json') == []
+
+    def test_save_then_read_roundtrips(self, tmp_path):
+        path = tmp_path / 'identifier_lists.json'
+        config_editor.save_custom_list(path, 'My Tech', ['AAPL', 'MSFT'])
+        lists = config_editor.read_custom_lists(path)
+        assert lists == [{'name': 'My Tech', 'identifiers': ['AAPL', 'MSFT']}]
+
+    def test_save_upserts_by_name(self, tmp_path):
+        path = tmp_path / 'identifier_lists.json'
+        config_editor.save_custom_list(path, 'Watchlist', ['AAPL'])
+        config_editor.save_custom_list(path, 'Watchlist', ['NVDA', 'AMD'])
+        lists = config_editor.read_custom_lists(path)
+        assert len(lists) == 1
+        assert lists[0] == {'name': 'Watchlist', 'identifiers': ['NVDA', 'AMD']}
+
+    def test_save_strips_whitespace(self, tmp_path):
+        path = tmp_path / 'identifier_lists.json'
+        config_editor.save_custom_list(path, '  Spaced  ', [' AAPL ', 'MSFT'])
+        lists = config_editor.read_custom_lists(path)
+        assert lists == [{'name': 'Spaced', 'identifiers': ['AAPL', 'MSFT']}]
+
+    def test_delete_removes_named_list(self, tmp_path):
+        path = tmp_path / 'identifier_lists.json'
+        config_editor.save_custom_list(path, 'A', ['AAPL'])
+        config_editor.save_custom_list(path, 'B', ['MSFT'])
+        remaining = config_editor.delete_custom_list(path, 'A')
+        assert [entry['name'] for entry in remaining] == ['B']
+        assert [entry['name'] for entry in config_editor.read_custom_lists(path)] == ['B']
+
+    def test_delete_absent_name_is_noop(self, tmp_path):
+        path = tmp_path / 'identifier_lists.json'
+        config_editor.save_custom_list(path, 'A', ['AAPL'])
+        assert [e['name'] for e in config_editor.delete_custom_list(path, 'missing')] == ['A']
+
+    def test_save_rejects_empty_name(self, tmp_path):
+        with pytest.raises(ValueError, match='name'):
+            config_editor.save_custom_list(tmp_path / 'lists.json', '   ', ['AAPL'])
+
+    def test_save_rejects_non_string_identifiers(self, tmp_path):
+        with pytest.raises(ValueError, match='identifiers'):
+            config_editor.save_custom_list(tmp_path / 'lists.json', 'X', ['AAPL', 7])
+
+    def test_read_tolerates_corrupt_file(self, tmp_path):
+        path = tmp_path / 'identifier_lists.json'
+        path.write_text('{ not valid json', encoding='utf-8')
+        assert config_editor.read_custom_lists(path) == []
+
+
 class TestEnvKeys:
     def test_status_reports_missing_file_as_unset(self, tmp_path):
         status = config_editor.read_env_status(tmp_path / '.env')
@@ -196,6 +261,26 @@ class TestEnvKeys:
     def test_save_rejects_newlines_in_value(self, tmp_path):
         with pytest.raises(ValueError, match='Invalid value'):
             config_editor.save_env_values(tmp_path / '.env', {'KNDC_API_KEY_FMP': 'a\nb'})
+
+
+def test_server_custom_lists_roundtrip(tmp_path):
+    server, base = _start(tmp_path)
+    try:
+        status, body = _get(base + '/api/lists')
+        assert status == 200
+        assert json.loads(body) == {'lists': []}
+        assert _post(base + '/api/lists', {'name': 'Faves', 'identifiers': ['AAPL', 'NVDA']}) == 200
+        status, body = _get(base + '/api/lists')
+        assert json.loads(body)['lists'] == [{'name': 'Faves', 'identifiers': ['AAPL', 'NVDA']}]
+        assert (tmp_path / config_editor.CUSTOM_LISTS_FILENAME).is_file()
+        # invalid payloads are rejected
+        assert _post(base + '/api/lists', {'name': '', 'identifiers': ['AAPL']}) == 400
+        # delete clears it
+        assert _post(base + '/api/lists/delete', {'name': 'Faves'}) == 200
+        _, body = _get(base + '/api/lists')
+        assert json.loads(body) == {'lists': []}
+    finally:
+        server.shutdown()
 
 
 def _run_server(server):

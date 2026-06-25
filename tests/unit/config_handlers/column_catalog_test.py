@@ -1,5 +1,6 @@
 from kaxanuk.data_curator.config_handlers.column_catalog import (
     load_catalog,
+    load_etf_catalog,
     load_identifier_presets,
     load_macro_catalog,
 )
@@ -47,6 +48,58 @@ def test_catalog_includes_market_and_calculation_columns():
     assert 'm_date' in all_columns
     assert 'm_close' in all_columns
     assert any(c.startswith('c_') for c in all_columns)
+
+
+EXPECTED_ETF_GROUPS = [
+    'US Sectors',
+    'Thematic',
+    'Factor / Style / Size',
+    'Broad / Bonds / Commodities / Intl',
+]
+
+
+class TestEtfCatalog:
+    def test_loads_four_top_level_groups(self):
+        catalog = load_etf_catalog()
+        labels = [g['label'] for g in catalog['groups']]
+        assert labels == EXPECTED_ETF_GROUPS
+
+    def test_nested_shape_is_well_formed(self):
+        for group in load_etf_catalog()['groups']:
+            assert group['label']
+            assert len(group['subgroups']) > 0
+            for subgroup in group['subgroups']:
+                assert subgroup['label']
+                assert len(subgroup['etfs']) > 0
+                for etf in subgroup['etfs']:
+                    assert etf['ticker']
+                    assert etf['name']
+
+    def test_tickers_are_unique_across_whole_catalog(self):
+        tickers = [
+            etf['ticker']
+            for group in load_etf_catalog()['groups']
+            for subgroup in group['subgroups']
+            for etf in subgroup['etfs']
+        ]
+        duplicates = sorted({t for t in tickers if tickers.count(t) > 1})
+        assert not duplicates, f"Duplicate ETF tickers: {duplicates}"
+
+    def test_known_anchors_present_in_expected_groups(self):
+        groups = {g['label']: g for g in load_etf_catalog()['groups']}
+        sector_tickers = {
+            etf['ticker']
+            for sg in groups['US Sectors']['subgroups']
+            for etf in sg['etfs']
+        }
+        # all eleven Select Sector SPDRs, including Real Estate (XLRE)
+        assert {'XLK', 'XLF', 'XLE', 'XLRE', 'XLC'} <= sector_tickers
+        thematic_tickers = {
+            etf['ticker']
+            for sg in groups['Thematic']['subgroups']
+            for etf in sg['etfs']
+        }
+        assert {'SMH', 'IBIT', 'TQQQ'} <= thematic_tickers
 
 
 class TestMacroCatalog:

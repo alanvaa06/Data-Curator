@@ -77,6 +77,37 @@
   .presets { display: flex; flex-wrap: wrap; gap: 6px; flex: none; }
   .presets button { font-size: 12px; padding: 3px 10px; border-radius: 99px; color: var(--muted); }
   .presets button:hover { color: var(--text); }
+  /* custom saved lists — accent-tinted to stand apart from the neutral index presets */
+  #customLists { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; flex: none; }
+  .clpill { display: inline-flex; align-items: center; }
+  .clload { font-size: 12px; padding: 3px 9px; border-radius: 99px 0 0 99px; border: 1px solid var(--accent);
+            border-right: none; color: var(--accent-text); background: var(--accent-bg); }
+  .cldel { font-size: 13px; line-height: 1; padding: 3px 7px; border-radius: 0 99px 99px 0;
+           border: 1px solid var(--accent); color: var(--accent-text); background: var(--accent-bg); }
+  .cldel:hover { color: var(--err); background: var(--accent-bg); }
+  .clsave { font-size: 12px; padding: 3px 10px; border-radius: 99px; color: var(--muted);
+            border: 1px dashed var(--border); background: none; }
+  .clsave:hover { color: var(--text); background: var(--row-hover); }
+  /* ETF browser — collapsible topic tree of individually selectable ETF pills */
+  .etfbox { flex: none; }
+  .etftoggle, .etfsub { display: flex; align-items: center; gap: 6px; width: 100%; text-align: left;
+            border: none; background: none; padding: 5px 4px; font-size: 12px; color: var(--text); border-radius: 6px; }
+  .etftoggle:hover, .etfsub:hover { background: var(--row-hover); }
+  .etfbody { margin-top: 2px; max-height: 38vh; overflow: auto; border: 1px solid var(--border-soft);
+             border-radius: 8px; background: var(--field); padding: 2px 6px 8px; }
+  .etfgrp { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase;
+            letter-spacing: 0.03em; padding: 8px 4px 2px; }
+  .etfsub { color: var(--muted); }
+  .etfsub:hover { color: var(--text); }
+  .etfall { margin-left: auto; font-size: 10px; padding: 1px 7px; border: 1px solid var(--border-soft);
+            border-radius: 5px; color: var(--muted); background: var(--card); }
+  .etfall:hover { color: var(--text); border-color: var(--muted); }
+  .etfpills { display: flex; flex-wrap: wrap; gap: 4px; padding: 1px 4px 6px 20px; }
+  .etfpill { font-size: 11px; padding: 2px 8px; border-radius: 99px; border: 1px solid var(--border-soft);
+             color: var(--muted); background: var(--card);
+             font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; }
+  .etfpill:hover { color: var(--text); border-color: var(--muted); }
+  .etfpill.on { color: var(--accent-text); border-color: var(--accent); background: var(--accent-bg); }
   .chips { flex: 1; min-height: 0; overflow: auto; display: flex; flex-wrap: wrap; gap: 5px; align-content: flex-start; }
   .chip { display: inline-flex; align-items: center; gap: 5px; background: var(--bg); color: var(--text);
           border: 1px solid var(--border-soft); padding: 2px 4px 2px 8px; border-radius: 6px; font-size: 12px;
@@ -129,7 +160,9 @@
 
     <fieldset class="boxIds"><legend>Identifiers (<span id="idCount">0</span>)</legend>
       <div class="presets" id="presets"></div>
+      <div id="customLists"></div>
       <div class="row"><input id="idInput" placeholder="Add ticker…" /><button id="idAdd">Add</button></div>
+      <div class="etfbox" id="etfBox"></div>
       <div class="chips" id="idChips"></div>
     </fieldset>
 
@@ -152,6 +185,8 @@ const GENERAL_FIELDS = [
   ['output_directory', 'text'],
 ];
 let state = null, catalog = null, envStatus = [], collapsedGroups = new Set();
+let customLists = [], etfExpanded = false;
+const etfOpen = new Set();
 
 const KEY_LABELS = {
   KNDC_API_KEY_FMP: 'Financial Modeling Prep',
@@ -174,6 +209,7 @@ async function boot() {
     catalog = await (await fetch('/api/catalog')).json();
     state = await (await fetch('/api/config')).json();
     envStatus = await (await fetch('/api/env')).json();
+    customLists = ((await (await fetch('/api/lists')).json()).lists) || [];
   } catch (e) {
     setStatus('Not connected', 'err');
     document.getElementById('general').innerHTML =
@@ -188,7 +224,8 @@ async function boot() {
     if (g.subgroups) for (const sg of g.subgroups) collapsedGroups.add(g.label + ' ▸ ' + sg.label);
   }
   collapsedGroups.add('Custom / other');
-  renderGeneral(); renderKeys(); renderPresets(); renderIdentifiers(); renderColumns(); setStatus('');
+  renderGeneral(); renderKeys(); renderPresets(); renderCustomLists(); renderEtfBrowser();
+  renderIdentifiers(); renderColumns(); setStatus('');
 }
 
 function renderKeys() {
@@ -294,11 +331,119 @@ function renderIdentifiers() {
     chip.appendChild(x); chips.appendChild(chip);
   });
   document.getElementById('idCount').textContent = state.identifiers.length;
+  if (etfExpanded) renderEtfBrowser();
 }
 
 function addIdentifier() {
   const input = document.getElementById('idInput'); const v = input.value.trim();
   if (v && !state.identifiers.includes(v)) { state.identifiers.push(v); input.value = ''; renderIdentifiers(); }
+}
+
+// Add one or more tickers, skipping any already present, then refresh the views.
+function addTickers(tickers) {
+  const have = new Set(state.identifiers);
+  let added = false;
+  for (const t of tickers) { if (!have.has(t)) { state.identifiers.push(t); have.add(t); added = true; } }
+  if (added) renderIdentifiers();
+}
+
+function renderCustomLists() {
+  const root = document.getElementById('customLists'); root.innerHTML = '';
+  for (const lst of customLists) {
+    const wrap = document.createElement('span'); wrap.className = 'clpill';
+    const load = document.createElement('button'); load.className = 'clload';
+    load.textContent = '★ ' + lst.name + ' (' + lst.identifiers.length + ')';
+    load.title = 'Add the ' + lst.identifiers.length + ' identifiers in “' + lst.name + '”';
+    load.onclick = () => addTickers(lst.identifiers);
+    const del = document.createElement('button'); del.className = 'cldel'; del.textContent = '×';
+    del.title = 'Delete saved list “' + lst.name + '”';
+    del.onclick = () => deleteCustomList(lst.name);
+    wrap.appendChild(load); wrap.appendChild(del); root.appendChild(wrap);
+  }
+  const save = document.createElement('button'); save.className = 'clsave'; save.textContent = 'Save list…';
+  save.title = 'Save the current identifiers as a named, reusable list';
+  save.onclick = saveCustomList;
+  root.appendChild(save);
+}
+
+async function saveCustomList() {
+  if (!state.identifiers.length) { setStatus('Add identifiers before saving a list', 'err'); return; }
+  const name = (window.prompt('Name this identifier list:') || '').trim();
+  if (!name) return;
+  let data = {};
+  try {
+    const res = await fetch('/api/lists', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, identifiers: state.identifiers }),
+    });
+    data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error((data.errors && data.errors[0]) || 'Could not save list');
+  } catch (e) { setStatus(e.message || 'Could not save list', 'err'); return; }
+  customLists = data.lists || customLists;
+  renderCustomLists();
+  setStatus('Saved list “' + name + '”', 'ok');
+}
+
+async function deleteCustomList(name) {
+  let data = {};
+  try {
+    const res = await fetch('/api/lists/delete', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    });
+    data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error((data.errors && data.errors[0]) || 'Could not delete list');
+  } catch (e) { setStatus(e.message || 'Could not delete list', 'err'); return; }
+  customLists = data.lists || [];
+  renderCustomLists();
+}
+
+function renderEtfBrowser() {
+  const box = document.getElementById('etfBox'); box.innerHTML = '';
+  const groups = catalog.etf_groups || [];
+  if (!groups.length) return;
+  const total = groups.reduce((a, g) => a + g.subgroups.reduce((b, s) => b + s.etfs.length, 0), 0);
+
+  const top = document.createElement('button'); top.className = 'etftoggle';
+  const chev = document.createElement('span'); chev.className = 'chev'; chev.textContent = etfExpanded ? '▾' : '▸';
+  top.appendChild(chev); top.appendChild(document.createTextNode(' ETFs by topic '));
+  const tc = document.createElement('span'); tc.className = 'gcount'; tc.textContent = total; top.appendChild(tc);
+  top.onclick = () => { etfExpanded = !etfExpanded; renderEtfBrowser(); };
+  box.appendChild(top);
+  if (!etfExpanded) return;
+
+  const selected = new Set(state.identifiers);
+  const body = document.createElement('div'); body.className = 'etfbody';
+  for (const g of groups) {
+    const gh = document.createElement('div'); gh.className = 'etfgrp'; gh.textContent = g.label; body.appendChild(gh);
+    for (const sg of g.subgroups) {
+      const key = g.label + ' ▸ ' + sg.label;
+      const open = etfOpen.has(key);
+      const sub = document.createElement('button'); sub.className = 'etfsub';
+      const sc = document.createElement('span'); sc.className = 'chev'; sc.textContent = open ? '▾' : '▸';
+      sub.appendChild(sc); sub.appendChild(document.createTextNode(' ' + sg.label + ' '));
+      const cnt = document.createElement('span'); cnt.className = 'gcount'; cnt.textContent = sg.etfs.length;
+      sub.appendChild(cnt);
+      const all = document.createElement('span'); all.className = 'etfall'; all.textContent = 'all';
+      all.title = 'Add all ' + sg.label + ' ETFs';
+      all.onclick = (e) => { e.stopPropagation(); addTickers(sg.etfs.map(x => x.ticker)); };
+      sub.appendChild(all);
+      sub.onclick = () => { if (etfOpen.has(key)) etfOpen.delete(key); else etfOpen.add(key); renderEtfBrowser(); };
+      body.appendChild(sub);
+      if (open) {
+        const pills = document.createElement('div'); pills.className = 'etfpills';
+        for (const etf of sg.etfs) {
+          const b = document.createElement('button'); b.className = 'etfpill'; b.textContent = etf.ticker;
+          b.title = etf.name; b.setAttribute('aria-label', etf.ticker + ' — ' + etf.name);
+          if (selected.has(etf.ticker)) b.classList.add('on');
+          b.onclick = () => addTickers([etf.ticker]);
+          pills.appendChild(b);
+        }
+        body.appendChild(pills);
+      }
+    }
+  }
+  box.appendChild(body);
 }
 
 let groupCounters = [];

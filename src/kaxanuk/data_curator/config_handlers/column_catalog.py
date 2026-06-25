@@ -40,6 +40,19 @@ def load_identifier_presets() -> dict[str, typing.Any]:
     return _load_bundled_json('identifier_presets.json')
 
 
+def load_etf_catalog() -> dict[str, typing.Any]:
+    """
+    Load the bundled ETF browser catalog (US-listed ETFs grouped by topic).
+
+    Returns
+    -------
+    A mapping with an 'as_of' date and a 'groups' list. Each group holds a 'label'
+    and a 'subgroups' list, each subgroup holding a 'label' and an 'etfs' list whose
+    entries carry a 'ticker' and a 'name'.
+    """
+    return _load_bundled_json('etf_catalog.json')
+
+
 def load_macro_catalog() -> list[dict[str, typing.Any]]:
     """
     Load the bundled macro column catalog.
