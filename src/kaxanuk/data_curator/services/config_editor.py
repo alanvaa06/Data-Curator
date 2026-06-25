@@ -22,6 +22,7 @@ import webbrowser
 from kaxanuk.data_curator import __parameters_format_version__
 from kaxanuk.data_curator.config_handlers.column_catalog import (
     load_catalog,
+    load_etf_catalog,
     load_identifier_presets,
     load_macro_catalog,
 )
@@ -36,6 +37,7 @@ HOST = '127.0.0.1'
 DEFAULT_PORT = 8753
 OUTPUT_FORMATS = ('csv', 'duckdb', 'parquet')
 CONFIG_FILENAME = 'data_curator_parameters.json'
+CUSTOM_LISTS_FILENAME = 'identifier_lists.json'
 PAGE_RESOURCE = 'config_editor_page.html'
 RUN_TARGET_DEFAULT = '__main__.py'
 RUN_OUTPUT_MAX_CHARS = 20_000
@@ -169,6 +171,7 @@ def build_catalog_response() -> dict[str, typing.Any]:
     return {
         'groups': groups,
         'identifier_presets': load_identifier_presets()['presets'],
+        'etf_groups': load_etf_catalog()['groups'],
         'options': {
             'market_data_provider': list(ConfiguratorInterface.CONFIGURATION_PROVIDERS_MARKET),
             'fundamental_data_provider': list(ConfiguratorInterface.CONFIGURATION_PROVIDERS_FUNDAMENTAL),
@@ -323,6 +326,118 @@ def save_env_values(
 
     lines.extend(f"{name}={value}" for name, value in remaining.items())
     env_path.write_text('\n'.join(lines) + '\n', encoding='utf-8')
+
+
+def read_custom_lists(lists_path: pathlib.Path | str) -> list[dict[str, typing.Any]]:
+    """
+    Read the user's saved identifier lists.
+
+    Returns an empty list when the file is absent or malformed, so a corrupt file
+    never blocks the editor from loading.
+    """
+    path = pathlib.Path(lists_path)
+    if not path.is_file():
+
+        return []
+
+    try:
+        data = json.loads(path.read_text(encoding='utf-8'))
+    except (json.JSONDecodeError, OSError):
+
+        return []
+
+    lists = data.get('lists') if isinstance(data, dict) else None
+    if not isinstance(lists, list):
+
+        return []
+
+    return [
+        {'name': entry['name'], 'identifiers': entry['identifiers']}
+        for entry in lists
+        if isinstance(entry, dict)
+        and isinstance(entry.get('name'), str)
+        and isinstance(entry.get('identifiers'), list)
+    ]
+
+
+def _validate_custom_list(name: typing.Any, identifiers: typing.Any) -> str:
+    """Return a validated, stripped name or raise ValueError on bad input."""
+    if not isinstance(name, str) or not name.strip():
+        msg = "List name must be a non-empty string"
+
+        raise ValueError(msg)
+    if (
+        not isinstance(identifiers, list)
+        or any(not isinstance(i, str) or not i.strip() for i in identifiers)
+    ):
+        msg = "identifiers must be a list of non-empty strings"
+
+        raise ValueError(msg)
+
+    return name.strip()
+
+
+def save_custom_list(
+    lists_path: pathlib.Path | str,
+    name: typing.Any,
+    identifiers: typing.Any,
+) -> list[dict[str, typing.Any]]:
+    """
+    Upsert a named identifier list by name and persist the file.
+
+    Returns the full list collection after the change.
+
+    Raises
+    ------
+    ValueError
+        When the name is empty or identifiers are not a list of non-empty strings.
+    """
+    clean_name = _validate_custom_list(name, identifiers)
+    clean_ids = [i.strip() for i in identifiers]
+
+    path = pathlib.Path(lists_path)
+    lists = read_custom_lists(path)
+    lists = [entry for entry in lists if entry['name'] != clean_name]
+    lists.append({'name': clean_name, 'identifiers': clean_ids})
+
+    path.write_text(
+        json.dumps({'lists': lists}, indent=2) + '\n',
+        encoding='utf-8',
+    )
+
+    return lists
+
+
+def delete_custom_list(
+    lists_path: pathlib.Path | str,
+    name: typing.Any,
+) -> list[dict[str, typing.Any]]:
+    """
+    Remove a named identifier list and persist the file (no-op when absent).
+
+    Returns the full list collection after the change.
+
+    Raises
+    ------
+    ValueError
+        When the name is not a non-empty string.
+    """
+    if not isinstance(name, str) or not name.strip():
+        msg = "List name must be a non-empty string"
+
+        raise ValueError(msg)
+
+    clean_name = name.strip()
+    path = pathlib.Path(lists_path)
+    lists = read_custom_lists(path)
+    remaining = [entry for entry in lists if entry['name'] != clean_name]
+    if len(remaining) != len(lists):
+        path.write_text(
+            json.dumps({'lists': remaining}, indent=2) + '\n',
+            encoding='utf-8',
+        )
+
+    return remaining
 
 
 def _try_date(value: typing.Any) -> datetime.date | None:
@@ -484,6 +599,8 @@ def build_server(
                 self._send_json(200, get_run_status())
             elif self.path == '/api/env':
                 self._send_json(200, read_env_status(config_file.parent / '.env'))
+            elif self.path == '/api/lists':
+                self._send_json(200, {'lists': read_custom_lists(config_file.parent / CUSTOM_LISTS_FILENAME)})
             else:
                 self._send_json(404, {'error': 'not found'})
 
@@ -529,6 +646,30 @@ def build_server(
                     return
 
                 self._send_json(200, {'status': 'saved'})
+            elif self.path in ('/api/lists', '/api/lists/delete'):
+                length = int(self.headers.get('Content-Length', 0))
+                raw = self.rfile.read(length)
+                lists_file = config_file.parent / CUSTOM_LISTS_FILENAME
+                try:
+                    payload = json.loads(raw.decode('utf-8'))
+                    if not isinstance(payload, dict):
+                        msg = "Expected a JSON object"
+
+                        raise ValueError(msg)
+                    if self.path == '/api/lists/delete':
+                        lists = delete_custom_list(lists_file, payload.get('name'))
+                        status = 'deleted'
+                    else:
+                        lists = save_custom_list(
+                            lists_file, payload.get('name'), payload.get('identifiers'),
+                        )
+                        status = 'saved'
+                except (json.JSONDecodeError, ValueError) as error:
+                    self._send_json(400, {'errors': [str(error)]})
+
+                    return
+
+                self._send_json(200, {'status': status, 'lists': lists})
             else:
                 self._send_json(404, {'error': 'not found'})
 
