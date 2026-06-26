@@ -8,6 +8,7 @@ https://fred.stlouisfed.org/docs/api/api_key.html).
 
 import datetime
 import decimal
+import logging
 
 import httpx
 
@@ -19,6 +20,21 @@ from kaxanuk.data_curator.exceptions import ApiEndpointError, DataProviderMissin
 
 _BASE = "https://api.stlouisfed.org/fred/series/observations"
 _MISSING = {".", "", None}
+_HTTP_BAD_REQUEST = 400
+
+
+def _is_series_not_found(response: httpx.Response) -> bool:
+    """
+    Return True when a FRED HTTP 400 body signals an unknown series id.
+
+    FRED returns 400 for several distinct causes; only an unknown series id says
+    "The series does not exist." A bad key instead says "...api_key is not
+    registered...", and a malformed id says "Invalid value for variable
+    series_id..." — both must stay fatal, so this matches the not-found wording
+    only. The response body carries no api_key (that lives in the request URL),
+    so it is safe to inspect.
+    """
+    return "does not exist" in response.text.lower()
 
 
 class Fred(MacroDataProviderInterface):
@@ -62,7 +78,15 @@ class Fred(MacroDataProviderInterface):
                 )
             except httpx.HTTPStatusError as error:
                 # Do NOT interpolate the error — its str() contains the full request
-                # URL, which carries the api_key query parameter.
+                # URL, which carries the api_key query parameter. The response body is
+                # key-free, so it is safe to inspect.
+                if error.response.status_code == _HTTP_BAD_REQUEST and _is_series_not_found(error.response):
+                    # Stale/unknown series id (400 "The series does not exist."). One bad
+                    # series must not abort the run nor drop the other requested series — skip it.
+                    logging.getLogger(__name__).warning(
+                        "FRED has no series %r (series does not exist); skipping it.", sid
+                    )
+                    continue
                 msg = f"FRED request failed for series {sid!r}: HTTP {error.response.status_code}"
                 raise ApiEndpointError(msg) from None
             except httpx.HTTPError as error:

@@ -8,6 +8,7 @@ token embedded directly in the URL path (free registration at inegi.org.mx).
 
 import datetime
 import decimal
+import logging
 
 import httpx
 
@@ -19,6 +20,22 @@ from kaxanuk.data_curator.exceptions import ApiEndpointError, DataProviderMissin
 
 _BASE = "https://www.inegi.org.mx/app/api/indicadores/desarrolladores/jsonxml/INDICATOR"
 _MISSING = {"", None}
+_HTTP_BAD_REQUEST = 400
+
+
+def _is_no_results(response: httpx.Response) -> bool:
+    """
+    Return True when an INEGI HTTP 400 body signals 'no results' for the requested id.
+
+    A stale or unknown indicator id makes INEGI reply 400 with a JSON array of
+    ``"Key:Value"`` strings containing ``ErrorCode:100`` / "No se encontraron
+    resultados" — a per-series miss, not a provider failure. The response body
+    carries no token (the token lives only in the request URL path), so it is
+    safe to inspect. Matched case-insensitively so a casing change upstream
+    cannot silently turn a not-found back into a fatal error.
+    """
+    body = response.text.lower()
+    return "errorcode:100" in body or "no se encontraron resultados" in body
 
 
 class Inegi(MacroDataProviderInterface):
@@ -56,7 +73,15 @@ class Inegi(MacroDataProviderInterface):
                 )
             except httpx.HTTPStatusError as error:
                 # Do NOT interpolate the error — its str() contains the full request
-                # URL, which carries the token in the URL path.
+                # URL, which carries the token in the URL path. The response body is
+                # token-free, so it is safe to inspect.
+                if error.response.status_code == _HTTP_BAD_REQUEST and _is_no_results(error.response):
+                    # Stale/unknown indicator id (400 + ErrorCode 100). One bad series must
+                    # not abort the run nor drop this provider's other series — skip it.
+                    logging.getLogger(__name__).warning(
+                        "INEGI returned no results for series %r; skipping it.", sid
+                    )
+                    continue
                 msg = f"INEGI request failed for series {sid!r}: HTTP {error.response.status_code}"
                 raise ApiEndpointError(msg) from None
             except httpx.HTTPError as error:
