@@ -74,6 +74,71 @@ def test_malformed_payload_raises_api_endpoint_error(monkeypatch):
         )
 
 
+def test_not_found_series_is_skipped_not_fatal(monkeypatch):
+    """A 400 'No se encontraron resultados' (stale/unknown id) is skipped, not fatal."""
+    not_found = [
+        "ErrorInfo:No se encontraron resultados",
+        "ErrorDetails:No se encontraron resultados",
+        "ErrorCode:100",
+    ]
+
+    def fake_get(url, *args, **kwargs):
+        return httpx.Response(400, request=httpx.Request("GET", url), json=not_found)
+
+    monkeypatch.setattr(httpx, "get", fake_get)
+
+    out = Inegi(api_key="tok").get_economic_data(
+        series_ids=["216064"],
+        start_date=datetime.date(2020, 1, 1),
+        end_date=datetime.date(2020, 3, 1),
+    )
+
+    assert out == {}  # series omitted, no exception raised
+
+
+def test_not_found_skips_only_bad_series_keeps_good(monkeypatch):
+    """One stale id must not drop the provider's other (valid) series."""
+    not_found = ["ErrorInfo:No se encontraron resultados", "ErrorCode:100"]
+    good = {
+        "Series": [
+            {"INDICADOR": "111", "FREQ": "8",
+             "OBSERVATIONS": [{"TIME_PERIOD": "2020/01", "OBS_VALUE": "5.0"}]},
+        ]
+    }
+
+    def fake_get(url, *args, **kwargs):
+        status, body = (400, not_found) if "/216064/" in url else (200, good)
+        return httpx.Response(status, request=httpx.Request("GET", url), json=body)
+
+    monkeypatch.setattr(httpx, "get", fake_get)
+
+    out = Inegi(api_key="tok").get_economic_data(
+        series_ids=["216064", "111"],
+        start_date=datetime.date(2020, 1, 1),
+        end_date=datetime.date(2020, 3, 1),
+    )
+
+    assert "216064" not in out
+    assert out["111"].rows["2020-01-01"].value == decimal.Decimal("5.0")
+
+
+def test_non_not_found_400_stays_fatal(monkeypatch):
+    """A 400 that is NOT a 'no results' reply must stay fatal, not be skipped."""
+    other_400 = ["ErrorInfo:Token no valido", "ErrorCode:200"]
+
+    def fake_get(url, *args, **kwargs):
+        return httpx.Response(400, request=httpx.Request("GET", url), json=other_400)
+
+    monkeypatch.setattr(httpx, "get", fake_get)
+
+    with pytest.raises(ApiEndpointError):
+        Inegi(api_key="tok").get_economic_data(
+            series_ids=["216064"],
+            start_date=datetime.date(2020, 1, 1),
+            end_date=datetime.date(2020, 3, 1),
+        )
+
+
 def test_http_error_does_not_leak_token(monkeypatch):
     """A 401 HTTPStatusError must NOT expose the token in the raised message or cause chain."""
     secret_url = "https://www.inegi.org.mx/app/api/indicadores/desarrolladores/jsonxml/INDICATOR/216064/es/00/false/BIE/2.0/SUPERSECRET?type=json"  # noqa: S105

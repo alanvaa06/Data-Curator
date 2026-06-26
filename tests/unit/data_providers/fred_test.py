@@ -92,6 +92,72 @@ def test_validate_api_key_false_when_none():
     assert Fred(api_key=None).validate_api_key() is False
 
 
+def test_series_not_found_is_skipped_not_fatal(monkeypatch):
+    """A 400 'The series does not exist' (stale/unknown id) is skipped, not fatal."""
+    body = {"error_code": 400, "error_message": "Bad Request.  The series does not exist."}
+
+    def fake_get(url=None, *args, params=None, **kwargs):
+        return httpx.Response(
+            400, request=httpx.Request("GET", "https://api.stlouisfed.org/fred/series/observations"), json=body
+        )
+
+    monkeypatch.setattr(httpx, "get", fake_get)
+
+    out = Fred(api_key="tok").get_economic_data(
+        series_ids=["NOPE"],
+        start_date=datetime.date(2020, 1, 1),
+        end_date=datetime.date(2020, 3, 1),
+    )
+
+    assert out == {}  # series omitted, no exception raised
+
+
+def test_bad_api_key_400_stays_fatal(monkeypatch):
+    """A 400 for an unregistered api_key must STAY fatal — never misread as not-found."""
+    body = {
+        "error_code": 400,
+        "error_message": "Bad Request.  The value for variable api_key is not registered.",
+    }
+
+    def fake_get(url=None, *args, params=None, **kwargs):
+        return httpx.Response(
+            400, request=httpx.Request("GET", "https://api.stlouisfed.org/fred/series/observations"), json=body
+        )
+
+    monkeypatch.setattr(httpx, "get", fake_get)
+
+    with pytest.raises(ApiEndpointError):
+        Fred(api_key="tok").get_economic_data(
+            series_ids=["GDP"],
+            start_date=datetime.date(2020, 1, 1),
+            end_date=datetime.date(2020, 3, 1),
+        )
+
+
+def test_not_found_skips_only_bad_series_keeps_good(monkeypatch):
+    """One stale id must not drop the request's other (valid) series."""
+    good = {"observations": [{"date": "2020-01-01", "value": "1.5"}]}
+    not_found = {"error_code": 400, "error_message": "Bad Request.  The series does not exist."}
+
+    def fake_get(url=None, *args, params=None, **kwargs):
+        sid = params["series_id"]
+        status, payload = (400, not_found) if sid == "NOPE" else (200, good)
+        return httpx.Response(
+            status, request=httpx.Request("GET", "https://api.stlouisfed.org/fred/series/observations"), json=payload
+        )
+
+    monkeypatch.setattr(httpx, "get", fake_get)
+
+    out = Fred(api_key="tok").get_economic_data(
+        series_ids=["NOPE", "GDP"],
+        start_date=datetime.date(2020, 1, 1),
+        end_date=datetime.date(2020, 3, 1),
+    )
+
+    assert "NOPE" not in out
+    assert out["GDP"].rows["2020-01-01"].value == decimal.Decimal("1.5")
+
+
 def test_http_error_does_not_leak_api_key(monkeypatch):
     """A 401 HTTPStatusError must NOT expose the api_key in the raised message or cause chain."""
     req = httpx.Request("GET", "https://api.stlouisfed.org/fred/series/observations?api_key=SUPERSECRET")
