@@ -7327,8 +7327,8 @@
   },
   {
     "column": "e_mx_inpc",
-    "provider": "inegi",
-    "series_id": "216064",
+    "provider": "banxico_sie",
+    "series_id": "SP1",
     "name": "MX INPC (headline CPI)",
     "region": "MX",
     "frequency": "monthly",
@@ -7417,12 +7417,12 @@
   },
   {
     "column": "e_mx_unemployment",
-    "provider": "inegi",
-    "series_id": "444612",
-    "name": "MX unemployment (ENOE)",
+    "provider": "fred",
+    "series_id": "LRHUTTTTMXM156S",
+    "name": "MX unemployment rate (OECD harmonised)",
     "region": "MX",
     "frequency": "monthly",
-    "commercial_ok": "unverified"
+    "commercial_ok": "no"
   },
   {
     "column": "e_mx_unemployment_youth",

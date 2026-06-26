@@ -13,10 +13,16 @@ from kaxanuk.data_curator.exceptions import ConfigurationError, DataProviderMiss
 
 
 def test_routes_columns_to_providers():
-    requests = resolve_macro_requests(("m_close", "e_mx_target_rate", "e_us_cpi", "e_mx_inpc"))
+    requests = resolve_macro_requests(
+        ("m_close", "e_mx_target_rate", "e_us_cpi", "e_mx_inpc", "e_mx_unemployment")
+    )
     assert ("e_mx_target_rate", "SF61745") in requests["banxico_sie"]
+    # e_mx_inpc / e_mx_unemployment were re-sourced off INEGI (token lacks BIE access)
+    # onto providers already working in the pipeline.
+    assert ("e_mx_inpc", "SP1") in requests["banxico_sie"]
     assert ("e_us_cpi", "CPIAUCSL") in requests["fred"]
-    assert ("e_mx_inpc", "216064") in requests["inegi"]
+    assert ("e_mx_unemployment", "LRHUTTTTMXM156S") in requests["fred"]
+    assert "inegi" not in requests  # no catalog column routes to INEGI any more
     assert "m_close" not in str(requests)
 
 
