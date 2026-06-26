@@ -2,8 +2,13 @@
 INEGI macro-economic data adapter.
 
 Thin HTTP adapter for Mexico's Instituto Nacional de Estadística y Geografía (INEGI)
-Indicator Bank API (BIE — Banco de Información Económica). Authentication is via a
-token embedded directly in the URL path (free registration at inegi.org.mx).
+Indicator Bank API. Queries the BISE bank (Banco de Indicadores) at national
+geography (``00``); the standard free developer token is provisioned for BISE only,
+not the BIE economic bank — every BIE query returns HTTP 400 ``ErrorCode:100``.
+Series that live solely in BIE (e.g. INPC, the headline unemployment rate) are
+therefore sourced from other providers in the catalog, not from here.
+Authentication is via a token embedded directly in the URL path (free registration
+at inegi.org.mx).
 """
 
 import datetime
@@ -21,6 +26,9 @@ from kaxanuk.data_curator.exceptions import ApiEndpointError, DataProviderMissin
 _BASE = "https://www.inegi.org.mx/app/api/indicadores/desarrolladores/jsonxml/INDICATOR"
 _MISSING = {"", None}
 _HTTP_BAD_REQUEST = 400
+# INEGI CL_FREQ codes whose TIME_PERIOD post-slash segment is a quarter index (1-4),
+# not a month. Only 4 = "Trimestral" per INEGI's frequency catalogue (CL_FREQ).
+_QUARTERLY_FREQS = frozenset({"4"})
 
 
 def _is_no_results(response: httpx.Response) -> bool:
@@ -39,7 +47,7 @@ def _is_no_results(response: httpx.Response) -> bool:
 
 
 class Inegi(MacroDataProviderInterface):
-    """Thin HTTP adapter for INEGI's Indicator Bank API (BIE bank, token in path)."""
+    """Thin HTTP adapter for INEGI's Indicator Bank API (BISE bank, geo 00, token in path)."""
 
     macro_provider_name = "inegi"
 
@@ -53,13 +61,13 @@ class Inegi(MacroDataProviderInterface):
         start_date: datetime.date,
         end_date: datetime.date,
     ) -> dict[str, EconomicIndicatorData]:
-        """Fetch economic series from INEGI BIE and return as entities."""
+        """Fetch economic series from INEGI BISE and return as entities."""
         if not self._token:
             msg = "INEGI requires an API token (set KNDC_API_KEY_INEGI)"
             raise DataProviderMissingKeyError(msg)
         out: dict[str, EconomicIndicatorData] = {}
         for sid in series_ids:
-            url = f"{_BASE}/{sid}/es/00/false/BIE/2.0/{self._token}?type=json"
+            url = f"{_BASE}/{sid}/es/00/false/BISE/2.0/{self._token}?type=json"
             try:
                 response = httpx.get(url, timeout=30)
                 response.raise_for_status()
@@ -96,20 +104,22 @@ class Inegi(MacroDataProviderInterface):
         return out
 
     @staticmethod
-    def _period_to_iso(period: str) -> str:
+    def _period_to_iso(period: str, freq: str | None = None) -> str:
         """
         Convert an INEGI TIME_PERIOD string to an ISO date string (YYYY-MM-DD).
 
-        Supported formats:
-        - ``"YYYY"``      → annual   → ``YYYY-01-01``
-        - ``"YYYY/MM"``   → monthly  → ``YYYY-MM-01``
+        Supported formats (INEGI ``FREQ`` code from CL_FREQ in parentheses):
+        - ``"YYYY"``      annual / decadal (3 Anual, 1 Decenal, …) → ``YYYY-01-01``
+        - ``"YYYY/MM"``   monthly (8 Mensual)                      → ``YYYY-MM-01``
+        - ``"YYYY/0Q"``   quarterly (4 Trimestral), Q in 1..4      → first month of
+                          the quarter (Q1→01, Q2→04, Q3→07, Q4→10), matching the
+                          DBnomics adapter's quarter convention.
 
-        Quarterly (FREQ "6") notes:
-        # TODO: confirm quarterly TIME_PERIOD format against a live payload (FREQ 6);
-        #       GDP series are deferred for v1 so this path is untested against real data.
-        #       Current behaviour: treats the segment after "/" as a month number (1-12),
-        #       which will be wrong for quarter-index notation (e.g. "2020/01" for Q1,
-        #       "2020/02" for Q2). Refine once a live GDP payload is available.
+        The post-slash segment is ambiguous between a month and a quarter index
+        (``"2026/01"`` is both January and Q1), so ``freq`` disambiguates: only the
+        quarterly FREQ codes map it as a quarter; every other slashed period is a
+        month. ``freq`` is ``None`` only when a caller parses a period in isolation,
+        in which case the segment is treated as a month (legacy behaviour).
         """
         parts = period.replace("-", "/").split("/")
         year = int(parts[0])
@@ -117,7 +127,8 @@ class Inegi(MacroDataProviderInterface):
         if len(parts) > 1 and parts[1].strip():
             token = parts[1].strip().lstrip("0") or "1"
             if token.isdigit():
-                month = int(token)
+                sub = int(token)
+                month = (sub - 1) * 3 + 1 if freq in _QUARTERLY_FREQS else sub
         return datetime.date(year, month, 1).isoformat()
 
     @classmethod
@@ -130,7 +141,7 @@ class Inegi(MacroDataProviderInterface):
         end_date: datetime.date,
     ) -> dict[str, EconomicIndicatorData]:
         """
-        Parse a raw INEGI BIE JSON payload into ``EconomicIndicatorData`` entities.
+        Parse a raw INEGI BISE JSON payload into ``EconomicIndicatorData`` entities.
 
         INEGI returns observations NEWEST-FIRST; this method sorts them ascending
         before building the entity (which enforces sorted ISO keys).
@@ -140,8 +151,9 @@ class Inegi(MacroDataProviderInterface):
         rows: dict[str, EconomicIndicatorRow] = {}
 
         for series in payload.get("Series", []):
+            freq = str(series.get("FREQ") or "")
             for obs in series.get("OBSERVATIONS", []):
-                iso = cls._period_to_iso(obs["TIME_PERIOD"])
+                iso = cls._period_to_iso(obs["TIME_PERIOD"], freq)
                 raw = obs.get("OBS_VALUE")
                 value = None if raw in _MISSING else decimal.Decimal(str(raw))
                 rows[iso] = EconomicIndicatorRow(

@@ -22,7 +22,10 @@ def test_routes_columns_to_providers():
     assert ("e_mx_inpc", "SP1") in requests["banxico_sie"]
     assert ("e_us_cpi", "CPIAUCSL") in requests["fred"]
     assert ("e_mx_unemployment", "LRHUTTTTMXM156S") in requests["fred"]
-    assert "inegi" not in requests  # no catalog column routes to INEGI any more
+    # None of the selected columns route to INEGI: INPC / unemployment stay on
+    # Banxico/FRED (the token cannot reach INEGI's BIE bank). INEGI now serves only
+    # e_mx_igae (BISE bank), which is asserted separately in inegi_test.py.
+    assert "inegi" not in requests
     assert "m_close" not in str(requests)
 
 
