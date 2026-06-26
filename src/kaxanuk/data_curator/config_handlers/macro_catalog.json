@@ -7308,6 +7308,15 @@
     "commercial_ok": "restricted"
   },
   {
+    "column": "e_mx_igae",
+    "provider": "inegi",
+    "series_id": "6207136901",
+    "name": "Mexico IGAE global economic activity (index, base 2018=100)",
+    "region": "MX",
+    "frequency": "monthly",
+    "commercial_ok": "unverified"
+  },
+  {
     "column": "e_mx_imports_goods",
     "provider": "dbnomics",
     "series_id": "IMF/DOT/A.MX.TMG_CIF_USD.W00",
@@ -7414,6 +7423,15 @@
     "region": "MX",
     "frequency": "monthly",
     "commercial_ok": "restricted"
+  },
+  {
+    "column": "e_mx_unemployed_persons",
+    "provider": "inegi",
+    "series_id": "6200093973",
+    "name": "Mexico unemployed population 15+ (persons, ENOE)",
+    "region": "MX",
+    "frequency": "quarterly",
+    "commercial_ok": "unverified"
   },
   {
     "column": "e_mx_unemployment",
