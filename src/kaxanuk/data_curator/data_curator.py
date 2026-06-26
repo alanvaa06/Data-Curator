@@ -182,11 +182,6 @@ def main(
     ]
 
     try:
-        market_data_provider.initialize(configuration=configuration)
-
-        if fundamental_data_provider is not None:
-            fundamental_data_provider.initialize(configuration=configuration)
-
         # Macro series are non-ticker: fetch once for the whole run, then broadcast to every identifier.
         economic_data: dict[str, EconomicIndicatorData] = {}
         if macro_data_providers:
@@ -202,13 +197,21 @@ def main(
                 return False
 
         # No identifiers: this is a standalone macro export (macro series are non-ticker),
-        # handled directly and returned before any equity fetch/compute machinery is created.
+        # handled directly and returned before any equity provider is initialized. Equity
+        # providers (e.g. yfinance) reject an empty identifier list in initialize(), so a
+        # macro-only run must never reach their initialize() at all.
         if not configuration.identifiers:
             return _export_macro_only(
                 configuration=configuration,
                 economic_data=economic_data,
                 output_handlers=output_handlers,
             )
+
+        # Equity path: now that we know there are tickers to fetch, initialize the providers.
+        market_data_provider.initialize(configuration=configuration)
+
+        if fundamental_data_provider is not None:
+            fundamental_data_provider.initialize(configuration=configuration)
 
         executor = concurrent.futures.ThreadPoolExecutor(
             max_workers=max_concurrent_fetches,

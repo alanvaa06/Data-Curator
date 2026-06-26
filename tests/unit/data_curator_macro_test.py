@@ -21,6 +21,8 @@ from kaxanuk.data_curator.exceptions import ApiEndpointError
 from kaxanuk.data_curator.entities import (
     Configuration,
     DividendData,
+    EconomicIndicatorData,
+    EconomicIndicatorRow,
     FundamentalData,
     MainIdentifier,
     MarketData,
@@ -411,6 +413,105 @@ class TestMainEmptyIdentifiersGuard:
             fundamental_data_provider=None,
             output_handlers=[handler],
             # macro_data_providers omitted -> defaults to None
+        )
+
+        assert result is False
+        assert handler.tables == {}
+
+
+class InitForbiddenMarketProvider(StubMarketDataProvider):
+    """Equity provider whose initialize() must never run on a macro-only (no-identifier) export.
+
+    Mirrors yfinance, whose initialize() builds yfinance.Tickers("") on an empty identifier
+    list and then crashes with 'No objects to concatenate'. A macro-only run must short-circuit
+    before any equity provider is initialized.
+    """
+
+    def initialize(self, *, configuration):
+        msg = "market_data_provider.initialize must not run on a macro-only export"
+        raise AssertionError(msg)
+
+
+class TestMacroOnlySkipsEquityProviderInit:
+    def test_standalone_macro_export_does_not_initialize_market_provider(self):
+        macro = FakeMacroProvider(
+            monthly_values={"SF61745": [("2024-01-03", "7.25")]},
+            provider_name="banxico_sie",
+        )
+        handler = CaptureOutputHandler()
+
+        result = data_curator.main(
+            configuration=_build_configuration((), ('e_mx_target_rate',)),
+            market_data_provider=InitForbiddenMarketProvider(),
+            fundamental_data_provider=None,
+            output_handlers=[handler],
+            macro_data_providers=[macro],
+        )
+
+        assert result is True
+        assert 'e_mx_target_rate' in handler.tables
+
+
+class OmitsOneSeriesMacroProvider(MacroDataProviderInterface):
+    """Provider that fetches one series but omits another (mirrors a real provider skipping
+    a stale/unknown id after the not-found-is-non-fatal fix). Proves a single absent series
+    does not abort a multi-series macro export."""
+
+    def __init__(self, *, present: dict[str, str], provider_name: str = "banxico_sie"):
+        # present: {series_id: value_str} for the series that DO return data
+        self.macro_provider_name = provider_name
+        self._present = present
+
+    def get_economic_data(self, *, series_ids, start_date, end_date):
+        out = {}
+        for sid in series_ids:
+            if sid not in self._present:
+                continue  # stale id skipped — absent from the result, not raised
+            out[sid] = EconomicIndicatorData(
+                start_date=start_date, end_date=end_date,
+                series_id=sid, series_name=sid,
+                rows={"2024-01-03": EconomicIndicatorRow(
+                    date=datetime.date(2024, 1, 3),
+                    value=decimal.Decimal(self._present[sid]),
+                )},
+            )
+        return out
+
+    def validate_api_key(self):
+        return None
+
+
+class TestMacroOnlyExportSurvivesNotFoundSeries:
+    def test_skipped_series_does_not_abort_export_of_the_rest(self):
+        # Two macro columns; the provider omits one (stale id) and returns the other.
+        # Maps to catalog: e_mx_target_rate -> SF61745, e_mx_cetes28 -> SF60633 (banxico_sie).
+        provider = OmitsOneSeriesMacroProvider(present={"SF61745": "7.25"})  # SF60633 omitted
+        handler = CaptureOutputHandler()
+
+        result = data_curator.main(
+            configuration=_build_configuration((), ('e_mx_target_rate', 'e_mx_cetes28')),
+            market_data_provider=StubMarketDataProvider(),
+            fundamental_data_provider=None,
+            output_handlers=[handler],
+            macro_data_providers=[provider],
+        )
+
+        assert result is True  # the good series still exports
+        assert 'e_mx_target_rate' in handler.tables
+        assert 'e_mx_cetes28' not in handler.tables  # the skipped series is simply absent
+
+    def test_all_series_skipped_returns_false(self):
+        # When every requested macro series is skipped (all stale), nothing is written,
+        # so the run is a clear failure (False), not a silent empty success.
+        provider = OmitsOneSeriesMacroProvider(present={})  # both columns omitted
+        handler = CaptureOutputHandler()
+
+        result = data_curator.main(
+            configuration=_build_configuration((), ('e_mx_target_rate', 'e_mx_cetes28')),
+            market_data_provider=StubMarketDataProvider(),
+            fundamental_data_provider=None,
+            output_handlers=[handler],
+            macro_data_providers=[provider],
         )
 
         assert result is False
