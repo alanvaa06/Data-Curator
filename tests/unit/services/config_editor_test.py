@@ -19,6 +19,16 @@ def _wait_for_run_completion(timeout=15.0):
     return config_editor.get_run_status()
 
 
+def _wait_for_state(*states, timeout=15.0):
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        status = config_editor.get_run_status()
+        if status['state'] in states:
+            return status
+        time.sleep(0.1)
+    return config_editor.get_run_status()
+
+
 def test_build_default_config_has_required_shape():
     config = config_editor.build_default_config()
     assert set(config) >= {'parameters_format_version', 'general', 'identifiers', 'columns'}
@@ -563,3 +573,50 @@ class TestRunManager:
         assert config_editor.start_pipeline_run(script) is False
         status = _wait_for_run_completion()
         assert status['state'] == 'done'
+
+
+class TestRunStop:
+    def test_stop_when_idle_returns_false(self):
+        config_editor.reset_run_state()
+        assert config_editor.stop_pipeline_run() is False
+
+    def test_stop_terminates_running_pipeline(self, tmp_path):
+        config_editor.reset_run_state()
+        script = tmp_path / 'entry.py'
+        script.write_text("import time; time.sleep(30)", encoding='utf-8')
+        assert config_editor.start_pipeline_run(script) is True
+        assert _wait_for_state('running')['state'] == 'running'
+        assert config_editor.stop_pipeline_run() is True
+        status = _wait_for_state('stopped', 'failed', 'done')
+        assert status['state'] == 'stopped'
+        assert status['returncode'] != 0
+
+    def test_post_stop_endpoint_stops_run(self, tmp_path):
+        config_editor.reset_run_state()
+        entry = tmp_path / 'entry.py'
+        entry.write_text("import time; time.sleep(30)", encoding='utf-8')
+        server, base = _start(tmp_path, entry=entry)
+        try:
+            assert _post_empty(base + '/api/run') == 200
+            assert _wait_for_state('running')['state'] == 'running'
+            assert _post_empty(base + '/api/run/stop') == 200
+            assert _wait_for_state('stopped', 'failed', 'done')['state'] == 'stopped'
+        finally:
+            server.shutdown()
+
+    def test_post_stop_when_idle_returns_409(self, tmp_path):
+        config_editor.reset_run_state()
+        server, base = _start(tmp_path)
+        try:
+            assert _post_empty(base + '/api/run/stop') == 409
+        finally:
+            server.shutdown()
+
+    def test_page_has_stop_control(self, tmp_path):
+        server, base = _start(tmp_path)
+        try:
+            _, body = _get(base + '/')
+            assert 'id="stop"' in body
+            assert '/api/run/stop' in body
+        finally:
+            server.shutdown()

@@ -155,7 +155,7 @@
 <body>
 <div class="bar">
   <div><h1>Data Curator — parameters</h1><p class="sub" id="path">Config/data_curator_parameters.json</p></div>
-  <div><span class="status" id="status"></span> <span class="ptimer" id="ptimer"></span> <button id="reload">Reload</button> <button id="save">Save</button> <button id="run">Save &amp; run</button></div>
+  <div><span class="status" id="status"></span> <span class="ptimer" id="ptimer"></span> <button id="reload">Reload</button> <button id="save">Save</button> <button id="run">Save &amp; run</button> <button id="stop" disabled>Stop</button></div>
 </div>
 
 <div class="layout">
@@ -648,12 +648,23 @@ async function saveAndRun() {
     setStatus(data.state === 'running' ? 'Already running' : 'Run failed to start', 'err');
     document.getElementById('runLog').textContent = data.output || '';
     updateTimer(data);
+    if (data.state === 'running') { document.getElementById('stop').disabled = false; startRunPolling(); }
     return;
   }
   setStatus('Running…', 'run');
   document.getElementById('runLog').textContent = 'Running… output appears when the run finishes.';
+  document.getElementById('stop').disabled = false;
   updateTimer({ elapsed: 0 });
   startRunPolling();
+}
+
+async function stopRun() {
+  setStatus('Stopping…', 'run');
+  document.getElementById('stop').disabled = true;
+  await fetch('/api/run/stop', { method: 'POST' });
+  // The poller reconciles to the final 'stopped'/'failed'/'done' state and the
+  // disabled toggle.
+  pollRun();
 }
 
 function firstCriticalLine(output) {
@@ -664,10 +675,12 @@ function firstCriticalLine(output) {
 async function pollRun() {
   const s = await (await fetch('/api/run')).json();
   updateTimer(s);
+  document.getElementById('stop').disabled = s.state !== 'running';
   if (s.state === 'running') return;
   document.getElementById('runLog').textContent = s.output || '(no output)';
   const critical = firstCriticalLine(s.output);
-  if (critical) { setStatus('Run failed: ' + critical, 'err'); }
+  if (s.state === 'stopped') { setStatus('Run stopped', 'err'); }
+  else if (critical) { setStatus('Run failed: ' + critical, 'err'); }
   else if (s.state === 'done') { setStatus('Run finished — check the Output folder', 'ok'); }
   else if (s.state === 'failed') { setStatus('Run failed — see the run output below', 'err'); }
   stopRunPolling();
@@ -684,6 +697,7 @@ document.getElementById('colSearch').addEventListener('keydown', e => {
 });
 document.getElementById('save').onclick = save;
 document.getElementById('run').onclick = saveAndRun;
+document.getElementById('stop').onclick = stopRun;
 document.getElementById('reload').onclick = boot;
 boot();
 </script>
