@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - JSON configuration format (`Config/data_curator_parameters.json`) read by the new `JsonConfigurator`.
 - `config-editor` CLI command: a lightweight local HTML editor for managing run parameters (providers, dates, period, identifiers, and a searchable output-column picker). Binds to `127.0.0.1`, no new runtime dependencies.
 - Editor server endpoints `POST /api/run` / `GET /api/run` to launch the entry script in the background and poll its status/output from the panel.
+- **Stop** button in the panel to cancel an in-progress run: a new `POST /api/run/stop` terminates the live pipeline subprocess and reports a distinct `stopped` state (not `failed`). The button shows only while a run is active.
 - `init json` / `update json` scaffolding and a JSON entry-script template.
 - Configurable output directory: `general.output_directory` in the JSON configuration (default `Output`), editable from the panel's General section; the progress bar follows the configured folder. Pointing it outside cloud-synced folders (OneDrive/Dropbox) avoids heavy sync churn on large runs
 - `data_curator.main` new `max_concurrent_fetches` parameter (default 8): identifiers' data is now downloaded concurrently through a bounded prefetch pipeline while column calculation and output stay sequential and deterministic; pass 1 for fully sequential fetching

@@ -58,6 +58,11 @@ _RUN_STATE_IDLE: dict[str, typing.Any] = {
     'finished_at': None,
 }
 _run_state: dict[str, typing.Any] = dict(_RUN_STATE_IDLE)
+# Out-of-band run controls, guarded by _run_lock and mutated in place (never
+# rebound) so no module-level `global` is needed: 'process' is the live pipeline
+# subprocess (None when no run is active) and 'stop_requested' lets the worker
+# report 'stopped' rather than 'failed' after a user-initiated stop.
+_run_control: dict[str, typing.Any] = {'process': None, 'stop_requested': False}
 
 API_KEY_ENV_VARS = (
     'KNDC_API_KEY_FMP',
@@ -476,6 +481,7 @@ def reset_run_state() -> None:
     """Reset the pipeline run state to idle (mainly for tests)."""
     with _run_lock:
         _run_state.update(_RUN_STATE_IDLE)
+        _run_control.update(process=None, stop_requested=False)
 
 
 def start_pipeline_run(
@@ -519,26 +525,67 @@ def start_pipeline_run(
             started_at=time.time(),
             finished_at=None,
         )
+        _run_control.update(process=None, stop_requested=False)
 
     def _worker() -> None:
-        result = subprocess.run(  # noqa: S603
+        proc = subprocess.Popen(  # noqa: S603
             [sys.executable, str(entry_path)],
-            capture_output=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             text=True,
-            check=False,
         )
-        output = (result.stdout or '')
-        if result.stderr:
-            output += ('\n' if output else '') + result.stderr
+        # Publish the handle so stop_pipeline_run() can reach it, and honor a stop
+        # that arrived in the window before the process existed.
         with _run_lock:
+            _run_control['process'] = proc
+            stop_now = _run_control['stop_requested']
+        if stop_now:
+            proc.terminate()
+
+        out, err = proc.communicate()
+        output = (out or '')
+        if err:
+            output += ('\n' if output else '') + err
+        with _run_lock:
+            stopped = _run_control['stop_requested']
+            _run_control['process'] = None
+            if stopped:
+                final_state = 'stopped'
+            elif proc.returncode == 0:
+                final_state = 'done'
+            else:
+                final_state = 'failed'
             _run_state.update(
-                state='done' if result.returncode == 0 else 'failed',
+                state=final_state,
                 output=_redact_api_keys(output[-RUN_OUTPUT_MAX_CHARS:]),
-                returncode=result.returncode,
+                returncode=proc.returncode,
                 finished_at=time.time(),
             )
 
     threading.Thread(target=_worker, daemon=True).start()
+
+    return True
+
+
+def stop_pipeline_run() -> bool:
+    """
+    Request termination of the active pipeline run.
+
+    Returns
+    -------
+    True when a running process was signalled to stop; False when no run is
+    currently active.
+    """
+    with _run_lock:
+        if _run_state['state'] != 'running':
+
+            return False
+
+        _run_control['stop_requested'] = True
+        proc = _run_control['process']
+
+    if proc is not None:
+        proc.terminate()
 
     return True
 
@@ -632,6 +679,11 @@ def build_server(
                     status = get_run_status()
                     code = 409 if status['state'] == 'running' else 400
                     self._send_json(code, status)
+            elif self.path == '/api/run/stop':
+                if stop_pipeline_run():
+                    self._send_json(200, {'status': 'stopping'})
+                else:
+                    self._send_json(409, get_run_status())
             elif self.path == '/api/env':
                 length = int(self.headers.get('Content-Length', 0))
                 raw = self.rfile.read(length)
