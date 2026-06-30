@@ -93,6 +93,16 @@ provider key (panel's API keys section, or the `Config/.env` file):
     > ```
     > python -m kaxanuk.data_curator start
     > ```
+    > If you lost the terminal (or started the panel in the background) and it is still serving on
+    > `127.0.0.1:8753`, stop it by its port:
+    > ```powershell
+    > # Windows (PowerShell)
+    > Get-NetTCPConnection -LocalPort 8753 -State Listen | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }
+    > ```
+    > ```bash
+    > # macOS / Linux
+    > kill "$(lsof -ti tcp:8753)"
+    > ```
 2. In the panel, pick the data providers, dates, period, output format, identifiers, and output columns, then click
    **Save & run** — the run output appears on the page and the data is saved to the `Output` folder.
 3. If your data provider requires an API key, set it in the panel's API keys section, or open the `Config/.env` file
