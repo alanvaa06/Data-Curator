@@ -33,6 +33,10 @@ class JsonConfigurator(ConfiguratorInterface):
         'logger_level',
     )
 
+    # A macro-only run (no identifiers) leaves the equity providers unset.
+    _market_data_provider: DataProviderInterface | None
+    _fundamental_data_provider: DataProviderInterface | None
+
     def __init__(
         self,
         file_path: str,
@@ -84,36 +88,45 @@ class JsonConfigurator(ConfiguratorInterface):
             self._logger_level = _resolver.get_logger_level(general['logger_level'])
             logger.setLevel(self._logger_level)
 
-            self._market_data_provider = _resolver.select_market_data_provider(
-                general['market_data_provider'],
-                data_providers,
-            )
-            self._fundamental_data_provider = _resolver.select_fundamental_data_provider(
-                general['fundamental_data_provider'],
-                data_providers,
-            )
-
-            selected_providers = {
-                provider.__class__.__name__: provider
-                for provider in (
-                    self._market_data_provider,
-                    self._fundamental_data_provider,
-                )
-                if provider is not None
-            }
-            _resolver.validate_api_keys(selected_providers, logger)
-
-            self._output_handler = _resolver.select_output_handler(
-                general['output_format'],
-                output_handlers,
-            )
-
             self._configuration = Configuration(
                 start_date=self._parse_date(general['start_date'], 'start_date'),
                 end_date=self._parse_date(general['end_date'], 'end_date'),
                 period=general['period'],
                 identifiers=tuple(parsed.get('identifiers', [])),
                 columns=tuple(parsed.get('columns', [])),
+            )
+
+            # A run with no identifiers is a standalone macro export: main() returns from
+            # _export_macro_only before any equity provider is initialized, so the market and
+            # fundamental providers are never used. Skip selecting and validating them, so a
+            # macro-only run doesn't require (nor make a live validation call against) an equity
+            # data provider API key it would never use.
+            if self._configuration.identifiers:
+                self._market_data_provider = _resolver.select_market_data_provider(
+                    general['market_data_provider'],
+                    data_providers,
+                )
+                self._fundamental_data_provider = _resolver.select_fundamental_data_provider(
+                    general['fundamental_data_provider'],
+                    data_providers,
+                )
+
+                selected_providers = {
+                    provider.__class__.__name__: provider
+                    for provider in (
+                        self._market_data_provider,
+                        self._fundamental_data_provider,
+                    )
+                    if provider is not None
+                }
+                _resolver.validate_api_keys(selected_providers, logger)
+            else:
+                self._market_data_provider = None
+                self._fundamental_data_provider = None
+
+            self._output_handler = _resolver.select_output_handler(
+                general['output_format'],
+                output_handlers,
             )
 
             self._macro_data_providers = _resolver.select_macro_data_providers(
@@ -145,7 +158,7 @@ class JsonConfigurator(ConfiguratorInterface):
     def get_macro_data_providers(self) -> list[MacroDataProviderInterface]:
         return self._macro_data_providers
 
-    def get_market_data_provider(self) -> DataProviderInterface:
+    def get_market_data_provider(self) -> DataProviderInterface | None:
         return self._market_data_provider
 
     def get_output_handler(self) -> OutputHandlerInterface:

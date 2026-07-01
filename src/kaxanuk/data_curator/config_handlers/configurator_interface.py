@@ -32,7 +32,7 @@ class ConfiguratorInterface(metaclass=abc.ABCMeta):
         ...
 
     @abc.abstractmethod
-    def get_market_data_provider(self) -> DataProviderInterface:
+    def get_market_data_provider(self) -> DataProviderInterface | None:
         ...
 
     @abc.abstractmethod
