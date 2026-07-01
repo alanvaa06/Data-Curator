@@ -393,6 +393,27 @@ def test_server_rejects_invalid_config(tmp_path):
         server.shutdown()
 
 
+def test_server_rejects_state_change_from_foreign_host(tmp_path):
+    # DNS-rebinding / CSRF defense: a state-changing POST whose Host header is not loopback
+    # (as a rebound DNS name or cross-site post would be) must be refused before it mutates state.
+    server, base = _start(tmp_path)
+    try:
+        request = urllib.request.Request(
+            base + '/api/config',
+            data=json.dumps(config_editor.build_default_config()).encode('utf-8'),
+            headers={'Content-Type': 'application/json', 'Host': 'attacker.example.com'},
+            method='POST',
+        )
+        try:
+            with urllib.request.urlopen(request) as response:
+                status = response.status
+        except urllib.error.HTTPError as error:
+            status = error.code
+        assert status == 403
+    finally:
+        server.shutdown()
+
+
 def test_server_removed_import_excel_endpoint_returns_404(tmp_path):
     server, base = _start(tmp_path)
     try:
@@ -519,6 +540,20 @@ class TestRunOutputRedaction:
         assert 'AnotherSecret456' not in status['output']
         assert 'apikey=***' in status['output']
         assert 'symbol=AAPL' in status['output']
+
+    def test_header_and_query_tokens_redacted(self, tmp_path):
+        config_editor.reset_run_state()
+        script = tmp_path / 'entry.py'
+        script.write_text(
+            "print('Bmx-Token: BanxicoSecretABC fetching series')\n"
+            "print('GET https://api.example.com/x?token=QuerySecretXYZ&id=1')\n",
+            encoding='utf-8',
+        )
+        assert config_editor.start_pipeline_run(script) is True
+        status = _wait_for_run_completion()
+        assert 'BanxicoSecretABC' not in status['output']
+        assert 'QuerySecretXYZ' not in status['output']
+        assert 'id=1' in status['output']
 
 
 class TestRunElapsed:

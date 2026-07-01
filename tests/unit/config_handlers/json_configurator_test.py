@@ -186,3 +186,31 @@ def test_bad_column_prefix_raises(tmp_path):
     data['columns'] = ['not_a_valid_column']
     with pytest.raises(DataCuratorError):
         build(tmp_path, data)()
+
+
+def test_macro_only_run_skips_equity_provider_and_key(tmp_path):
+    # A run with no identifiers is a standalone macro export: the equity providers are never
+    # used, so the configurator must not construct or validate them (which would otherwise
+    # require an equity provider API key a macro-only run has no reason to supply).
+    from kaxanuk.data_curator.exceptions import DataProviderMissingKeyError
+
+    class KeyDemandingProvider(FakeProvider):
+        def __init__(self, api_key=None):
+            if api_key is None:
+                raise DataProviderMissingKeyError
+            super().__init__(api_key)
+
+    data = valid_config_dict()
+    data['identifiers'] = []
+    data['columns'] = ['m_close']
+    path = write_config(tmp_path, data)
+
+    configurator = JsonConfigurator(
+        file_path=path,
+        data_providers={'financial_modeling_prep': {'class': KeyDemandingProvider, 'api_key': None}},
+        output_handlers=handlers(),
+    )
+
+    assert configurator.get_market_data_provider() is None
+    assert configurator.get_fundamental_data_provider() is None
+    assert configurator.get_configuration().identifiers == ()

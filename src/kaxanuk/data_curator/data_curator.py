@@ -56,7 +56,7 @@ from kaxanuk.data_curator.services.column_builder import ColumnBuilder
 def main(
     *,  # Force user to call function with keyword arguments
     configuration: Configuration,
-    market_data_provider: DataProviderInterface,
+    market_data_provider: DataProviderInterface | None,
     fundamental_data_provider: DataProviderInterface | None,
     output_handlers: list[OutputHandlerInterface],
     macro_data_providers: list[MacroDataProviderInterface] | None = None,
@@ -207,7 +207,14 @@ def main(
                 output_handlers=output_handlers,
             )
 
-        # Equity path: now that we know there are tickers to fetch, initialize the providers.
+        # Equity path: identifiers are present, so a market data provider is required
+        # (a macro-only run returned above without ever needing one).
+        if market_data_provider is None:
+            msg = "A run with identifiers requires a market data provider"
+
+            raise InjectedDependencyError(msg)
+
+        # now that we know there are tickers to fetch, initialize the providers.
         market_data_provider.initialize(configuration=configuration)
 
         if fundamental_data_provider is not None:
