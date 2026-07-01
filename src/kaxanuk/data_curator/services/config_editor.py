@@ -43,7 +43,11 @@ PAGE_RESOURCE = 'config_editor_page.html'
 RUN_TARGET_DEFAULT = '__main__.py'
 RUN_OUTPUT_MAX_CHARS = 20_000
 # data provider APIs pass keys as URL query parameters, which end up in logged URLs
-_API_KEY_PATTERN = re.compile(r'(api[_-]?key=)[^&\s"\']+', re.IGNORECASE)
+_API_KEY_PATTERN = re.compile(
+    # query-string forms (api_key=, apikey=, token=) and header forms (Bmx-Token:, Authorization:)
+    r'((?:api[_-]?key|token)=|(?:bmx-token|authorization)\s*:\s*)[^&\s"\']+',
+    re.IGNORECASE,
+)
 
 
 def _redact_api_keys(text: str) -> str:
@@ -654,6 +658,15 @@ def build_server(
                 self._send_json(404, {'error': 'not found'})
 
         def do_POST(self) -> None:
+            # DNS-rebinding / CSRF defense: state-changing requests must carry a loopback Host.
+            # The panel binds to 127.0.0.1, so a legitimate request always has a 127.0.0.1 /
+            # localhost Host header; a rebound DNS name (or cross-site form post) would not.
+            host = self.headers.get('Host', '')
+            if host.rsplit(':', 1)[0].lower() not in ('127.0.0.1', 'localhost'):
+                self._send_json(403, {'error': 'forbidden host'})
+
+                return
+
             if self.path == '/api/config':
                 length = int(self.headers.get('Content-Length', 0))
                 raw = self.rfile.read(length)
@@ -712,18 +725,18 @@ def build_server(
                         raise ValueError(msg)
                     if self.path == '/api/lists/delete':
                         lists = delete_custom_list(lists_file, payload.get('name'))
-                        status = 'deleted'
+                        list_action = 'deleted'
                     else:
                         lists = save_custom_list(
                             lists_file, payload.get('name'), payload.get('identifiers'),
                         )
-                        status = 'saved'
+                        list_action = 'saved'
                 except (json.JSONDecodeError, ValueError) as error:
                     self._send_json(400, {'errors': [str(error)]})
 
                     return
 
-                self._send_json(200, {'status': status, 'lists': lists})
+                self._send_json(200, {'status': list_action, 'lists': lists})
             else:
                 self._send_json(404, {'error': 'not found'})
 
