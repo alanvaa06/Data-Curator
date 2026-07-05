@@ -17,9 +17,19 @@ import sys
 import threading
 import time
 import typing
+import urllib.parse
 import webbrowser
 
+import httpx
+
 from kaxanuk.data_curator import __parameters_format_version__
+from kaxanuk.data_curator.config_handlers._resolver import resolve_macro_requests
+from kaxanuk.data_curator.data_providers import (
+    BanxicoSie,
+    Dbnomics,
+    Fred,
+    Inegi,
+)
 from kaxanuk.data_curator.config_handlers.column_catalog import (
     load_catalog,
     load_etf_catalog,
@@ -617,6 +627,118 @@ class _PanelServer(http.server.HTTPServer):
         super().server_bind()
 
 
+_SERIES_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36'
+_MACRO_KEY_ENV = {
+    'banxico_sie': 'KNDC_API_KEY_BANXICO',
+    'inegi': 'KNDC_API_KEY_INEGI',
+    'fred': 'KNDC_API_KEY_FRED',
+}
+_MACRO_PROVIDER_CLASSES: dict[str, typing.Any] = {
+    'dbnomics': Dbnomics,
+    'banxico_sie': BanxicoSie,
+    'inegi': Inegi,
+    'fred': Fred,
+}
+
+
+def _env_value(env_path: pathlib.Path, name: str) -> str | None:
+    """Read a single variable's value from a .env file, or None when absent."""
+    try:
+        lines = env_path.read_text(encoding='utf-8').splitlines()
+    except OSError:
+
+        return None
+
+    prefix = f'{name}='
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith(prefix):
+            value = stripped[len(prefix):].strip()
+
+            return value or None
+
+    return None
+
+
+def _ticker_series(symbol: str) -> dict[str, typing.Any]:
+    """Daily closes for an equity/ETF symbol from Yahoo Finance (keyless)."""
+    url = f'https://query1.finance.yahoo.com/v8/finance/chart/{urllib.parse.quote(symbol)}'
+    response = httpx.get(
+        url,
+        params={'range': '5y', 'interval': '1d'},
+        headers={'User-Agent': _SERIES_UA},
+        timeout=30.0,
+    )
+    response.raise_for_status()
+    result = response.json()['chart']['result'][0]
+    timestamps = result['timestamp']
+    closes = result['indicators']['quote'][0]['close']
+    points = [
+        {
+            'time': datetime.datetime.fromtimestamp(stamp, datetime.UTC).date().isoformat(),
+            'value': round(float(close), 4),
+        }
+        for stamp, close in zip(timestamps, closes, strict=False)
+        if close is not None
+    ]
+
+    return {'points': points, 'label': symbol, 'kind': 'price'}
+
+
+def _macro_series(column: str, env_path: pathlib.Path) -> dict[str, typing.Any]:
+    """A macro (e_*) series as (date, value) points, via the curator's own providers."""
+    requests = resolve_macro_requests([column])
+    if not requests:
+        msg = f'{column} is not a known macro column'
+
+        raise ValueError(msg)
+
+    provider_name, pairs = next(iter(requests.items()))
+    series_id = pairs[0][1]
+    key_env = _MACRO_KEY_ENV.get(provider_name)
+    api_key = _env_value(env_path, key_env) if key_env else None
+    if key_env and not api_key:
+        msg = f'{column} needs {key_env} set in the panel API keys'
+
+        raise ValueError(msg)
+
+    provider = _MACRO_PROVIDER_CLASSES[provider_name](api_key=api_key)
+    end_date = datetime.datetime.now(datetime.UTC).date()
+    start_date = datetime.date(2000, 1, 1)
+    fetched = provider.get_economic_data(series_ids=[series_id], start_date=start_date, end_date=end_date)
+    series = fetched.get(series_id)
+    points = (
+        [
+            {'time': iso, 'value': round(float(row.value), 6)}
+            for iso, row in series.rows.items()
+            if row.value is not None
+        ]
+        if series is not None
+        else []
+    )
+
+    return {'points': points, 'label': series.series_name if series else column, 'kind': 'macro'}
+
+
+def build_series_response(query: str, env_path: pathlib.Path) -> tuple[int, dict[str, typing.Any]]:
+    """Resolve a /api/series query (?symbol= or ?macro=) into a chart payload."""
+    params = urllib.parse.parse_qs(query)
+    symbol = (params.get('symbol') or [''])[0].strip()
+    macro = (params.get('macro') or [''])[0].strip()
+    try:
+        if symbol:
+
+            return 200, _ticker_series(symbol)
+        if macro:
+
+            return 200, _macro_series(macro, env_path)
+    except (httpx.HTTPError, ValueError, LookupError, KeyError, TypeError) as error:
+
+        return 400, {'error': str(error)}
+
+    return 400, {'error': 'pass ?symbol= or ?macro='}
+
+
 def build_server(
     config_path: pathlib.Path | str,
     port: int = DEFAULT_PORT,
@@ -654,6 +776,10 @@ def build_server(
                 self._send_json(200, read_env_status(config_file.parent / '.env'))
             elif self.path == '/api/lists':
                 self._send_json(200, {'lists': read_custom_lists(config_file.parent / CUSTOM_LISTS_FILENAME)})
+            elif self.path.startswith('/api/series'):
+                query = urllib.parse.urlsplit(self.path).query
+                status, payload = build_series_response(query, config_file.parent / '.env')
+                self._send_json(status, payload)
             else:
                 self._send_json(404, {'error': 'not found'})
 

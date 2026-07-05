@@ -6,39 +6,84 @@
 <title>Data Curator — parameters</title>
 <style>
   :root {
-    color-scheme: light dark;
+    color-scheme: dark;
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    /* neutrals tinted toward the brand blue (hue 255), restrained accent */
-    --bg: light-dark(oklch(0.975 0.004 255), oklch(0.195 0.011 255));
-    --card: light-dark(oklch(0.993 0.002 255), oklch(0.235 0.011 255));
-    --field: light-dark(oklch(0.999 0.001 255), oklch(0.21 0.011 255));
-    --border: light-dark(oklch(0.82 0.012 255), oklch(0.38 0.015 255));
-    --border-soft: light-dark(oklch(0.905 0.008 255), oklch(0.295 0.012 255));
-    --text: light-dark(oklch(0.27 0.014 255), oklch(0.93 0.006 255));
-    --muted: light-dark(oklch(0.50 0.016 255), oklch(0.71 0.014 255));
-    --accent: light-dark(oklch(0.50 0.13 252), oklch(0.68 0.125 252));
-    --accent-hover: light-dark(oklch(0.44 0.125 252), oklch(0.73 0.12 252));
-    --accent-contrast: light-dark(oklch(0.985 0.004 252), oklch(0.18 0.05 252));
-    --accent-bg: light-dark(oklch(0.93 0.035 252), oklch(0.33 0.06 252));
-    --accent-text: light-dark(oklch(0.40 0.11 252), oklch(0.85 0.06 252));
-    --ok: light-dark(oklch(0.49 0.10 165), oklch(0.78 0.10 165));
-    --err: light-dark(oklch(0.50 0.13 25), oklch(0.78 0.10 25));
-    --row-hover: light-dark(oklch(0.945 0.006 255), oklch(0.27 0.012 255));
-    --log-bg: light-dark(oklch(0.965 0.004 255), oklch(0.175 0.010 255));
+    /* Nocturne: committed dark "instrument" theme. Blue-tinted near-blacks in
+       three depth layers (page < side < card), one decisive accent, data glows. */
+    --bg: #0E1116;
+    --side: #12161D;
+    --card: #161B22;
+    --field: #10141A;
+    --border: #2E3742;
+    --border-soft: #212832;
+    --text: #E8ECF3;
+    --muted: #8792A3;
+    --accent: #4C8DFF;
+    --accent-hover: #6BA1FF;
+    --accent-contrast: #071227;
+    --accent-bg: #16273D;
+    --accent-text: #9FC2FF;
+    --sel: #172A42;
+    --ok: #34D399;
+    --err: #F87171;
+    --row-hover: #1A212B;
+    --log-bg: #0B0E13;
+    --shadow-color: rgba(0, 0, 0, 0.5);
+    --radius: 11px; --radius-sm: 7px;
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
   }
   html, body { height: 100%; }
-  body { margin: 0; padding: 12px 20px 16px; box-sizing: border-box; display: flex; flex-direction: column;
-         overflow: hidden; background: var(--bg); color: var(--text); font-size: 13px; }
-  h1 { font-size: 17px; font-weight: 650; letter-spacing: -0.01em; margin: 0; }
-  .sub { color: var(--muted); font-size: 12px; margin: 1px 0 0; font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; }
-  .bar { flex: none; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-bottom: 10px; }
+  body { margin: 0; padding: 14px 22px 18px; box-sizing: border-box; display: flex; flex-direction: column;
+         overflow: hidden; background: var(--bg); color: var(--text); font-size: 13px;
+         -webkit-font-smoothing: antialiased; }
+  h1 { font-size: 18px; font-weight: 650; letter-spacing: -0.015em; margin: 0;
+       display: inline-flex; align-items: center; gap: 9px; }
+  h1::before { content: ''; width: 15px; height: 15px; border-radius: 5px; flex: none; background: var(--accent);
+       box-shadow: 0 1px 3px color-mix(in oklch, var(--accent) 45%, transparent); }
+  .sub { color: var(--muted); font-size: 12px; margin: 2px 0 0; font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; }
+  .bar { flex: none; display: flex; justify-content: space-between; align-items: center; gap: 12px;
+         padding-bottom: 13px; border-bottom: 1px solid var(--border-soft);
+         transition: border-color 0.3s var(--ease); }
+  body.running .bar { border-bottom-color: var(--accent); }
   .bar > div:last-child { display: flex; align-items: center; gap: 8px; }
-  .layout { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(340px, 2fr) 3fr; gap: 12px; }
-  .side { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
-  fieldset { background: var(--card); border: 1px solid var(--border-soft); border-radius: 10px; margin: 0;
-             padding: 10px 14px 12px; min-width: 0; }
-  legend { font-size: 12px; font-weight: 600; color: var(--muted); padding: 0 6px; }
-  legend span { font-variant-numeric: tabular-nums; }
+  /* indeterminate top progress: only present while a run is live, conveys "running" */
+  #progress { height: 3px; margin: 0 -22px; overflow: hidden; flex: none; }
+  #progress::after { content: ''; display: block; height: 100%; width: 38%;
+       background: var(--accent); transform: translateX(-105%);
+       box-shadow: 0 0 10px color-mix(in oklch, var(--accent) 60%, transparent); }
+  body.running #progress::after { animation: indeterminate 1.15s cubic-bezier(0.65, 0, 0.35, 1) infinite; }
+  @keyframes indeterminate { 0% { transform: translateX(-105%); } 100% { transform: translateX(360%); } }
+  .bento { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 12px; padding-top: 13px; }
+  .bentoMain { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(320px, 1fr) minmax(0, 1.75fr); gap: 12px; }
+  .leftcol { min-height: 0; display: flex; flex-direction: column; gap: 12px; }
+  .kpis { flex: none; display: grid; grid-template-columns: 1fr 2fr 1fr 1fr; gap: 12px; }
+  .kpi { background-color: var(--side); border: 1px solid var(--border-soft); border-radius: var(--radius);
+         padding: 9px 14px 11px; box-shadow: 0 1px 2px var(--shadow-color); }
+  .kpiLabel { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; text-transform: uppercase;
+              letter-spacing: 0.1em; font-size: 10px; color: var(--muted); margin-bottom: 3px; }
+  .kpiValue { font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; line-height: 1.1; }
+  .kpiHero { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; }
+  .spark { display: flex; align-items: flex-end; gap: 3px; height: 38px; flex: 1; max-width: 58%; }
+  .sparkBar { flex: 1; border-radius: 2px 2px 0 0; min-height: 3px; transition: height 0.25s var(--ease); }
+  .mChart { flex: none; }
+  .chartHead { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; }
+  #chartPick { width: auto; max-width: 62%; padding: 4px 8px; font-size: 12px; }
+  .chartMeta { font-size: 11px; color: var(--muted); font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+               white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lwchart { height: 200px; border-radius: var(--radius-sm); overflow: hidden; }
+  fieldset { background-color: var(--card); border: 1px solid var(--border-soft); border-radius: var(--radius); margin: 0;
+             padding: 13px 16px 15px; min-width: 0; box-shadow: 0 1px 2px var(--shadow-color); position: relative;
+             background-image: radial-gradient(rgba(76, 141, 255, 0.05) 1px, transparent 1.4px); background-size: 22px 22px; }
+  .side > fieldset { background-color: var(--side); }
+  fieldset::before, fieldset::after { content: ''; position: absolute; width: 11px; height: 11px; pointer-events: none; }
+  fieldset::before { top: -1px; left: -1px; border-top: 2px solid var(--accent); border-left: 2px solid var(--accent);
+                     border-top-left-radius: var(--radius); }
+  fieldset::after { bottom: -1px; right: -1px; border-bottom: 2px solid var(--accent); border-right: 2px solid var(--accent);
+                    border-bottom-right-radius: var(--radius); }
+  legend { font-size: 10px; font-weight: 600; color: var(--accent-text); padding: 0 8px;
+           font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+           text-transform: uppercase; letter-spacing: 0.11em; }
+  legend span { font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
   .boxIds, .boxRun, .boxCols { display: flex; flex-direction: column; min-height: 0; }
   .boxIds { flex: 1; }
   .boxRun { flex: 1; }
@@ -54,29 +99,33 @@
   .keystate.set { color: var(--ok); }
   .keysub { font-size: 10px; color: var(--muted); margin-bottom: 4px; opacity: 0.85;
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  input, select { width: 100%; box-sizing: border-box; padding: 6px 8px; font-size: 13px;
-                  border: 1px solid var(--border); border-radius: 6px;
+  input, select { width: 100%; box-sizing: border-box; padding: 6px 9px; font-size: 13px;
+                  border: 1px solid var(--border); border-radius: var(--radius-sm);
                   background: var(--field); color: var(--text);
-                  transition: border-color 0.15s ease; }
+                  transition: border-color 0.15s var(--ease), box-shadow 0.15s var(--ease); }
   input:hover, select:hover { border-color: var(--muted); }
-  input:focus-visible, select:focus-visible, button:focus-visible {
-    outline: 2px solid var(--accent); outline-offset: 1px; }
+  input:focus-visible, select:focus-visible {
+    outline: none; border-color: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--accent) 20%, transparent); }
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
   input::placeholder { color: var(--muted); opacity: 0.8; }
   input[type="date"] { font-variant-numeric: tabular-nums; }
   input[type="checkbox"] { width: 15px; height: 15px; margin: 0; flex: none; accent-color: var(--accent); cursor: pointer; }
-  .row { display: flex; gap: 8px; margin: 8px 0; flex: none; }
+  .row { display: flex; gap: 8px; margin: 9px 0; flex: none; }
   .row input { flex: 1; }
-  button { padding: 6px 12px; font-size: 13px; border: 1px solid var(--border); border-radius: 6px;
+  button { padding: 6px 12px; font-size: 13px; border: 1px solid var(--border); border-radius: var(--radius-sm);
            background: var(--card); color: var(--text); cursor: pointer;
-           transition: background-color 0.15s ease, border-color 0.15s ease; }
+           transition: background-color 0.14s var(--ease), border-color 0.14s var(--ease), transform 0.06s var(--ease); }
   button:hover { background: var(--row-hover); border-color: var(--muted); }
-  button:active { background: var(--border-soft); }
+  button:active { background: var(--border-soft); transform: translateY(0.5px); }
   button:disabled { opacity: 0.5; cursor: default; }
-  #run { background: var(--accent); border-color: var(--accent); color: var(--accent-contrast); font-weight: 600; }
-  #run:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+  #run { background: var(--accent); border-color: var(--accent); color: var(--accent-contrast); font-weight: 600;
+         box-shadow: 0 1px 2px color-mix(in oklch, var(--accent) 42%, transparent); }
+  #run:hover { background: var(--accent-hover); border-color: var(--accent-hover); transform: translateY(-1px);
+               box-shadow: 0 3px 9px color-mix(in oklch, var(--accent) 42%, transparent); }
   .presets { display: flex; flex-wrap: wrap; gap: 6px; flex: none; }
-  .presets button { font-size: 12px; padding: 3px 10px; border-radius: 99px; color: var(--muted); }
-  .presets button:hover { color: var(--text); }
+  .presets button { font-size: 12px; padding: 3px 11px; border-radius: 99px; color: var(--muted); }
+  .presets button:hover { color: var(--text); border-color: var(--muted); transform: translateY(-1px); }
   /* custom saved lists — accent-tinted to stand apart from the neutral index presets */
   #customLists { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; flex: none; }
   .clpill { display: inline-flex; align-items: center; }
@@ -105,29 +154,40 @@
   .etfpills { display: flex; flex-wrap: wrap; gap: 4px; padding: 1px 4px 6px 20px; }
   .etfpill { font-size: 11px; padding: 2px 8px; border-radius: 99px; border: 1px solid var(--border-soft);
              color: var(--muted); background: var(--card);
-             font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; }
-  .etfpill:hover { color: var(--text); border-color: var(--muted); }
+             font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+             transition: transform 0.12s var(--ease), border-color 0.12s var(--ease), color 0.12s var(--ease); }
+  .etfpill:hover { color: var(--text); border-color: var(--muted); transform: translateY(-1px); }
   .etfpill.on { color: var(--accent-text); border-color: var(--accent); background: var(--accent-bg); }
   /* Browsers + chips share one scroll region so expanding a browser scrolls
      within the Identifiers box instead of bleeding over the Run output panel. */
   .idscroll { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; }
   .chips { display: flex; flex-wrap: wrap; gap: 5px; align-content: flex-start; }
-  .chip { display: inline-flex; align-items: center; gap: 5px; background: var(--bg); color: var(--text);
-          border: 1px solid var(--border-soft); padding: 2px 4px 2px 8px; border-radius: 6px; font-size: 12px;
-          font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; height: fit-content; }
-  .chip button { border: none; background: none; cursor: pointer; color: var(--muted); padding: 0 4px;
-                 font-size: 13px; line-height: 1; border-radius: 4px; }
+  .chip { display: inline-flex; align-items: center; gap: 4px; background: var(--field); color: var(--text);
+          border: 1px solid var(--border-soft); padding: 2px 4px 2px 9px; border-radius: var(--radius-sm); font-size: 12px;
+          font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; height: fit-content;
+          transition: border-color 0.14s var(--ease); }
+  .chip:hover { border-color: var(--border); }
+  .chip button { border: none; background: none; cursor: pointer; color: var(--muted); padding: 0 3px;
+                 font-size: 14px; line-height: 1; border-radius: 4px; transition: color 0.12s var(--ease); }
   .chip button:hover { color: var(--err); background: none; border: none; }
-  .cols { flex: 1; min-height: 0; overflow: auto; border: 1px solid var(--border-soft); border-radius: 6px;
+  .cols { flex: 1; min-height: 0; overflow: auto; border: 1px solid var(--border-soft); border-radius: var(--radius-sm);
           background: var(--field); }
-  .col { display: flex; align-items: center; gap: 10px; padding: 4px 12px; font-size: 13px;
-         font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; color: var(--text); cursor: pointer; }
+  .col { display: flex; align-items: center; gap: 10px; padding: 5px 12px; font-size: 13px;
+         font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; color: var(--text); cursor: pointer;
+         transition: background-color 0.12s var(--ease), color 0.12s var(--ease); }
   .col:hover { background: var(--row-hover); }
+  /* selected rows tint toward the accent — the picker reads its own state at a glance */
+  .col:has(> input:checked) { background: var(--sel); color: var(--accent-text); font-weight: 500; }
+  .col:has(> input:checked):hover { background: var(--sel); }
   .grouphdr { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; gap: 8px; font-weight: 600;
-              font-size: 12px; color: var(--text); background: var(--card); margin: 0; padding: 7px 12px 6px;
-              border-bottom: 1px solid var(--border-soft); cursor: pointer; user-select: none; }
+              font-size: 12px; color: var(--text); background: var(--card); margin: 0; padding: 8px 12px 7px;
+              border-bottom: 1px solid var(--border-soft); cursor: pointer; user-select: none;
+              transition: background-color 0.12s var(--ease); }
   .grouphdr:hover { background: var(--row-hover); }
   .chev { display: inline-block; width: 12px; color: var(--muted); font-size: 11px; }
+  .gdot { width: 8px; height: 8px; border-radius: 50%; flex: none;
+          box-shadow: 0 0 0 2px color-mix(in oklch, var(--card), transparent 100%); }
+  .grouphdr:hover .gdot { box-shadow: 0 0 0 3px color-mix(in oklch, currentColor 14%, transparent); }
   .gcount { color: var(--muted); font-weight: 400; font-variant-numeric: tabular-nums; }
   legend.collapsible { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; border-radius: 5px; }
   legend.collapsible:hover { color: var(--text); }
@@ -145,10 +205,13 @@
   @media (prefers-reduced-motion: reduce) {
     .status.run::before { animation: none; }
     input, select, button { transition: none; }
+    body.running #progress::after { animation: none; width: 100%; transform: none; }
+    #run:hover, .presets button:hover, .etfpill:hover { transform: none; }
   }
   .ok { color: var(--ok); } .err { color: var(--err); }
-  #runLog { flex: 1; min-height: 0; overflow: auto; margin: 0; padding: 8px 10px; font-size: 12px; line-height: 1.5;
-            white-space: pre-wrap; background: var(--log-bg); border: 1px solid var(--border-soft); border-radius: 6px; }
+  #runLog { flex: 1; min-height: 0; overflow: auto; margin: 0; padding: 9px 11px; font-size: 12px; line-height: 1.55;
+            white-space: pre-wrap; background: var(--log-bg); border: 1px solid var(--border-soft);
+            border-radius: var(--radius-sm); color: var(--text); }
   .ptimer { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
 </style>
 </head>
@@ -157,35 +220,49 @@
   <div><h1>Data Curator — parameters</h1><p class="sub" id="path">Config/data_curator_parameters.json</p></div>
   <div><span class="status" id="status"></span> <span class="ptimer" id="ptimer"></span> <button id="reload">Reload</button> <button id="save">Save</button> <button id="run">Save &amp; run</button> <button id="stop" disabled>Stop</button></div>
 </div>
+<div id="progress"></div>
 
-<div class="layout">
-  <div class="side">
-    <fieldset><legend>General</legend><div class="grid" id="general"></div></fieldset>
+<div class="bento">
+  <div class="kpis" id="kpis"></div>
 
-    <fieldset><legend class="collapsible" id="keysLegend" tabindex="0" role="button" aria-expanded="false"></legend><div class="grid" id="apikeys"></div></fieldset>
+  <fieldset><legend>General</legend><div class="grid" id="general"></div></fieldset>
 
-    <fieldset class="boxIds"><legend>Identifiers (<span id="idCount">0</span>)</legend>
-      <div class="presets" id="presets"></div>
-      <div id="customLists"></div>
-      <div class="row"><input id="idInput" placeholder="Add ticker…" /><button id="idAdd">Add</button></div>
-      <div class="idscroll">
-        <div class="etfbox" id="etfBox"></div>
-        <div class="etfbox" id="fundBox"></div>
-        <div class="chips" id="idChips"></div>
-      </div>
-    </fieldset>
+  <fieldset><legend class="collapsible" id="keysLegend" tabindex="0" role="button" aria-expanded="false"></legend><div class="grid" id="apikeys"></div></fieldset>
 
-    <fieldset class="boxRun" id="runBox" style="display:none"><legend>Run output</legend>
-      <pre id="runLog"></pre>
+  <div class="bentoMain">
+    <div class="leftcol">
+      <fieldset class="boxIds"><legend>Identifiers (<span id="idCount">0</span>)</legend>
+        <div class="presets" id="presets"></div>
+        <div id="customLists"></div>
+        <div class="row"><input id="idInput" placeholder="Add ticker…" /><button id="idAdd">Add</button></div>
+        <div class="idscroll">
+          <div class="etfbox" id="etfBox"></div>
+          <div class="etfbox" id="fundBox"></div>
+          <div class="chips" id="idChips"></div>
+        </div>
+      </fieldset>
+
+      <fieldset class="mChart"><legend>Chart</legend>
+        <div class="chartHead">
+          <select id="chartPick" aria-label="Chart series"></select>
+          <span class="chartMeta" id="chartMeta"></span>
+        </div>
+        <div id="lwchart" class="lwchart"></div>
+      </fieldset>
+
+      <fieldset class="boxRun" id="runBox" style="display:none"><legend>Run output</legend>
+        <pre id="runLog"></pre>
+      </fieldset>
+    </div>
+
+    <fieldset class="boxCols"><legend>Output columns (<span id="colCount">0</span> selected)</legend>
+      <div class="row"><input id="colSearch" placeholder="Search columns or type a custom c_… then Enter" /></div>
+      <div class="cols" id="cols"></div>
     </fieldset>
   </div>
-
-  <fieldset class="boxCols"><legend>Output columns (<span id="colCount">0</span> selected)</legend>
-    <div class="row"><input id="colSearch" placeholder="Search columns or type a custom c_… then Enter" /></div>
-    <div class="cols" id="cols"></div>
-  </fieldset>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.3/dist/lightweight-charts.standalone.production.js"></script>
 <script>
 const GENERAL_FIELDS = [
   ['market_data_provider', 'select'], ['fundamental_data_provider', 'select'],
@@ -214,6 +291,21 @@ const KEY_SUBS = {
   KNDC_API_KEY_INEGI: 'Mexico · CPI & jobs',
 };
 
+// One muted category hue per top-level column group, so the picker reads like a
+// legend: colour carries meaning (which family a column belongs to), never decoration.
+const GROUP_COLORS = {
+  'Market data': '#4C8DFF',
+  'Fundamental': '#C084FC',
+  'Balance sheet': '#2DD4BF',
+  'Cash flow': '#34D399',
+  'Income statement': '#FBBF24',
+  'Dividends': '#F472B6',
+  'Splits': '#FB923C',
+  'Calculations': '#38BDF8',
+  'Economic (macro)': '#E879F9',
+  _default: '#6B7686',
+};
+
 async function boot() {
   try {
     catalog = await (await fetch('/api/catalog')).json();
@@ -236,7 +328,7 @@ async function boot() {
   collapsedGroups.add('Custom / other');
   renderGeneral(); renderKeys(); renderKeysToggle(); renderPresets(); renderCustomLists();
   renderEtfBrowser(); renderFundBrowser();
-  renderIdentifiers(); renderColumns(); setStatus('');
+  renderIdentifiers(); renderColumns(); renderStats(); setStatus('');
 }
 
 function renderKeysToggle() {
@@ -321,7 +413,7 @@ function renderGeneral() {
       input.title = 'Folder for the output files — a folder outside OneDrive/Dropbox runs faster';
     } else { input = document.createElement('input'); input.type = 'date'; }
     input.value = state.general[key] || (type === 'text' ? 'Output' : '');
-    input.addEventListener('change', () => { state.general[key] = input.value; });
+    input.addEventListener('change', () => { state.general[key] = input.value; renderStats(); });
     wrap.appendChild(input); root.appendChild(wrap);
   }
 }
@@ -355,6 +447,8 @@ function renderIdentifiers() {
     chip.appendChild(x); chips.appendChild(chip);
   });
   document.getElementById('idCount').textContent = state.identifiers.length;
+  renderStats();
+  renderChart();
   if (etfState.expanded) renderEtfBrowser();
   if (fundState.expanded) renderFundBrowser();
 }
@@ -492,6 +586,113 @@ function renderFundBrowser() {
 
 let groupCounters = [];
 
+function statTile(label, value, color) {
+  const cell = document.createElement('div'); cell.className = 'kpi';
+  const lab = document.createElement('div'); lab.className = 'kpiLabel'; lab.textContent = label;
+  const val = document.createElement('div'); val.className = 'kpiValue'; val.textContent = value;
+  val.style.color = color;
+  cell.appendChild(lab); cell.appendChild(val);
+  return cell;
+}
+
+function renderStats() {
+  const g = state.general || {};
+  const yr = (d) => (d && String(d).slice(0, 4)) || '—';
+  const root = document.getElementById('kpis'); root.innerHTML = '';
+
+  root.appendChild(statTile('Identifiers', String(state.identifiers.length), '#4C8DFF'));
+
+  // Hero tile: total columns + a live per-group bar-spark, each bar in its group's colour,
+  // so the shape of what you've pulled reads at a glance.
+  const selected = new Set(state.columns);
+  const perGroup = (catalog.groups || []).map(grp => {
+    const cols = grp.subgroups ? grp.subgroups.flatMap(sg => sg.columns) : (grp.columns || []);
+    return { label: grp.label, sel: cols.filter(c => selected.has(c)).length,
+             total: cols.length, color: GROUP_COLORS[grp.label] || GROUP_COLORS._default };
+  });
+  const hero = document.createElement('div'); hero.className = 'kpi kpiHero';
+  const left = document.createElement('div');
+  const hl = document.createElement('div'); hl.className = 'kpiLabel'; hl.textContent = 'Columns';
+  const hv = document.createElement('div'); hv.className = 'kpiValue'; hv.textContent = String(state.columns.length);
+  hv.style.color = '#38BDF8';
+  left.appendChild(hl); left.appendChild(hv);
+  const spark = document.createElement('div'); spark.className = 'spark';
+  const maxSel = Math.max(1, ...perGroup.map(x => x.sel));
+  for (const x of perGroup) {
+    const bar = document.createElement('div'); bar.className = 'sparkBar';
+    bar.style.height = (x.sel > 0 ? Math.max(16, Math.round((x.sel / maxSel) * 100)) : 8) + '%';
+    bar.style.background = x.sel > 0 ? x.color : 'var(--border)';
+    bar.title = x.label + ': ' + x.sel + ' / ' + x.total;
+    spark.appendChild(bar);
+  }
+  hero.appendChild(left); hero.appendChild(spark);
+  root.appendChild(hero);
+
+  root.appendChild(statTile('Range', yr(g.start_date) + '–' + yr(g.end_date), '#2DD4BF'));
+  root.appendChild(statTile('Output', (g.output_format || 'csv').toUpperCase(), '#FBBF24'));
+}
+
+let lwChart = null, lwSeries = null, chartKey = null;
+
+function ensureChart() {
+  if (lwChart || typeof LightweightCharts === 'undefined') return;
+  lwChart = LightweightCharts.createChart(document.getElementById('lwchart'), {
+    autoSize: true,
+    layout: { attributionLogo: false, background: { color: 'transparent' }, textColor: '#8792A3', fontSize: 11,
+              fontFamily: 'ui-monospace, "Cascadia Mono", Consolas, monospace' },
+    grid: { vertLines: { color: 'rgba(46,55,66,0.30)' }, horzLines: { color: 'rgba(46,55,66,0.30)' } },
+    rightPriceScale: { borderColor: '#2E3742' },
+    timeScale: { borderColor: '#2E3742' },
+  });
+  lwSeries = lwChart.addAreaSeries({ lineWidth: 2 });
+}
+
+// Charts the curator's OWN data via TradingView's open-source Lightweight Charts:
+// the first identifier's price (Yahoo) or any selected macro e_* series (curator
+// providers), both from the panel's /api/series endpoint. Dark, to match the panel.
+async function loadChart(value) {
+  ensureChart();
+  const meta = document.getElementById('chartMeta');
+  if (!lwSeries || !value) { if (meta) meta.textContent = ''; return; }
+  chartKey = value;
+  const cut = value.indexOf(':');
+  const kind = value.slice(0, cut), key = value.slice(cut + 1);
+  const macro = kind === 'macro';
+  lwSeries.applyOptions(macro
+    ? { lineColor: '#2DD4BF', topColor: 'rgba(45,212,191,0.24)', bottomColor: 'rgba(45,212,191,0.02)' }
+    : { lineColor: '#4C8DFF', topColor: 'rgba(76,141,255,0.26)', bottomColor: 'rgba(76,141,255,0.02)' });
+  meta.textContent = 'loading…';
+  try {
+    const res = await fetch('/api/series?' + (macro ? 'macro=' : 'symbol=') + encodeURIComponent(key));
+    const d = await res.json();
+    if (!res.ok || d.error) { meta.textContent = d.error || 'no data'; lwSeries.setData([]); return; }
+    const pts = (d.points || []).map(p => ({ time: p.time, value: p.value }));
+    lwSeries.setData(pts);
+    lwChart.timeScale().fitContent();
+    meta.textContent = d.label + ' · ' + pts.length + ' pts';
+  } catch (err) { meta.textContent = 'connection error'; }
+}
+
+function renderChart() {
+  const sel = document.getElementById('chartPick');
+  if (!sel) return;
+  const opts = [];
+  if (state.identifiers[0]) opts.push(['price:' + state.identifiers[0], 'Price · ' + state.identifiers[0]]);
+  for (const c of state.columns.filter(x => x.startsWith('e_')).sort()) opts.push(['macro:' + c, 'Macro · ' + c]);
+  const prev = sel.value;
+  sel.innerHTML = '';
+  if (!opts.length) {
+    const o = document.createElement('option'); o.value = ''; o.textContent = 'Add a ticker or an e_ column';
+    sel.appendChild(o); loadChart('');
+
+    return;
+  }
+  for (const [v, t] of opts) { const o = document.createElement('option'); o.value = v; o.textContent = t; sel.appendChild(o); }
+  const values = opts.map(o => o[0]);
+  sel.value = values.includes(prev) ? prev : values[0];
+  if (sel.value !== chartKey) loadChart(sel.value);
+}
+
 function refreshCounts() {
   const selected = new Set(state.columns);
   for (const counter of groupCounters) {
@@ -499,6 +700,8 @@ function refreshCounts() {
     counter.span.textContent = count + '/' + counter.columns.length;
   }
   document.getElementById('colCount').textContent = state.columns.length;
+  renderStats();
+  renderChart();
 }
 
 function groupHeader(label, columns, expanded, key, depth) {
@@ -508,7 +711,13 @@ function groupHeader(label, columns, expanded, key, depth) {
   const chev = document.createElement('span'); chev.className = 'chev'; chev.textContent = expanded ? '▾' : '▸';
   const title = document.createElement('span'); title.textContent = label;
   const count = document.createElement('span'); count.className = 'gcount';
-  hdr.appendChild(chev); hdr.appendChild(title); hdr.appendChild(count);
+  hdr.appendChild(chev);
+  if (!depth) {
+    const dot = document.createElement('span'); dot.className = 'gdot';
+    dot.style.background = GROUP_COLORS[label] || GROUP_COLORS._default;
+    hdr.appendChild(dot);
+  }
+  hdr.appendChild(title); hdr.appendChild(count);
   hdr.onclick = () => {
     if (collapsedGroups.has(key)) collapsedGroups.delete(key); else collapsedGroups.add(key);
     renderColumns();
@@ -648,10 +857,11 @@ async function saveAndRun() {
     setStatus(data.state === 'running' ? 'Already running' : 'Run failed to start', 'err');
     document.getElementById('runLog').textContent = data.output || '';
     updateTimer(data);
-    if (data.state === 'running') { document.getElementById('stop').disabled = false; startRunPolling(); }
+    if (data.state === 'running') { document.body.classList.add('running'); document.getElementById('stop').disabled = false; startRunPolling(); }
     return;
   }
   setStatus('Running…', 'run');
+  document.body.classList.add('running');
   document.getElementById('runLog').textContent = 'Running… output appears when the run finishes.';
   document.getElementById('stop').disabled = false;
   updateTimer({ elapsed: 0 });
@@ -677,6 +887,7 @@ async function pollRun() {
   updateTimer(s);
   document.getElementById('stop').disabled = s.state !== 'running';
   if (s.state === 'running') return;
+  document.body.classList.remove('running');
   document.getElementById('runLog').textContent = s.output || '(no output)';
   const critical = firstCriticalLine(s.output);
   if (s.state === 'stopped') { setStatus('Run stopped', 'err'); }
@@ -698,6 +909,7 @@ document.getElementById('colSearch').addEventListener('keydown', e => {
 document.getElementById('save').onclick = save;
 document.getElementById('run').onclick = saveAndRun;
 document.getElementById('stop').onclick = stopRun;
+document.getElementById('chartPick').addEventListener('change', (e) => loadChart(e.target.value));
 document.getElementById('reload').onclick = boot;
 boot();
 </script>
