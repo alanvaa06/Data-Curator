@@ -50,6 +50,8 @@ OUTPUT_FORMATS = ('csv', 'duckdb', 'parquet')
 CONFIG_FILENAME = 'data_curator_parameters.json'
 CUSTOM_LISTS_FILENAME = 'identifier_lists.json'
 PAGE_RESOURCE = 'config_editor_page.html'
+# Vendored (not a CDN) so the panel stays self-contained / offline-capable.
+CHART_LIB_RESOURCE = 'lightweight-charts.standalone.production.js'
 RUN_TARGET_DEFAULT = '__main__.py'
 RUN_OUTPUT_MAX_CHARS = 20_000
 # data provider APIs pass keys as URL query parameters, which end up in logged URLs
@@ -612,6 +614,14 @@ def _read_page() -> str:
     return resource.read_text(encoding='utf-8')
 
 
+def _read_chart_lib() -> str:
+    resource = importlib.resources.files(
+        'kaxanuk.data_curator.services'
+    ).joinpath(CHART_LIB_RESOURCE)
+
+    return resource.read_text(encoding='utf-8')
+
+
 class _PanelServer(http.server.HTTPServer):
     """
     HTTPServer with exclusive port binding on Windows.
@@ -769,6 +779,9 @@ def build_server(
             if self.path in ('/', '/index.html'):
                 # read per request so server restarts are never needed to pick up page updates
                 self._send(200, _read_page().encode('utf-8'), 'text/html; charset=utf-8')
+            elif self.path == '/vendor/lightweight-charts.js':
+                # Vendored charting library served from our own server (no CDN).
+                self._send(200, _read_chart_lib().encode('utf-8'), 'text/javascript; charset=utf-8')
             elif self.path == '/api/config':
                 self._send_json(200, load_config(config_file))
             elif self.path == '/api/catalog':
