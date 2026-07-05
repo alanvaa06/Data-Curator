@@ -38,6 +38,21 @@ def test_parse_maps_observations():
     assert list(series.rows.keys()) == ["2020-01-01", "2020-02-01", "2020-03-01"]
 
 
+def test_non_finite_value_is_treated_as_missing():
+    """A value that coerces to a non-finite Decimal (NaN/Infinity) must be stored
+    as missing (None), not as a live value."""
+    payload = {"observations": [
+        {"date": "2020-01-01", "value": "NaN"},
+        {"date": "2020-02-01", "value": "1.6"},
+    ]}
+    data = Fred._parse_observations(
+        payload, series_id="X",
+        start_date=datetime.date(2020, 1, 1), end_date=datetime.date(2020, 2, 1),
+    )
+    assert data["X"].rows["2020-01-01"].value is None
+    assert data["X"].rows["2020-02-01"].value == decimal.Decimal("1.6")
+
+
 def test_missing_key_raises():
     with pytest.raises(DataProviderMissingKeyError):
         Fred(api_key=None).get_economic_data(

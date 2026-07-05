@@ -49,6 +49,23 @@ def test_parse_maps_series_to_entity():
     assert list(series.rows.keys()) == ["2020-01-01", "2020-02-01", "2020-03-01"]
 
 
+def test_non_finite_value_is_treated_as_missing():
+    """A value that coerces to a non-finite Decimal (NaN/Infinity) is not a real
+    observation and must be stored as missing (None), not as a live value."""
+    payload = {
+        "bmx": {"series": [
+            {"idSerie": "SF61745", "titulo": "Tasa objetivo",
+             "datos": [{"fecha": "01/01/2020", "dato": "NaN"},
+                       {"fecha": "01/02/2020", "dato": "7.00"}]},
+        ]}
+    }
+    data = BanxicoSie._parse_series_payload(
+        payload, start_date=datetime.date(2020, 1, 1), end_date=datetime.date(2020, 3, 1),
+    )
+    assert data["SF61745"].rows["2020-01-01"].value is None
+    assert data["SF61745"].rows["2020-02-01"].value == decimal.Decimal("7.00")
+
+
 def test_parse_comma_thousands_value():
     """Comma-separated thousands (e.g. 1,234.56) must be parsed correctly."""
     data = BanxicoSie._parse_series_payload(

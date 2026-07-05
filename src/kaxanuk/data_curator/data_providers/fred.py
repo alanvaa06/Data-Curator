@@ -127,6 +127,10 @@ class Fred(MacroDataProviderInterface):
                 if raw in _MISSING
                 else decimal.Decimal(str(raw))
             )
+            if value is not None and not value.is_finite():
+                # NaN/Infinity is never a valid observation: treat it as missing so
+                # it can't silently poison downstream rolling means/ratios.
+                value = None
             rows[iso] = EconomicIndicatorRow(
                 date=datetime.date.fromisoformat(iso), value=value
             )

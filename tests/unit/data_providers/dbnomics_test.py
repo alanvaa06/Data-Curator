@@ -29,6 +29,20 @@ def test_parse_maps_parallel_arrays():
     assert list(series.rows.keys()) == ["2020-01-01", "2020-02-01", "2020-03-01"]
 
 
+def test_non_finite_value_is_treated_as_missing():
+    """A bare NaN/Infinity JSON token (json.loads decodes it to a non-finite float)
+    must be stored as missing (None), not as a live Decimal('NaN')."""
+    payload = {"series": {"docs": [
+        {"period": ["2020-01", "2020-02"], "value": ["NaN", 105.4]},
+    ]}}
+    data = Dbnomics._parse_series_payload(
+        payload, requested_id="X",
+        start_date=datetime.date(2020, 1, 1), end_date=datetime.date(2020, 2, 1),
+    )
+    assert data["X"].rows["2020-01-01"].value is None
+    assert data["X"].rows["2020-02-01"].value == decimal.Decimal("105.4")
+
+
 def test_parse_annual_and_daily_periods():
     payload = {"series": {"docs": [{"period": ["2020", "2021-06-15"], "value": [1.0, 2.0]}]}}
     data = Dbnomics._parse_series_payload(payload, requested_id="X",

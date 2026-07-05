@@ -34,6 +34,21 @@ def test_parse_maps_inegi_observations_sorted_ascending():
     assert series.rows["2020-03-01"].value is None  # "" -> None
 
 
+def test_non_finite_value_is_treated_as_missing():
+    """A value that coerces to a non-finite Decimal (NaN/Infinity) must be stored
+    as missing (None), not as a live value."""
+    payload = {"Series": [{"INDICADOR": "1", "FREQ": "8", "OBSERVATIONS": [
+        {"TIME_PERIOD": "2020/01", "OBS_VALUE": "NaN"},
+        {"TIME_PERIOD": "2020/02", "OBS_VALUE": "101.2"},
+    ]}]}
+    data = Inegi._parse_series_payload(
+        payload, requested_id="1",
+        start_date=datetime.date(2020, 1, 1), end_date=datetime.date(2020, 2, 1),
+    )
+    assert data["1"].rows["2020-01-01"].value is None
+    assert data["1"].rows["2020-02-01"].value == decimal.Decimal("101.2")
+
+
 def test_parse_annual_period():
     payload = {"Series": [{"INDICADOR": "1", "FREQ": "1",
         "OBSERVATIONS": [{"TIME_PERIOD": "2020", "OBS_VALUE": "5.0"}]}]}
