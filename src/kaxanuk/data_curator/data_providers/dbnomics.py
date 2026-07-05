@@ -145,6 +145,11 @@ class Dbnomics(MacroDataProviderInterface):
                     if raw in _MISSING
                     else decimal.Decimal(str(raw))
                 )
+                if value is not None and not value.is_finite():
+                    # A bare NaN/Infinity JSON token decodes to a non-finite float and
+                    # slips past _MISSING; a non-finite observation is never valid data,
+                    # so treat it as missing instead of poisoning downstream calculations.
+                    value = None
                 rows[iso] = EconomicIndicatorRow(
                     date=datetime.date.fromisoformat(iso), value=value
                 )
