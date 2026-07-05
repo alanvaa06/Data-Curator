@@ -173,3 +173,45 @@ def test_unknown_economic_column_raises():
     builder = _builder(market, fundamentals, dividends, splits, economic_data)
     with pytest.raises(ColumnBuilderUnavailableEntityFieldError, match="economic data"):
         builder.process_columns(("e_not_in_economic_data",))
+
+
+def test_macro_forward_fill_uses_latest_observation_denser_than_market_grid():
+    # Regression: when >=2 observations fall strictly between two consecutive market
+    # dates (a daily macro series published on weekends over a business-day grid), the
+    # forward-fill must carry the LATEST observation <= the market date. _infill_data's
+    # else-branch advanced the observation cursor only ONE step per market date, so it
+    # lagged behind and returned a stale earlier value when observations were denser
+    # than the date grid.
+    market = _market(["2020-01-06", "2020-01-20"])
+    fundamentals, dividends, splits = _empty_fundamentals()
+    economic_data = {
+        "e_mx_target_rate": EconomicIndicatorData(
+            start_date=datetime.date(2020, 1, 1),
+            end_date=datetime.date(2020, 1, 18),
+            series_id="SF61745",
+            series_name="rate",
+            rows={
+                "2020-01-01": EconomicIndicatorRow(
+                    date=datetime.date(2020, 1, 1), value=decimal.Decimal("1")
+                ),
+                "2020-01-10": EconomicIndicatorRow(
+                    date=datetime.date(2020, 1, 10), value=decimal.Decimal("2")
+                ),
+                "2020-01-15": EconomicIndicatorRow(
+                    date=datetime.date(2020, 1, 15), value=decimal.Decimal("3")
+                ),
+                "2020-01-18": EconomicIndicatorRow(
+                    date=datetime.date(2020, 1, 18), value=decimal.Decimal("4")
+                ),
+            },
+        )
+    }
+
+    builder = _builder(market, fundamentals, dividends, splits, economic_data)
+    table = builder.process_columns(("m_close", "e_mx_target_rate"))
+
+    col = table.column("e_mx_target_rate").to_pylist()
+    # 2020-01-06 -> latest obs <= it = 2020-01-01 (=1).
+    # 2020-01-20 -> latest obs <= it = 2020-01-18 (=4), NOT the stale 2020-01-10 (=2)
+    # produced by advancing the observation cursor only one step.
+    assert [str(v) for v in col] == ["1", "4"]
