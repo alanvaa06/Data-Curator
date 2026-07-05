@@ -55,7 +55,7 @@
   @keyframes indeterminate { 0% { transform: translateX(-105%); } 100% { transform: translateX(360%); } }
   .bento { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 12px; padding-top: 13px; }
   .bentoMain { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(320px, 1fr) minmax(0, 1.75fr); gap: 12px; }
-  .leftcol { min-height: 0; display: flex; flex-direction: column; gap: 12px; }
+  .leftcol { min-height: 0; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; }
   .kpis { flex: none; display: grid; grid-template-columns: 1fr 2fr 1fr 1fr; gap: 12px; }
   .kpi { background-color: var(--side); border: 1px solid var(--border-soft); border-radius: var(--radius);
          padding: 9px 14px 11px; box-shadow: 0 1px 2px var(--shadow-color); }
@@ -70,7 +70,7 @@
   #chartPick { width: auto; max-width: 62%; padding: 4px 8px; font-size: 12px; }
   .chartMeta { font-size: 11px; color: var(--muted); font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
                white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .lwchart { height: 200px; border-radius: var(--radius-sm); overflow: hidden; }
+  .lwchart { height: 170px; border-radius: var(--radius-sm); overflow: hidden; }
   fieldset { background-color: var(--card); border: 1px solid var(--border-soft); border-radius: var(--radius); margin: 0;
              padding: 13px 16px 15px; min-width: 0; box-shadow: 0 1px 2px var(--shadow-color); position: relative;
              background-image: radial-gradient(rgba(76, 141, 255, 0.05) 1px, transparent 1.4px); background-size: 22px 22px; }
@@ -85,7 +85,7 @@
            text-transform: uppercase; letter-spacing: 0.11em; }
   legend span { font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
   .boxIds, .boxRun, .boxCols { display: flex; flex-direction: column; min-height: 0; }
-  .boxIds { flex: 1; }
+  .boxIds { flex: none; }
   .boxRun { flex: 1; }
   .boxCols { min-height: 0; }
   .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px 14px; }
@@ -160,7 +160,7 @@
   .etfpill.on { color: var(--accent-text); border-color: var(--accent); background: var(--accent-bg); }
   /* Browsers + chips share one scroll region so expanding a browser scrolls
      within the Identifiers box instead of bleeding over the Run output panel. */
-  .idscroll { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; }
+  .idscroll { flex: none; min-height: 130px; max-height: 42vh; overflow-y: auto; display: flex; flex-direction: column; }
   .chips { display: flex; flex-wrap: wrap; gap: 5px; align-content: flex-start; }
   .chip { display: inline-flex; align-items: center; gap: 4px; background: var(--field); color: var(--text);
           border: 1px solid var(--border-soft); padding: 2px 4px 2px 9px; border-radius: var(--radius-sm); font-size: 12px;

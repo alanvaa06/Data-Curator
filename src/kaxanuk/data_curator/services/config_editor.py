@@ -756,6 +756,9 @@ def build_server(
             self.send_response(status)
             self.send_header('Content-Type', content_type)
             self.send_header('Content-Length', str(len(body)))
+            # Local dev panel: never let the browser cache, so a plain refresh always
+            # picks up the freshly-read page (the page itself is read per request).
+            self.send_header('Cache-Control', 'no-store')
             self.end_headers()
             self.wfile.write(body)
 
