@@ -359,6 +359,24 @@ def test_server_serves_page(tmp_path):
         server.shutdown()
 
 
+def test_server_serves_vendored_chart_library_not_a_cdn(tmp_path):
+    # Self-contained/offline requirement: the charting library is vendored and served
+    # from our own server, never loaded from an external CDN.
+    server, base = _start(tmp_path)
+    try:
+        status, page = _get(base + '/')
+        assert status == 200
+        assert '/vendor/lightweight-charts.js' in page
+        assert 'jsdelivr' not in page
+        assert 'cdn.' not in page
+
+        status, lib = _get(base + '/vendor/lightweight-charts.js')
+        assert status == 200
+        assert 'LightweightCharts' in lib  # the real library, served locally
+    finally:
+        server.shutdown()
+
+
 def test_server_returns_config_and_catalog(tmp_path):
     server, base = _start(tmp_path)
     try:
