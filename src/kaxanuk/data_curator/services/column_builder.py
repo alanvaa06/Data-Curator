@@ -574,11 +574,17 @@ class ColumnBuilder:
             if date < current_data_row_date:
                 infilled_data[date] = data_rows.get(previous_data_row_date)
             else:
-                try:
+                # Drain the observation cursor to the LAST observation <= date, not just one
+                # step: when observations are denser than the date grid in some region (e.g. a
+                # daily macro series published on weekends over a business-day market calendar),
+                # a single advance leaves a stale earlier observation as the forward-fill value.
+                # Mirrors the priming while-loop above.
+                while date >= current_data_row_date:
                     previous_data_row_date = current_data_row_date
-                    current_data_row_date = next(data_row_dates)
-                except StopIteration:
-                    pass
+                    try:
+                        current_data_row_date = next(data_row_dates)
+                    except StopIteration:
+                        break
 
                 infilled_data[date] = data_rows.get(previous_data_row_date)
 
