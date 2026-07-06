@@ -46,8 +46,20 @@ class MarketDataDailyRow(BaseDataEntity):
             if field.name == 'date':
                 continue
 
-            # Check that no numeric fields are negative
             field_value = getattr(self, field.name)
+
+            # Reject non-finite Decimals (NaN/Infinity) before any comparison, so a bad
+            # provider value surfaces as a catchable per-row EntityValueError instead of a
+            # raw decimal.InvalidOperation that escapes entity packing and aborts the block.
+            if (
+                isinstance(field_value, decimal.Decimal)
+                and not field_value.is_finite()
+            ):
+                msg = f"Non-finite {self.__class__.__name__}.{field.name} for date {self.date!s}"
+
+                raise EntityValueError(msg)
+
+            # Check that no numeric fields are negative
             if (
                 field_value is not None
                 and field_value < type(field_value)(0)
