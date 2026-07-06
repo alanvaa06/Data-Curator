@@ -17,6 +17,7 @@ import logging
 import os
 import sys
 import types
+from concurrent.futures.process import BrokenProcessPool
 
 import httpx
 import pyarrow
@@ -317,6 +318,27 @@ def main(
                     logging.getLogger(__name__).error(msg)
 
                     continue
+                except (
+                    ApiEndpointError,
+                    ColumnBuilderCircularDependenciesError,
+                    ColumnBuilderCustomFunctionNotFoundError,
+                    ColumnBuilderUnavailableEntityFieldError,
+                ):
+                    # run-fatal errors are not ticker-specific (an API-wide failure or a
+                    # calculation misconfiguration that affects every ticker): re-raise so the
+                    # inner handler below logs critical and returns False.
+                    raise
+                except DataCuratorError as error:
+                    # any other provider error is scoped to THIS ticker: skip it and keep
+                    # processing the rest, mirroring the not-found/payment handling above and
+                    # the broad macro-fetch catch at the top of main().
+                    msg = "\n  ".join([
+                        f"{main_identifier} skipping output as it presented the following data provider error:",
+                        str(error)
+                    ])
+                    logging.getLogger(__name__).error(msg)
+
+                    continue
 
                 if compute_executor is None:
                     output_columns = _compute_identifier_columns(
@@ -364,6 +386,14 @@ def main(
                     output_columns=compute_future.result(),
                     output_handlers=output_handlers,
                 )
+        except BrokenProcessPool as error:
+            # a compute worker process died: BrokenProcessPool is a RuntimeError, NOT a
+            # DataCuratorError, so it would otherwise escape main() and invalidate every
+            # pending future. Treat it as run-fatal: log critical and return False. The
+            # finally below still shuts the pool down.
+            logging.getLogger(__name__).critical(str(error))
+
+            return False
         except (
             ApiEndpointError,
             ColumnBuilderCircularDependenciesError,

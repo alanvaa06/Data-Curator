@@ -1,6 +1,8 @@
+import concurrent.futures
 import datetime
 import decimal
 import threading
+from concurrent.futures.process import BrokenProcessPool
 
 import pytest
 
@@ -17,6 +19,7 @@ from kaxanuk.data_curator.entities import (
 )
 from kaxanuk.data_curator.exceptions import (
     ApiEndpointError,
+    DataProviderParsingError,
     DataProviderPaymentError,
     IdentifierNotFoundError,
     PassedArgumentError,
@@ -77,12 +80,14 @@ class StubMarketDataProvider(DataProviderInterface):
         fail_identifiers=(),
         fatal_identifiers=(),
         payment_fail_identifiers=(),
+        parsing_fail_identifiers=(),
         barrier=None,
         fetch_started_hook=None,
     ):
         self.fail_identifiers = set(fail_identifiers)
         self.fatal_identifiers = set(fatal_identifiers)
         self.payment_fail_identifiers = set(payment_fail_identifiers)
+        self.parsing_fail_identifiers = set(parsing_fail_identifiers)
         self.barrier = barrier
         self.fetch_started_hook = fetch_started_hook
 
@@ -101,6 +106,10 @@ class StubMarketDataProvider(DataProviderInterface):
         if main_identifier in self.payment_fail_identifiers:
             msg = f"{main_identifier} requires payment"
             raise DataProviderPaymentError(msg)
+        if main_identifier in self.parsing_fail_identifiers:
+            # an un-enumerated per-ticker DataCuratorError (not one of main's abort classes)
+            msg = f"{main_identifier} response parsing failed"
+            raise DataProviderParsingError(msg)
         return _build_market_data(main_identifier, start_date, end_date)
 
     def get_dividend_data(self, *, main_identifier, start_date, end_date):
@@ -344,3 +353,61 @@ class TestMainParallelFetch:
                 output_handlers=[handler],
                 max_concurrent_fetches=bad_value,
             )
+
+
+class _BrokenComputeFuture:
+    """A future stand-in whose result() raises BrokenProcessPool (a dead worker)."""
+
+    def result(self):
+        msg = "A process in the process pool was terminated abruptly"
+        raise BrokenProcessPool(msg)
+
+
+class _FakeBrokenProcessPoolExecutor:
+    """ProcessPoolExecutor stand-in: submit() returns futures that raise BrokenProcessPool."""
+
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def submit(self, *args, **kwargs):
+        return _BrokenComputeFuture()
+
+    def shutdown(self, *args, **kwargs):
+        pass
+
+
+class TestMainBatchResilience:
+    def test_unenumerated_provider_error_skips_ticker_not_aborts_batch(self):
+        # A provider raising an un-enumerated DataCuratorError (DataProviderParsingError)
+        # for ONE ticker must NOT escape main(): that ticker is skipped, the rest proceed.
+        identifiers = ('AAA', 'BAD', 'CCC')
+        handler = RecordingOutputHandler()
+        result = data_curator.main(
+            configuration=_build_configuration(identifiers),
+            market_data_provider=StubMarketDataProvider(parsing_fail_identifiers=('BAD',)),
+            fundamental_data_provider=None,
+            output_handlers=[handler],
+            max_concurrent_fetches=2,
+        )
+        assert handler.identifiers == ['AAA', 'CCC']
+        assert result is True
+
+    def test_broken_process_pool_returns_false_not_propagates(self, monkeypatch):
+        # A dead ProcessPool worker makes compute_future.result() raise BrokenProcessPool
+        # (a RuntimeError, not a DataCuratorError). main() must return False, not propagate.
+        monkeypatch.setattr(
+            concurrent.futures,
+            'ProcessPoolExecutor',
+            _FakeBrokenProcessPoolExecutor,
+        )
+        identifiers = ('AAA', 'BBB', 'CCC')
+        handler = RecordingOutputHandler()
+        result = data_curator.main(
+            configuration=_build_configuration(identifiers),
+            market_data_provider=StubMarketDataProvider(),
+            fundamental_data_provider=None,
+            output_handlers=[handler],
+            max_concurrent_fetches=2,
+            max_concurrent_computations=2,
+        )
+        assert result is False
