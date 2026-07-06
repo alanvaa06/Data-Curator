@@ -1206,6 +1206,35 @@ def test_market_cap(example_market_cap):
     )
 
 
+def test_market_cap_first_parameter_is_unadjusted_close():
+    # The engine wires calculation arguments by PARAMETER NAME (ColumnBuilder resolves via
+    # inspect.signature), and the docstring's contract is "unadjusted close prices". The first
+    # parameter must be m_close (unadjusted), not m_close_split_adjusted, which would feed the
+    # split-adjusted close and understate market cap by the cumulative split factor pre-split.
+    import inspect
+    param_names = list(inspect.signature(calculations.c_market_cap).parameters.keys())
+    assert param_names[0] == 'm_close'
+
+
+def test_market_cap_multiplies_unadjusted_close_by_shares():
+    # A pre-split date: unadjusted close 500 vs split-adjusted close 250, with as-reported
+    # diluted shares 4e9 (NOT split-adjusted). Correct market cap is 500 * 4e9 = 2e12, not 1e12.
+    unadjusted_close = DataColumn.load([Decimal('500')])
+    shares = DataColumn.load([Decimal('4000000000')])
+    result = calculations.c_market_cap(
+        m_close=unadjusted_close,
+        fis_weighted_average_diluted_shares_outstanding=shares,
+    )
+    expected = DataColumn.load([Decimal('2000000000000')])
+
+    assert DataColumn.fully_equal(
+        result,
+        expected,
+        approximate_floats=True,
+        equal_nulls=True,
+    )
+
+
 def test_macd_26d_12d_dividend_and_split_adjusted(
     example_moving_average_convergence_divergence
 ):
