@@ -543,19 +543,33 @@ def c_daily_traded_value(
 
     2. Drag the formula down to apply it to the remaining rows.
     """
-    if (
-        not m_vwap.is_null()
-        and not m_volume.is_null()
-    ):
-        output = m_vwap * m_volume
-    elif (
-        not m_vwap_split_adjusted.is_null()
-        and not m_volume_split_adjusted.is_null()
-    ):
-        output = m_vwap_split_adjusted * m_volume_split_adjusted
-    else:
-        output = m_vwap_dividend_and_split_adjusted * m_volume_dividend_and_split_adjusted
-    return output
+    products = (
+        m_vwap * m_volume,
+        m_vwap_split_adjusted * m_volume_split_adjusted,
+        m_vwap_dividend_and_split_adjusted * m_volume_dividend_and_split_adjusted,
+    )
+    arrays = [product.to_pyarrow() for product in products]
+
+    # A data set the provider omitted entirely arrives as a whole-column null array, and
+    # pyarrow.compute.coalesce cannot mix the null type with the numeric products, so cast any
+    # such array to the numeric product type first (yielding an all-null column of that type).
+    numeric_type = next(
+        (array.type for array in arrays if array.type != pyarrow.null()),
+        None,
+    )
+    if numeric_type is not None:
+        arrays = [
+            array.cast(numeric_type) if array.type == pyarrow.null() else array
+            for array in arrays
+        ]
+
+    # Per-row coalesce: prefer the unadjusted product, then the split-adjusted, then the
+    # dividend-and-split-adjusted, so a per-row null (e.g. a halted-trading day) in one data set
+    # falls back to whichever adjusted data set has the value on that same row. The former
+    # is_null() branch selection was a whole-column check and could not fall back per row.
+    coalesced = pyarrow.compute.coalesce(*arrays)
+
+    return DataColumn.load(coalesced)
 
 
 # noinspection PyShadowingNames
