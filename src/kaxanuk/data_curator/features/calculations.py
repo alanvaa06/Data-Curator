@@ -1811,7 +1811,7 @@ def c_macd_signal_9d_split_adjusted(
 
 # noinspection PyShadowingNames
 def c_market_cap(
-    m_close_split_adjusted,
+    m_close,
     fis_weighted_average_diluted_shares_outstanding
 ):
     r"""
@@ -1821,8 +1821,8 @@ def c_market_cap(
 
     Parameters
     ----------
-    m_close_split_adjusted : DataColumn
-        The adjusted closing prices.
+    m_close : DataColumn
+        The unadjusted closing prices.
     fis_weighted_average_diluted_shares_outstanding : DataColumn
         The weighted average of the diluted shares outstanding.
 
@@ -1847,7 +1847,7 @@ def c_market_cap(
 
     2. Drag the formula down to apply to subsequent rows.
     """
-    output = m_close_split_adjusted * fis_weighted_average_diluted_shares_outstanding
+    output = m_close * fis_weighted_average_diluted_shares_outstanding
     return output
 
 
