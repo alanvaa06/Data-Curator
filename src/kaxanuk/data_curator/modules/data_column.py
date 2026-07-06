@@ -93,6 +93,29 @@ class DataColumn:
         """
         return pyarrow.array(self.array, type=type)
 
+    def __bool__(self) -> bool:
+        """
+        Prevent ambiguous truth-value evaluation of a DataColumn.
+
+        Comparison operators (==, !=, <, <=, >, >=) return a DataColumn wrapping an element-wise
+        boolean array, not a scalar bool. Evaluating such a result in a boolean context (e.g.
+        ``if column_a == column_b:``) would otherwise fall back to __len__ and be truthy for any
+        non-empty column, silently masking the intended element-wise semantics. Raise instead,
+        mirroring numpy/pandas behaviour.
+
+        Raises
+        ------
+        TypeError
+            Always, because the truth value of a DataColumn is ambiguous.
+        """
+        msg = (
+            "The truth value of a DataColumn is ambiguous."
+            " Use DataColumn.fully_equal(), .boolean_and()/.boolean_or(), or an explicit reduction"
+            " such as pyarrow.compute.all(...)/pyarrow.compute.any(...) on the underlying array."
+        )
+
+        raise TypeError(msg)
+
     def __eq__(
         self,
         other: typing.Union['DataColumn', int, float, decimal.Decimal, pyarrow.Scalar],

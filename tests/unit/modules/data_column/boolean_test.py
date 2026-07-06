@@ -385,3 +385,33 @@ class TestBooleanOr:
             expected,
             equal_nulls=True,
         )
+
+
+class TestBool:
+    def test_bool_of_equality_result_raises_type_error(self):
+        col_a = DataColumn.load([1, 2, 3])
+        col_b = DataColumn.load([9, 8, 7])
+
+        with pytest.raises(TypeError):
+            bool(col_a == col_b)
+
+    def test_if_condition_on_equality_result_raises_type_error(self):
+        # The exact user-facing trap: `if column_a == column_b:` must not silently take the
+        # truthy branch. Without __bool__ this fell back to __len__ (truthy for any non-empty
+        # pair), entering the branch even though no elements are equal.
+        col_a = DataColumn.load([1, 2, 3])
+        col_b = DataColumn.load([9, 8, 7])
+
+        def _branch_on_columns():
+            if col_a == col_b:
+                return 'entered'
+            return 'skipped'
+
+        with pytest.raises(TypeError):
+            _branch_on_columns()
+
+    def test_bool_of_plain_column_raises_type_error(self):
+        column = DataColumn.load([1, 2, 3])
+
+        with pytest.raises(TypeError):
+            bool(column)

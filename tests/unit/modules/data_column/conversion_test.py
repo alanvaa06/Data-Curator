@@ -35,7 +35,13 @@ def test_load_from_pandas_with_nans():
 def test_load_is_idempotent():
     column = DataColumn.load([1, 2, 3, None])
 
-    assert column == DataColumn.load(column)
+    # `assert column == ...` used to silently pass on the DataColumn's truthiness (via __len__),
+    # never comparing element-wise; with __bool__ now raising, use the real comparison.
+    assert DataColumn.fully_equal(
+        column,
+        DataColumn.load(column),
+        equal_nulls=True,
+    )
 
 
 def test_to_pandas():
