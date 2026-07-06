@@ -256,6 +256,23 @@ class TestIndexedRollingWindowOperation:
                 window_length="some string that's not an int"
             )
 
+    def test_non_adjacent_duplicate_keys_raise_calculation_helper_error(self):
+        # Restatement/refiling: the same fiscal key reappears in a non-adjacent run (e.g. FMP
+        # re-emits a prior period). Before the fix this raised a raw pandas InvalidIndexError;
+        # after the fix it must raise a clear CalculationHelperError.
+        key_column = DataColumn.load(['A1', 'A1', 'A2', 'A2', 'A1', 'A1'])
+        value_column = DataColumn.load([1.0, 1.0, 2.0, 2.0, 3.0, 3.0])
+        with pytest.raises(CalculationHelperError) as exc_info:
+            helpers.indexed_rolling_window_operation(
+                key_column=key_column,
+                value_column=value_column,
+                operation_function=sum,
+                window_length=2
+            )
+        assert "indexed_rolling_window_operation" in str(exc_info.value)
+        assert "duplicate" in str(exc_info.value)
+
+
 @pytest.mark.parametrize(("column", "days", "expected_msg"), [
     # Case: 'column' is not a DataColumn
     ("not_a_DataColumn", 5, "features.helpers.annualized_volatility() column parameter must be a DataColumn object"),

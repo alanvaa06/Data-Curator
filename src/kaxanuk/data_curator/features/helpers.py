@@ -303,6 +303,19 @@ def indexed_rolling_window_operation(
         )
         .to_pandas()
     )
+    # A key that reappears in a non-adjacent run (e.g. a restated/refiled fiscal period reusing
+    # an earlier fiscal_year||fiscal_period) makes the index below non-unique, so the .map() at
+    # the end would raise a raw pandas InvalidIndexError and abort LTM. Fail with a clear domain
+    # error instead. dropna() mirrors the null-key drop in the .map() so legitimately-null keys
+    # (one per collapsed run) never trip a false positive.
+    if key_series.dropna().duplicated().any():
+        msg = (
+            "features.helpers.indexed_rolling_window_operation() found duplicate keys in"
+            " non-adjacent positions; each key must occupy a single contiguous run"
+        )
+
+        raise CalculationHelperError(msg)
+
     value_series = (
         pyarrow.compute.array_take(
             value_column.to_pyarrow(),
