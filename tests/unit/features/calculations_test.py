@@ -169,6 +169,63 @@ def test_daily_traded_value(example_average_daily_traded_value):
     )
 
 
+def test_daily_traded_value_falls_back_per_row_on_null():
+    # A halted-trading day: the unadjusted (primary) vwap/volume are null on row 1, but the
+    # split-adjusted product is available there. Traded value must fall back per-row instead
+    # of emitting a spurious null (is_null() is a whole-column check, not per-row).
+    m_vwap = DataColumn.load([10.0, None, 30.0])
+    m_volume = DataColumn.load([100.0, None, 300.0])
+    m_vwap_split_adjusted = DataColumn.load([10.0, 20.0, 30.0])
+    m_volume_split_adjusted = DataColumn.load([100.0, 200.0, 300.0])
+    m_vwap_dividend_and_split_adjusted = DataColumn.load([10.0, 20.0, 30.0])
+    m_volume_dividend_and_split_adjusted = DataColumn.load([100.0, 200.0, 300.0])
+
+    result = calculations.c_daily_traded_value(
+        m_vwap,
+        m_volume,
+        m_vwap_split_adjusted,
+        m_volume_split_adjusted,
+        m_vwap_dividend_and_split_adjusted,
+        m_volume_dividend_and_split_adjusted,
+    )
+    expected_result = DataColumn.load([1000.0, 4000.0, 9000.0])
+
+    assert DataColumn.fully_equal(
+        result,
+        expected_result,
+        approximate_floats=True,
+        equal_nulls=True,
+    )
+
+
+def test_daily_traded_value_falls_back_when_primary_is_whole_null_column():
+    # The provider supplied no unadjusted vwap/volume at all (a whole-column NullArray), so the
+    # split-adjusted product must be used for every row. Guards the pre-existing behavior.
+    m_vwap = DataColumn.load([None, None, None])
+    m_volume = DataColumn.load([None, None, None])
+    m_vwap_split_adjusted = DataColumn.load([10.0, 20.0, 30.0])
+    m_volume_split_adjusted = DataColumn.load([100.0, 200.0, 300.0])
+    m_vwap_dividend_and_split_adjusted = DataColumn.load([10.0, 20.0, 30.0])
+    m_volume_dividend_and_split_adjusted = DataColumn.load([100.0, 200.0, 300.0])
+
+    result = calculations.c_daily_traded_value(
+        m_vwap,
+        m_volume,
+        m_vwap_split_adjusted,
+        m_volume_split_adjusted,
+        m_vwap_dividend_and_split_adjusted,
+        m_volume_dividend_and_split_adjusted,
+    )
+    expected_result = DataColumn.load([1000.0, 4000.0, 9000.0])
+
+    assert DataColumn.fully_equal(
+        result,
+        expected_result,
+        approximate_floats=True,
+        equal_nulls=True,
+    )
+
+
 def test_daily_traded_value_sma_5d(example_average_daily_traded_value):
     average_daily_traded_value = DataColumn.load(
         example_average_daily_traded_value['c_average_daily_traded_value']
