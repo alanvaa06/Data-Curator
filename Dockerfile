@@ -33,6 +33,11 @@ RUN \
 RUN mkdir /app
 WORKDIR /app
 
+# Create an unprivileged user for the runtime stage (defense in depth). Build stages still run
+# as root (they need it for apt/pip); the final stage switches to this user before the CMD.
+RUN useradd --create-home --uid 1000 kndc \
+  && chown -R kndc /app
+
 
 FROM base AS lib_builder
 # This stage builds the library, which the other stages will copy from
@@ -85,6 +90,9 @@ FROM ${BUILD_ENV}_env AS final_env
 ARG BUILD_ENV
 # Save BUILDENV to run env variable
 ENV KNDC_APPENV=$BUILD_ENV
+
+# Drop root privileges before running the user entry point (custom_calculations + deps)
+USER kndc
 
 # execute data_curator on container start
 CMD ["kaxanuk.data_curator", "run"]
