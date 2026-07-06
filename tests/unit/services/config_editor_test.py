@@ -322,7 +322,10 @@ def _start(tmp_path, entry=None):
 
 
 def _post_empty(url):
-    request = urllib.request.Request(url, data=b'', method='POST')
+    # Mirror the real panel client, which sends X-Requested-By on the empty-body run routes.
+    request = urllib.request.Request(
+        url, data=b'', headers={'X-Requested-By': 'data-curator-panel'}, method='POST',
+    )
     try:
         with urllib.request.urlopen(request) as response:
             return response.status
@@ -342,6 +345,15 @@ def _post(url, data):
         headers={'Content-Type': 'application/json'},
         method='POST',
     )
+    try:
+        with urllib.request.urlopen(request) as response:
+            return response.status
+    except urllib.error.HTTPError as error:
+        return error.code
+
+
+def _post_raw(url, data, headers, method='POST'):
+    request = urllib.request.Request(url, data=data, headers=headers, method=method)
     try:
         with urllib.request.urlopen(request) as response:
             return response.status
@@ -428,6 +440,80 @@ def test_server_rejects_state_change_from_foreign_host(tmp_path):
         except urllib.error.HTTPError as error:
             status = error.code
         assert status == 403
+    finally:
+        server.shutdown()
+
+
+def test_server_rejects_cross_site_sec_fetch_post(tmp_path):
+    # CSRF defense: a POST advertising a cross-site fetch (Sec-Fetch-Site: cross-site) must be
+    # refused even though its Host is loopback (the browser sets Host from the URL, not the origin).
+    server, base = _start(tmp_path)
+    try:
+        status = _post_raw(
+            base + '/api/env',
+            json.dumps({'KNDC_API_KEY_FMP': 'attacker'}).encode('utf-8'),
+            {'Content-Type': 'application/json', 'Sec-Fetch-Site': 'cross-site'},
+        )
+        assert status == 403
+    finally:
+        server.shutdown()
+
+
+def test_server_rejects_non_json_content_type_post(tmp_path):
+    # CSRF defense: a simple-request Content-Type (text/plain) is rejected so a cross-site page
+    # cannot mutate state without triggering a CORS preflight.
+    server, base = _start(tmp_path)
+    try:
+        status = _post_raw(
+            base + '/api/env',
+            json.dumps({'KNDC_API_KEY_FMP': 'attacker'}).encode('utf-8'),
+            {'Content-Type': 'text/plain'},
+        )
+        assert status == 403
+    finally:
+        server.shutdown()
+
+
+def test_server_run_requires_custom_header(tmp_path):
+    # CSRF defense: /api/run carries no body, so it additionally requires a custom header a
+    # cross-site <form> cannot set. Without it, the run is refused.
+    config_editor.reset_run_state()
+    entry = tmp_path / 'entry.py'
+    entry.write_text("print('pipeline ok')", encoding='utf-8')
+    server, base = _start(tmp_path, entry=entry)
+    try:
+        status = _post_raw(base + '/api/run', b'', {})
+        assert status == 403
+    finally:
+        server.shutdown()
+
+
+def test_server_same_origin_json_post_still_works(tmp_path):
+    # A legitimate same-origin application/json POST is still accepted: the guard does not
+    # block the real panel.
+    server, base = _start(tmp_path)
+    try:
+        payload = config_editor.build_default_config()
+        payload['identifiers'] = ['AAPL']
+        status = _post_raw(
+            base + '/api/config',
+            json.dumps(payload).encode('utf-8'),
+            {'Content-Type': 'application/json', 'Sec-Fetch-Site': 'same-origin'},
+        )
+        assert status == 200
+    finally:
+        server.shutdown()
+
+
+def test_server_run_with_custom_header_still_works(tmp_path):
+    # /api/run with the required custom header (as the real panel sends) is accepted.
+    config_editor.reset_run_state()
+    entry = tmp_path / 'entry.py'
+    entry.write_text("print('pipeline ok')", encoding='utf-8')
+    server, base = _start(tmp_path, entry=entry)
+    try:
+        status = _post_raw(base + '/api/run', b'', {'X-Requested-By': 'data-curator-panel'})
+        assert status == 200
     finally:
         server.shutdown()
 

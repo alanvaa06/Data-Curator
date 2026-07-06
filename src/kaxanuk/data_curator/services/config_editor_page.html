@@ -850,7 +850,7 @@ function updateTimer(status) {
 async function saveAndRun() {
   const ok = await save();
   if (!ok) return;
-  const res = await fetch('/api/run', { method: 'POST' });
+  const res = await fetch('/api/run', { method: 'POST', headers: { 'X-Requested-By': 'data-curator-panel' } });
   document.getElementById('runBox').style.display = '';
   if (!res.ok) {
     const data = await res.json();
@@ -871,7 +871,7 @@ async function saveAndRun() {
 async function stopRun() {
   setStatus('Stopping…', 'run');
   document.getElementById('stop').disabled = true;
-  await fetch('/api/run/stop', { method: 'POST' });
+  await fetch('/api/run/stop', { method: 'POST', headers: { 'X-Requested-By': 'data-curator-panel' } });
   // The poller reconciles to the final 'stopped'/'failed'/'done' state and the
   // disabled toggle.
   pollRun();

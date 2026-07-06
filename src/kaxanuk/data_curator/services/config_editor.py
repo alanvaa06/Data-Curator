@@ -775,6 +775,14 @@ def build_server(
         def _send_json(self, status: int, data: typing.Any) -> None:
             self._send(status, json.dumps(data).encode('utf-8'), 'application/json')
 
+        def _reject(self, status: int, error: str) -> None:
+            # Drain any request body before responding so an early rejection doesn't leave
+            # unread bytes on the socket (which can reset the connection on some clients/OSes).
+            content_length = int(self.headers.get('Content-Length', 0))
+            if content_length > 0:
+                self.rfile.read(content_length)
+            self._send_json(status, {'error': error})
+
         def do_GET(self) -> None:
             if self.path in ('/', '/index.html'):
                 # read per request so server restarts are never needed to pick up page updates
@@ -805,9 +813,44 @@ def build_server(
             # localhost Host header; a rebound DNS name (or cross-site form post) would not.
             host = self.headers.get('Host', '')
             if host.rsplit(':', 1)[0].lower() not in ('127.0.0.1', 'localhost'):
-                self._send_json(403, {'error': 'forbidden host'})
+                self._reject(403, 'forbidden host')
 
                 return
+
+            # CSRF defense: the loopback Host check above only stops DNS rebinding. A cross-site
+            # page can still fetch() a loopback URL because the browser sets Host from the target
+            # URL, not the attacker's origin. For the state-changing routes, also require signals
+            # a cross-origin request cannot forge.
+            state_changing_paths = (
+                '/api/config', '/api/run', '/api/run/stop',
+                '/api/env', '/api/lists', '/api/lists/delete',
+            )
+            if self.path in state_changing_paths:
+                # Modern browsers advertise a cross-site fetch; reject it outright.
+                sec_fetch_site = self.headers.get('Sec-Fetch-Site')
+                if sec_fetch_site is not None and sec_fetch_site not in ('same-origin', 'none'):
+                    self._reject(403, 'forbidden cross-site request')
+
+                    return
+
+                # A body must be application/json, which forces a CORS preflight cross-site
+                # (a simple-request text/plain or form content type would skip the preflight).
+                content_length = int(self.headers.get('Content-Length', 0))
+                content_type = self.headers.get('Content-Type', '').split(';', 1)[0].strip().lower()
+                if content_length > 0 and content_type != 'application/json':
+                    self._reject(403, 'unsupported content type')
+
+                    return
+
+                # The empty-body run routes cannot rely on a JSON content type, so require a
+                # custom header that a cross-site <form> or simple fetch cannot set.
+                if (
+                    self.path in ('/api/run', '/api/run/stop')
+                    and self.headers.get('X-Requested-By') != 'data-curator-panel'
+                ):
+                    self._reject(403, 'missing X-Requested-By header')
+
+                    return
 
             if self.path == '/api/config':
                 length = int(self.headers.get('Content-Length', 0))
