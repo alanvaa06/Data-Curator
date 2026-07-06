@@ -1162,3 +1162,60 @@ class TestEdgeCases:
                         f"[{row.low_split_adjusted}, {row.high_split_adjusted}] "
                         f"for {ric} on {key}"
                     )
+
+
+class TestDividendAdjustmentDenominator:
+    """Regression: dividend factor must use the last cum-dividend close.
+
+    The adjustment factor (1 - Div/Price) must divide by the close on the
+    last trading day STRICTLY BEFORE the ex-date (the cum-dividend price),
+    not by the already-dropped close ON the ex-date itself.  See the method
+    docstring formula and the inline comment at the ex-date branch.
+    """
+
+    @staticmethod
+    def _price_frame():
+        return pandas.DataFrame(
+            {
+                "Date": [
+                    datetime.date(2020, 1, 1),
+                    datetime.date(2020, 1, 2),
+                    datetime.date(2020, 1, 3),
+                ],
+                "Open Price_split": [100.0, 98.2, 99.0],
+                "High Price_split": [100.0, 98.2, 99.0],
+                "Low Price_split": [100.0, 98.2, 99.0],
+                "Close Price_split": [100.0, 98.2, 99.0],
+            }
+        )
+
+    @staticmethod
+    def _dividend_frame():
+        return pandas.DataFrame(
+            {
+                "Dividend Ex Date": [datetime.date(2020, 1, 2)],
+                "Adjusted Gross Dividend Amount": [2.0],
+            }
+        )
+
+    def test_denominator_is_last_cum_dividend_close(self):
+        result = LsegWorkspace._calculate_dividend_adjusted_prices(
+            self._price_frame(),
+            self._dividend_frame(),
+        )
+        result = result.sort_values("Date").reset_index(drop=True)
+
+        # Row before the ex-date must be scaled by (1 - 2.0/100.0) = 0.98,
+        # NOT by (1 - 2.0/98.2).  Expected 100.0 * 0.98 = 98.0.
+        pre_ex_close = result.loc[0, "Close Price_div_split"]
+        assert pre_ex_close == pytest.approx(98.0, abs=1e-9)
+
+    def test_ex_date_row_uses_unit_factor(self):
+        result = LsegWorkspace._calculate_dividend_adjusted_prices(
+            self._price_frame(),
+            self._dividend_frame(),
+        )
+        result = result.sort_values("Date").reset_index(drop=True)
+
+        # Ex-date and later rows get factor 1.0 (before_ex_mask is False).
+        assert result.loc[1, "Close Price_div_split"] == pytest.approx(98.2, abs=1e-9)

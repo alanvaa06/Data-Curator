@@ -999,14 +999,12 @@ class LsegWorkspace(DataProviderInterface):
             if not before_ex_mask.any():
                 continue
 
-            # Get close price on ex-date (or nearest date before)
-            ex_date_mask = result[ColumnNames.DATE] == ex_date
-            if ex_date_mask.any():
-                close_on_ex = result.loc[ex_date_mask, ColumnNames.CLOSE_PRICE_SPLIT].iloc[0]
-            else:
-                # Use the last close before ex-date
-                last_before_ex_idx = result.loc[before_ex_mask, ColumnNames.DATE].idxmax()
-                close_on_ex = result.loc[last_before_ex_idx, ColumnNames.CLOSE_PRICE_SPLIT]
+            # Use the last cum-dividend close: the close on the last trading day
+            # strictly before the ex-date. This is the price that still embeds the
+            # dividend before it drops, matching the docstring formula and the CRSP
+            # standard. Never divide by the already-dropped ex-date close.
+            last_before_ex_idx = result.loc[before_ex_mask, ColumnNames.DATE].idxmax()
+            close_on_ex = result.loc[last_before_ex_idx, ColumnNames.CLOSE_PRICE_SPLIT]
 
             if close_on_ex is None or pandas.isna(close_on_ex) or close_on_ex <= 0:
                 continue
