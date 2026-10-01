@@ -38,29 +38,27 @@ def _fake_serve(calls):
 def test_config_editor_invokes_serve(monkeypatch, tmp_path):
     calls = {}
     monkeypatch.setattr(cli_module.config_editor, 'serve', _fake_serve(calls))
-    runner = CliRunner()
-    with runner.isolated_filesystem(temp_dir=tmp_path):
-        result = runner.invoke(
-            cli_module.cli,
-            ['config-editor', '--no-browser'],
-        )
+    monkeypatch.chdir(tmp_path)
+    result = CliRunner().invoke(
+        cli_module.cli,
+        ['config-editor', '--no-browser'],
+    )
     assert result.exit_code == 0, result.output
     assert calls['open_browser'] is False
     assert calls['config_path'].endswith('data_curator_parameters.json')
 
 
-def test_config_editor_reports_port_in_use(tmp_path):
+def test_config_editor_reports_port_in_use(tmp_path, monkeypatch):
     from kaxanuk.data_curator.services import config_editor
 
     blocker = config_editor.build_server(tmp_path / 'cfg.json', port=0)
     busy_port = blocker.server_address[1]
     try:
-        runner = CliRunner()
-        with runner.isolated_filesystem(temp_dir=tmp_path):
-            result = runner.invoke(
-                cli_module.cli,
-                ['config-editor', '--no-browser', '--port', str(busy_port)],
-            )
+        monkeypatch.chdir(tmp_path)
+        result = CliRunner().invoke(
+            cli_module.cli,
+            ['config-editor', '--no-browser', '--port', str(busy_port)],
+        )
         assert result.exit_code != 0
         assert 'already in use' in result.output
     finally:
@@ -70,14 +68,13 @@ def test_config_editor_reports_port_in_use(tmp_path):
 def test_init_json_scaffolds_files(tmp_path, monkeypatch):
     monkeypatch.setattr(cli_module, '_find_templates_dir', lambda: str(_repo_templates()))
 
-    runner = CliRunner()
-    with runner.isolated_filesystem(temp_dir=tmp_path):
-        result = runner.invoke(cli_module.cli, ['init', 'json'])
-        assert result.exit_code == 0, result.output
-        assert pathlib.Path('Config/data_curator_parameters.json').is_file()
-        assert pathlib.Path('Config/custom_calculations.py').is_file()
-        assert pathlib.Path('__main__.py').is_file()
-        assert not pathlib.Path('Config/data_curator_parameters.xlsx').is_file()
+    monkeypatch.chdir(tmp_path)
+    result = CliRunner().invoke(cli_module.cli, ['init', 'json'])
+    assert result.exit_code == 0, result.output
+    assert (tmp_path / 'Config/data_curator_parameters.json').is_file()
+    assert (tmp_path / 'Config/custom_calculations.py').is_file()
+    assert (tmp_path / '__main__.py').is_file()
+    assert not (tmp_path / 'Config/data_curator_parameters.xlsx').is_file()
 
 
 def test_start_scaffolds_missing_workspace_and_serves(tmp_path, monkeypatch):
@@ -85,14 +82,13 @@ def test_start_scaffolds_missing_workspace_and_serves(tmp_path, monkeypatch):
     calls = {}
     monkeypatch.setattr(cli_module.config_editor, 'serve', _fake_serve(calls))
 
-    runner = CliRunner()
-    with runner.isolated_filesystem(temp_dir=tmp_path):
-        result = runner.invoke(cli_module.cli, ['start', '--no-browser'])
-        assert result.exit_code == 0, result.output
-        assert pathlib.Path('Config/data_curator_parameters.json').is_file()
-        assert pathlib.Path('Config/custom_calculations.py').is_file()
-        assert pathlib.Path('__main__.py').is_file()
-        assert pathlib.Path('Output').is_dir()
+    monkeypatch.chdir(tmp_path)
+    result = CliRunner().invoke(cli_module.cli, ['start', '--no-browser'])
+    assert result.exit_code == 0, result.output
+    assert (tmp_path / 'Config/data_curator_parameters.json').is_file()
+    assert (tmp_path / 'Config/custom_calculations.py').is_file()
+    assert (tmp_path / '__main__.py').is_file()
+    assert (tmp_path / 'Output').is_dir()
     assert calls['config_path'].endswith('data_curator_parameters.json')
     assert calls['entry_script'].endswith('__main__.py')
     assert calls['open_browser'] is False
@@ -103,17 +99,16 @@ def test_start_preserves_existing_files(tmp_path, monkeypatch):
     calls = {}
     monkeypatch.setattr(cli_module.config_editor, 'serve', _fake_serve(calls))
 
-    runner = CliRunner()
-    with runner.isolated_filesystem(temp_dir=tmp_path):
-        pathlib.Path('Config').mkdir()
-        custom_config = {'custom': True}
-        pathlib.Path('Config/data_curator_parameters.json').write_text(
-            json.dumps(custom_config), encoding='utf-8'
-        )
-        pathlib.Path('__main__.py').write_text('# my custom entry\n', encoding='utf-8')
+    config_path = tmp_path / 'Config/data_curator_parameters.json'
+    entry_path = tmp_path / '__main__.py'
+    config_path.parent.mkdir()
+    custom_config = {'custom': True}
+    config_path.write_text(json.dumps(custom_config), encoding='utf-8')
+    entry_path.write_text('# my custom entry\n', encoding='utf-8')
 
-        result = runner.invoke(cli_module.cli, ['start', '--no-browser'])
-        assert result.exit_code == 0, result.output
-        saved = json.loads(pathlib.Path('Config/data_curator_parameters.json').read_text(encoding='utf-8'))
-        assert saved == custom_config
-        assert pathlib.Path('__main__.py').read_text(encoding='utf-8') == '# my custom entry\n'
+    monkeypatch.chdir(tmp_path)
+    result = CliRunner().invoke(cli_module.cli, ['start', '--no-browser'])
+    assert result.exit_code == 0, result.output
+    saved = json.loads(config_path.read_text(encoding='utf-8'))
+    assert saved == custom_config
+    assert entry_path.read_text(encoding='utf-8') == '# my custom entry\n'
